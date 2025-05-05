@@ -5,6 +5,8 @@ import { Upload, FileText, AlertCircle } from 'lucide-react';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import DetectTypeButton from '../components/DetectTypeButton';
 import ProcessAIButton from '../components/ProcessAIButton';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { useUser } from '@supabase/auth-helpers-react';
 
 // Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -17,6 +19,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export default function UploadPage() {
+  const user = useUser();
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [filePath, setFilePath] = useState<string | null>(null);
@@ -24,6 +27,8 @@ export default function UploadPage() {
   const [isDetecting, setIsDetecting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const supabase = createSupabaseBrowserClient();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -50,20 +55,22 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('You must be logged in to use this feature.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const saveRes = await fetch('/api/saveFile', {
-        method: 'POST',
-        body: formData,
-      });
-      const { filePath } = await saveRes.json();
-      setFilePath(filePath);
-
       const detectRes = await fetch('/api/detectType', {
         method: 'POST',
-        body: JSON.stringify({ filePath }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
       const detectData = await detectRes.json();
       setTypeResult(detectData.type || 'unknown');
@@ -75,7 +82,7 @@ export default function UploadPage() {
   };
 
   const handleProcessWithOpenAI = async () => {
-    if (!file || !filePath || !typeResult) {
+    if (!file || !typeResult) {
       setError('No file or type detected');
       return;
     }
@@ -84,6 +91,13 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('You must be logged in to use this feature.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -92,6 +106,9 @@ export default function UploadPage() {
 
       const res = await fetch(endpoint, {
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -118,6 +135,23 @@ export default function UploadPage() {
       }
     };
   }, [fileUrl]);
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white flex flex-col items-center justify-center">
+        <div className="bg-zinc-900/80 rounded-2xl shadow-2xl p-10 border border-zinc-800 backdrop-blur-md flex flex-col items-center gap-6">
+          <h1 className="text-3xl font-bold text-green-400 mb-2">Login Required</h1>
+          <p className="text-zinc-400 text-lg mb-4">You must be logged in to upload and process invoices.</p>
+          <a
+            href="/auth/login"
+            className="px-8 py-4 bg-green-600 hover:bg-green-500 rounded-xl text-white font-semibold text-lg shadow-lg transition"
+          >
+            Login to Continue
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-12 px-4">

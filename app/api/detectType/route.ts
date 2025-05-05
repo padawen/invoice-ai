@@ -1,17 +1,30 @@
 // app/api/detectType/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
 import pdf from 'pdf-parse';
+import { createSupabaseClient } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
-  const { filePath } = await req.json();
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const supabase = createSupabaseClient(token);
 
-  if (!filePath || !filePath.includes('temp')) {
-    return NextResponse.json({ error: 'Invalid or missing filePath' }, { status: 400 });
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const formData = await req.formData();
+  const file = formData.get('file') as File;
+
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
   try {
-    const buffer = await fs.readFile(filePath);
+    const buffer = Buffer.from(await file.arrayBuffer());
     const data = await pdf(buffer);
     const isTextBased = data.text.trim().length > 30;
 

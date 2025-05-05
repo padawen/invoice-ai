@@ -1,7 +1,11 @@
+"use client";
+
 import { ArrowRight, Upload, Github } from 'lucide-react';
 import Link from 'next/link';
+import { useUser } from '@supabase/auth-helpers-react';
 
 export default function Home() {
+  const user = useUser();
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white flex flex-col items-center justify-center px-4 relative overflow-hidden">
       {/* Background decoration */}
@@ -18,14 +22,25 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-          <Link
-            href="/upload"
-            className="group px-8 py-4 bg-green-600 hover:bg-green-500 transition-all rounded-xl text-white font-semibold shadow-lg flex items-center justify-center gap-2 hover:scale-105"
-          >
-            <Upload size={20} />
-            <span>Start Processing</span>
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          {user ? (
+            <Link
+              href="/upload"
+              className="group px-8 py-4 bg-green-600 hover:bg-green-500 transition-all rounded-xl text-white font-semibold shadow-lg flex items-center justify-center gap-2 hover:scale-105"
+            >
+              <Upload size={20} />
+              <span>Start Processing</span>
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="group px-8 py-4 bg-green-600 hover:bg-green-500 transition-all rounded-xl text-white font-semibold shadow-lg flex items-center justify-center gap-2 hover:scale-105"
+            >
+              <Upload size={20} />
+              <span>Login to start processing</span>
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
           <a
             href="https://github.com/your-repo"
             target="_blank"

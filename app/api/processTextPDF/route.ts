@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
+import { createSupabaseClient } from '@/lib/supabase';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const supabase = createSupabaseClient(token);
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const formData = await req.formData();
   const file = formData.get('file') as File;
 
@@ -23,7 +36,7 @@ export async function POST(req: NextRequest) {
     const assistant = await openai.beta.assistants.create({
       name: 'PDF Assistant',
       model: 'gpt-4o',
-      instructions: 'You are an invoice reader chatbot. You always answer in Hungarian.',
+      instructions: 'You are an invoice reader chatbot.',
       tools: [{ type: 'file_search' }],
     });
 

@@ -1,59 +1,251 @@
 'use client';
 
-import React from 'react';
-import { AlertCircle } from 'lucide-react';
-import type { InvoiceField } from '../types';
+import React, { useRef } from 'react';
+import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import type { InvoiceData, EditableInvoice } from '@/app/types';
+import DeleteModal from './DeleteModal';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface Props {
-  fields: InvoiceField[];
-  onChange: (updated: InvoiceField[]) => void;
+  fields: EditableInvoice;
+  onChange: (updated: EditableInvoice) => void;
 }
 
 const EditableFields = ({ fields, onChange }: Props) => {
-  const handleChange = (index: number, key: keyof InvoiceField, value: string) => {
-    const updated = [...fields];
-    updated[index][key] = value;
-    onChange(updated);
+  const handleTopLevelChange = (key: keyof EditableInvoice, value: string) => {
+    onChange({ ...fields, [key]: value });
   };
 
-  if (!Array.isArray(fields)) {
+  const handleNestedChange = (parent: 'seller' | 'buyer', key: string, value: string) => {
+    onChange({ ...fields, [parent]: { ...fields[parent], [key]: value } });
+  };
+
+  const handleItemChange = (index: number, key: keyof InvoiceData, value: string) => {
+    const updated = [...fields.invoice_data];
+    updated[index][key] = value;
+    onChange({ ...fields, invoice_data: updated });
+  };
+
+  const supabase = createSupabaseBrowserClient();
+
+  const handleDeleteItem = async (index: number) => {
+    if (!fields.id) {
+      const updated = [...fields.invoice_data];
+      updated.splice(index, 1);
+      onChange({ ...fields, invoice_data: updated });
+      return;
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('You must be logged in to delete items.');
+        return;
+      }
+      const res = await fetch('/api/processed/item', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ invoiceId: fields.id, itemIndex: index }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert('Failed to delete item: ' + (err.error || res.statusText));
+        return;
+      }
+      const updated = [...fields.invoice_data];
+      updated.splice(index, 1);
+      onChange({ ...fields, invoice_data: updated });
+    } catch (e: any) {
+      alert('Error deleting item: ' + (e?.message || e));
+    }
+  };
+
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+
+  const handleAddItem = () => {
+    onChange({
+      ...fields,
+      invoice_data: [
+        ...fields.invoice_data,
+        { name: '', quantity: '', unit_price: '', net: '', gross: '' },
+      ],
+    });
+    setTimeout(() => {
+      itemsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const [showDeleteModal, setShowDeleteModal] = React.useState<number | null>(null);
+
+  if (!fields || !fields.invoice_data) {
     return (
       <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-3 rounded-lg">
         <AlertCircle size={20} />
-        <span>Invalid OpenAI response format. Expected an array of invoice items.</span>
+        <span>Invalid OpenAI response format. Expected an invoice object.</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {fields.map((item, index) => (
-        <div
-          key={index}
-          className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 space-y-4 hover:border-green-500/50 transition-colors"
-        >
-          <div className="flex items-center gap-2 text-sm font-medium text-green-400">
-            <span className="px-2 py-1 bg-green-400/10 rounded-lg">Item {index + 1}</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(item).map(([key, value]) => (
-              <div key={key} className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-zinc-300 capitalize">
-                  {key.replace('_', ' ')}
-                </label>
+    <div className="space-y-10">
+      {/* Seller & Buyer */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
+          <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Seller</h3>
+          <div className="space-y-4">
+            {Object.entries(fields.seller).map(([key, value]) => (
+              <div key={key} className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-zinc-300 capitalize">{key.replace('_', ' ')}</label>
                 <input
                   type="text"
                   value={value}
-                  onChange={(e) => handleChange(index, key as keyof InvoiceField, e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg bg-zinc-900/50 border border-zinc-700/50 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
-                  placeholder={`Enter ${key.replace('_', ' ')}`}
+                  onChange={e => handleNestedChange('seller', key, e.target.value)}
+                  className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' || key === 'address' ? 'font-semibold' : ''}`}
+                  placeholder={`Seller ${key}`}
                 />
               </div>
             ))}
           </div>
         </div>
-      ))}
+        <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
+          <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Buyer</h3>
+          <div className="space-y-4">
+            {Object.entries(fields.buyer).map(([key, value]) => (
+              <div key={key} className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-zinc-300 capitalize">{key.replace('_', ' ')}</label>
+                <input
+                  type="text"
+                  value={value}
+                  onChange={e => handleNestedChange('buyer', key, e.target.value)}
+                  className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' || key === 'address' ? 'font-semibold' : ''}`}
+                  placeholder={`Buyer ${key}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Invoice Details */}
+      <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
+        <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Invoice Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-zinc-300">Invoice Number</label>
+            <input
+              type="text"
+              value={fields.invoice_number}
+              onChange={e => handleTopLevelChange('invoice_number', e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+              placeholder="Invoice number"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-zinc-300">Issue Date</label>
+            <input
+              type="text"
+              value={fields.issue_date}
+              onChange={e => handleTopLevelChange('issue_date', e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+              placeholder="Issue date"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-zinc-300">Fulfillment Date</label>
+            <input
+              type="text"
+              value={fields.fulfillment_date}
+              onChange={e => handleTopLevelChange('fulfillment_date', e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+              placeholder="Fulfillment date"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-zinc-300">Due Date</label>
+            <input
+              type="text"
+              value={fields.due_date}
+              onChange={e => handleTopLevelChange('due_date', e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+              placeholder="Due date"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-zinc-300">Payment Method</label>
+            <input
+              type="text"
+              value={fields.payment_method}
+              onChange={e => handleTopLevelChange('payment_method', e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+              placeholder="Payment method"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Invoice Items */}
+      <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
+        <div className="sticky top-0 z-10 bg-zinc-800/80 rounded-t-2xl pb-2 mb-4 border-b border-green-900 flex items-center justify-between">
+          <h3 className="text-xl font-bold text-green-400">Items</h3>
+          <button
+            type="button"
+            className="ml-4 px-7 py-3 bg-green-600 hover:bg-green-500 text-white rounded-full text-base font-bold shadow-lg border-2 border-green-700 flex items-center gap-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400/60"
+            onClick={handleAddItem}
+          >
+            <Plus size={20} /> Add Item
+          </button>
+        </div>
+        <div className="space-y-6">
+          {fields.invoice_data.map((item, index) => (
+            <div
+              key={index}
+              className="bg-zinc-900/80 rounded-xl border border-zinc-700/70 p-6 space-y-4 shadow-md hover:border-green-500/70 transition-colors group"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
+                <span className="px-2 py-1 bg-green-400/10 rounded-lg">Item {index + 1}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['name', ...Object.keys(item).filter(k => k !== 'name' && k !== 'address')].map((key) => (
+                  <div key={key} className={`flex flex-col gap-2 ${key === 'name' ? 'col-span-2' : ''}`}>
+                    <label className="text-sm font-medium text-zinc-300 capitalize">
+                      {key.replace('_', ' ')}
+                    </label>
+                    <input
+                      type="text"
+                      value={item[key as keyof InvoiceData]}
+                      onChange={e => handleItemChange(index, key as keyof InvoiceData, e.target.value)}
+                      className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' ? 'font-semibold' : ''}`}
+                      placeholder={`Enter ${key.replace('_', ' ')}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white rounded-lg px-4 py-2 shadow border-2 border-red-700 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-400/60"
+                  onClick={() => setShowDeleteModal(index)}
+                  title="Delete item"
+                >
+                  <Trash2 size={18} />
+                  Delete
+                </button>
+                <DeleteModal
+                  open={showDeleteModal === index}
+                  onClose={() => setShowDeleteModal(null)}
+                  onConfirm={() => handleDeleteItem(index)}
+                  title="Delete Item"
+                  description={fields.id ? "Are you sure you want to delete this item? This action cannot be undone." : "Remove this item from the invoice draft?"}
+                />
+              </div>
+            </div>
+          ))}
+          <div ref={itemsEndRef} />
+        </div>
+      </div>
     </div>
   );
 };

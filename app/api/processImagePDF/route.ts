@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fromBuffer } from 'pdf2pic';
 import { OpenAI } from 'openai';
 import { getGuidelinesImage } from '@/lib/instructions';
+import { createSupabaseClient } from '@/lib/supabase';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const supabase = createSupabaseClient(token);
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const formData = await req.formData();
   const file = formData.get('file') as File;
 
@@ -23,19 +36,17 @@ export async function POST(req: NextRequest) {
       format: 'png',
       saveFilename: 'preview',
       savePath: '/tmp',
-      ...( { save: false } as any ) // ✅ TS workaround
+      ...( { save: false } as any )
     });
 
     const pages = await convert.bulk(-1);
 
-    // 🧼 TS workaround a base64-re is
     const base64Images = pages.map((page) => {
       const casted = page as unknown as { base64: string };
       const base64 = casted.base64;
       return base64.split(',')[1];
     });
 
-    // 🧠 GPT-4 Vision üzenet összeállítása
     const messages: any = [
       {
         role: 'system',
@@ -58,7 +69,6 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    // 🤖 OpenAI lekérdezés
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-vision-preview',
       messages,
@@ -67,7 +77,6 @@ export async function POST(req: NextRequest) {
 
     const content = completion.choices[0].message?.content || '';
 
-    // 🧾 JSON adat kinyerése
     const jsonStart = content.indexOf('{');
     const jsonEnd = content.lastIndexOf('}') + 1;
     const parsedJson = JSON.parse(content.slice(jsonStart, jsonEnd));

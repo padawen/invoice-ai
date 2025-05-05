@@ -1,8 +1,7 @@
-// lib/supabase.ts
-import { createBrowserClient } from '@supabase/ssr';
-import { type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const createSupabaseClient = (): SupabaseClient => {
+export const createSupabaseClient = (accessToken?: string): SupabaseClient => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -10,5 +9,15 @@ export const createSupabaseClient = (): SupabaseClient => {
     throw new Error('Supabase URL or ANON KEY is missing in environment variables.');
   }
 
-  return createBrowserClient(url, anonKey);
+  const supabase = createClient(url, anonKey, {
+    global: {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  return supabase;
 };
