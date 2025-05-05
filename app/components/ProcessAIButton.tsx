@@ -1,21 +1,22 @@
 'use client';
 
+import { Sparkles } from 'lucide-react';
+
 interface Props {
   onClick: () => void;
   isProcessing: boolean;
+  large?: boolean;
 }
 
-const ProcessAIButton = ({ onClick, isProcessing }: Props) => (
+const ProcessAIButton = ({ onClick, isProcessing, large }: Props) => (
   <button
     onClick={onClick}
     disabled={isProcessing}
-    className={`mt-4 px-8 py-3 rounded-lg shadow font-semibold ${
-      isProcessing
-        ? 'bg-green-400 cursor-not-allowed'
-        : 'bg-green-600 hover:bg-green-500 text-white'
-    }`}
+    className={`group flex items-center justify-center gap-2 ${large ? 'px-10 py-5 text-lg' : 'px-6 py-3'} bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600`}
+    style={large ? { minWidth: 240 } : {}}
   >
-    {isProcessing ? 'Processing...' : 'Process with OpenAI'}
+    <Sparkles size={large ? 28 : 20} className={`${isProcessing ? 'animate-pulse' : 'group-hover:scale-110'} transition-transform`} />
+    <span>{isProcessing ? 'Processing...' : 'Process with AI'}</span>
   </button>
 );
 

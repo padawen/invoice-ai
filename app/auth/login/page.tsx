@@ -14,7 +14,7 @@ export default function LoginPage() {
     });
 
     return () => {
-      authListener.subscription.unsubscribe(); // cleanup
+      authListener.subscription.unsubscribe();
     };
   }, [supabase]);
 

@@ -15,13 +15,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Fájl feltöltése (közvetlenül a File API objektummal)
     const uploadedFile = await openai.files.create({
-      file, // FONTOS: nem buffer!
+      file, 
       purpose: 'assistants',
     });
 
-    // 2. Asszisztens létrehozása
     const assistant = await openai.beta.assistants.create({
       name: 'PDF Assistant',
       model: 'gpt-4o',
@@ -29,10 +27,8 @@ export async function POST(req: NextRequest) {
       tools: [{ type: 'file_search' }],
     });
 
-    // 3. Thread létrehozása
     const thread = await openai.beta.threads.create();
 
-    // 4. Üzenet küldése csatolt fájllal
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',
       content: getGuidelinesText(),
@@ -44,12 +40,10 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    // 5. Feldolgozás indítása
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: assistant.id,
     });
 
-    // 6. Polling ciklus
     let result;
     while (true) {
       const runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
@@ -64,7 +58,6 @@ export async function POST(req: NextRequest) {
       await new Promise((res) => setTimeout(res, 1000));
     }
 
-    // 7. Szöveg kivonása típusosan
     const msgContent = result.data[0].content.find(
       (c) => c.type === 'text'
     ) as { type: 'text'; text: { value: string } };

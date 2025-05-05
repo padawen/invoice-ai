@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
   const timestamp = Date.now();
   const tempDir = path.join(process.cwd(), 'temp');
 
-  // Mappa létrehozás, ha nem létezik
   await fs.mkdir(tempDir, { recursive: true });
 
   const filePath = path.join(tempDir, `${timestamp}-${file.name}`);
