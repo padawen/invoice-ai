@@ -8,13 +8,17 @@ import ProjectCard from "../components/ProjectCard";
 import slugify from 'slugify';
 import BackButton from '../components/BackButton';
 import DeleteModal from '../components/DeleteModal';
-import { Trash2 } from 'lucide-react';
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 export default function DashboardPage() {
   const user = useUser();
   const supabase = useSupabaseClient();
   const router = useRouter();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string, name: string } | null>(null);
 

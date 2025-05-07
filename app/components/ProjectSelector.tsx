@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, FolderPlus, Plus } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
@@ -18,15 +18,10 @@ const ProjectSelector = ({ onSelect }: Props) => {
 
   const supabase = createSupabaseBrowserClient();
 
-  const getSupabaseToken = async () => {
+  const getSupabaseToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) {
-      setError('You must be logged in to manage projects.');
-      return null;
-    }
-    return token;
-  };
+    return session?.access_token;
+  }, [supabase]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -50,7 +45,7 @@ const ProjectSelector = ({ onSelect }: Props) => {
       }
     };
     fetchProjects();
-  }, []);
+  }, [getSupabaseToken]);
 
   const handleCreate = async () => {
     const trimmedName = newProject.trim();

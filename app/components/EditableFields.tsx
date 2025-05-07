@@ -58,8 +58,9 @@ const EditableFields = ({ fields, onChange }: Props) => {
       const updated = [...fields.invoice_data];
       updated.splice(index, 1);
       onChange({ ...fields, invoice_data: updated });
-    } catch (e: any) {
-      alert('Error deleting item: ' + (e?.message || e));
+    } catch (error: unknown) {
+      console.error('Error deleting item:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete item');
     }
   };
 

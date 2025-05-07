@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { fakeProjects, FakeProcessedItem } from "@/app/fakeData";
 import EditableFields from "@/app/components/EditableFields";
 import SaveButton from "@/app/components/SaveButton";
 import slugify from 'slugify';
 import BackButton from '@/app/components/BackButton';
+import type { EditableInvoice } from "@/app/types";
 
 export default function EditProcessedItemPage() {
   const user = useUser();
   const supabase = useSupabaseClient();
-  const router = useRouter();
   const params = useParams();
   const projectSlug = params.id as string;
   const itemId = params.itemId as string;
-  const [fields, setFields] = useState<any>(null);
+  const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -29,7 +29,7 @@ export default function EditProcessedItemPage() {
       if (user) {
         // Find project by slug
         const { data: allProjects } = await supabase.from('projects').select('id, name');
-        const found = allProjects?.find((p: any) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
+        const found = allProjects?.find((p: { id: string; name: string }) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
         if (found) {
           setProjectName(found.name);
           const { data } = await supabase
@@ -80,6 +80,9 @@ export default function EditProcessedItemPage() {
     try {
       if (user) {
         // Update in Supabase
+        if (!fields) {
+          throw new Error('No fields to update');
+        }
         const { error } = await supabase.from('processed_data').update({
           seller_name: fields.seller.name,
           seller_address: fields.seller.address,
@@ -101,12 +104,15 @@ export default function EditProcessedItemPage() {
         // Update in local fake data (in-memory only)
         const fake = fakeProjects.find(p => slugify(p.name, { lower: true, strict: true }) === projectSlug);
         const item = fake?.processed.find((i: FakeProcessedItem) => i.id === itemId);
-        if (item) item.fields = fields;
+        if (item && fields) {
+          item.fields = fields;
+        }
       }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-    } catch (err) {
-      setError('Failed to save changes.');
+    } catch (error: unknown) {
+      console.error('Error fetching item:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch item');
     }
     setSaving(false);
   };

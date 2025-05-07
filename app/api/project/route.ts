@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase';
 
+interface Project {
+  name: string;
+}
+
 export async function GET(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   const supabase = createSupabaseClient(token);
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ projects: data.map((p: any) => p.name) });
+  return NextResponse.json({ projects: data.map((p: Project) => p.name) });
 }
 
 export async function POST(req: NextRequest) {
@@ -74,9 +78,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing project id' }, { status: 400 });
   }
 
-  // Delete all processed_data for this project
   await supabase.from('processed_data').delete().eq('project_id', id);
-  // Delete the project
   const { error } = await supabase.from('projects').delete().eq('id', id).eq('user_id', user.id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

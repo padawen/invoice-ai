@@ -1,13 +1,48 @@
 import { Download } from 'lucide-react';
 
+interface ProcessedData {
+  raw_data?: InvoiceData[];
+  invoice_data?: InvoiceData[];
+  seller?: {
+    name?: string;
+    address?: string;
+    tax_id?: string;
+    email?: string;
+    phone?: string;
+  };
+  buyer?: {
+    name?: string;
+    address?: string;
+    tax_id?: string;
+  };
+  seller_name?: string;
+  seller_address?: string;
+  seller_tax_id?: string;
+  seller_email?: string;
+  seller_phone?: string;
+  buyer_name?: string;
+  buyer_address?: string;
+  buyer_tax_id?: string;
+  invoice_number?: string;
+  issue_date?: string;
+}
+
+interface InvoiceData {
+  name: string;
+  quantity: string;
+  unit_price: string;
+  net: string;
+  gross: string;
+}
+
 interface ExportCSVButtonProps {
-  data: any[];
+  data: ProcessedData[];
   fileName?: string;
 }
 
-function flattenProcessedData(data: any[]): any[] {
+function flattenProcessedData(data: ProcessedData[]): Record<string, string>[] {
   // For each processed item, output one row per invoice item
-  const rows: any[] = [];
+  const rows: Record<string, string>[] = [];
   let netSum = 0;
   let grossSum = 0;
   data.forEach((item) => {
@@ -26,7 +61,7 @@ function flattenProcessedData(data: any[]): any[] {
     const buyer_tax_id = item.buyer_tax_id || buyer.tax_id || '';
     const invoice_number = item.invoice_number || '';
     const issue_date = item.issue_date || '';
-    (invoiceData.length ? invoiceData : [{}]).forEach((inv: { name: any; quantity: any; unit_price: any; net: any; gross: any; }) => {
+    (invoiceData.length ? invoiceData : [{} as InvoiceData]).forEach((inv: InvoiceData) => {
       const net = parseFloat(inv.net) || 0;
       const gross = parseFloat(inv.gross) || 0;
       netSum += net;
@@ -73,7 +108,7 @@ function flattenProcessedData(data: any[]): any[] {
   return rows;
 }
 
-function toCSV(data: any[]): string {
+function toCSV(data: Record<string, string>[]): string {
   if (!data.length) return '';
   const keys = Object.keys(data[0]);
   const csvRows = [keys.join(';')];

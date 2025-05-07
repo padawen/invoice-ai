@@ -22,7 +22,6 @@ export default function UploadPage() {
   const user = useUser();
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [filePath, setFilePath] = useState<string | null>(null);
   const [typeResult, setTypeResult] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -40,7 +39,6 @@ export default function UploadPage() {
       const blobUrl = URL.createObjectURL(selectedFile);
       setFileUrl(blobUrl);
       setTypeResult(null);
-      setFilePath(null);
     } else {
       setError('Please upload a valid PDF file!');
     }
@@ -74,7 +72,7 @@ export default function UploadPage() {
       });
       const detectData = await detectRes.json();
       setTypeResult(detectData.type || 'unknown');
-    } catch (err) {
+    } catch {
       setError('An error occurred while detecting the file type');
     } finally {
       setIsDetecting(false);
@@ -121,8 +119,9 @@ export default function UploadPage() {
       sessionStorage.setItem('pdf_base64', base64);
 
       window.location.href = '/edit';
-    } catch (err) {
-      setError('An error occurred while processing the file');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setError(error instanceof Error ? error.message : 'Failed to upload file');
       setIsProcessing(false);
     }
   };

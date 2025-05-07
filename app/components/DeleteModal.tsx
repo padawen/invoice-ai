@@ -32,7 +32,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ open, onClose, onConfirm, tit
         </div>
       </div>
     </div>,
-    typeof window !== 'undefined' ? document.body : (null as any)
+    typeof window !== 'undefined' ? document.body : (document.createElement('div') as HTMLElement)
   );
 };
 

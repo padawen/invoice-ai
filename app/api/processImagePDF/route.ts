@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fromBuffer } from 'pdf2pic';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { getGuidelinesImage } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase';
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       format: 'png',
       saveFilename: 'preview',
       savePath: '/tmp',
-      ...( { save: false } as any )
+      ...( { save: false } as { save: boolean } )
     });
 
     const pages = await convert.bulk(-1);
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       return base64.split(',')[1];
     });
 
-    const messages: any = [
+    const messages: ChatCompletionMessageParam[] = [
       {
         role: 'system',
         content: 'You are an intelligent assistant that extracts invoice data from scanned images.',
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
             text: getGuidelinesImage(),
           },
           ...base64Images.map((img) => ({
-            type: 'image_url',
+            type: 'image_url' as const,
             image_url: {
               url: `data:image/png;base64,${img}`,
             },
@@ -82,8 +83,8 @@ export async function POST(req: NextRequest) {
     const parsedJson = JSON.parse(content.slice(jsonStart, jsonEnd));
 
     return NextResponse.json(parsedJson);
-  } catch (error) {
-    console.error('Image PDF processing error:', error);
-    return NextResponse.json({ error: 'Failed to process image PDF' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Error processing PDF:', error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to process PDF' }, { status: 500 });
   }
 }

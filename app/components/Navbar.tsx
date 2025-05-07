@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist } from 'next/font/google';
 
 const geistSans = Geist({ subsets: ['latin'], weight: ['400', '700'] });
 

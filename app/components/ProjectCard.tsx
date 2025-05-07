@@ -34,7 +34,8 @@ const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) 
       try {
         await onSave(id, value);
         setSuccess(true);
-      } catch (err) {
+      } catch (error) {
+        console.error('Error fetching project:', error);
         setError('Failed to save');
       }
       setSaving(false);

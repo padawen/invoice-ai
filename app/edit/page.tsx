@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, X, AlertCircle } from "lucide-react";
 import EditableFields from "../components/EditableFields";
 import ProjectSelector from "../components/ProjectSelector";
 import { useRouter } from "next/navigation";
@@ -9,7 +8,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import type { EditableInvoice } from "../types";
 import PdfPreviewFrame from "../components/PdfPreviewFrame";
 import SaveButton from "../components/SaveButton";
-import { NextResponse } from "next/server";
+import { AlertCircle } from "lucide-react";
 
 // Helper to convert base64 DataURL to Blob
 function dataURLtoBlob(dataurl: string) {
@@ -34,10 +33,6 @@ const EditPage = () => {
   const [projects, setProjects] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState<{
-    page: number;
-    index: number;
-  } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -84,14 +79,14 @@ const EditPage = () => {
         URL.revokeObjectURL(pdfUrl);
       }
     };
-  }, []);
+  }, [pdfUrl, supabase]);
 
   const createProjectIfNeeded = async () => {
     if (!project) throw new Error("No project selected");
     if (projects.includes(project)) return;
 
     // Only check by project name, as user context is not available here
-    const { data: projectData, error: projectError } = await supabase
+    const { data: projectData } = await supabase
       .from('projects')
       .select('id')
       .eq('name', project)

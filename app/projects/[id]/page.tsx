@@ -4,11 +4,47 @@ import { useEffect, useState } from "react";
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useRouter, useParams } from "next/navigation";
 import { fakeProjects } from "@/app/fakeData";
-import { Pencil, Trash2 } from 'lucide-react';
 import slugify from 'slugify';
 import ExportCSVButton from '@/app/components/ExportCSVButton';
 import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/DeleteModal';
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface ProcessedItem {
+  id: string;
+  invoice_number?: string;
+  issue_date?: string;
+  buyer_name?: string;
+  seller_name?: string;
+  raw_data?: Array<{
+    name: string;
+    quantity: string;
+    unit_price: string;
+    net: string;
+    gross: string;
+  }>;
+  fields?: {
+    buyer?: {
+      name: string;
+    };
+    seller?: {
+      name: string;
+    };
+    issue_date?: string;
+    invoice_number?: string;
+    invoice_data?: Array<{
+      name: string;
+      quantity: string;
+      unit_price: string;
+      net: string;
+      gross: string;
+    }>;
+  };
+}
 
 export default function ProjectDetailsPage() {
   const user = useUser();
@@ -16,8 +52,8 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const projectSlug = params.id as string;
-  const [project, setProject] = useState<any>(null);
-  const [processed, setProcessed] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [processed, setProcessed] = useState<ProcessedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
@@ -27,8 +63,8 @@ export default function ProjectDetailsPage() {
       if (user) {
         // Get all projects, find by slug
         const { data: allProjects } = await supabase.from('projects').select('id, name');
-        const found = allProjects?.find((p: any) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
-        setProject(found);
+        const found = allProjects?.find((p: { id: string; name: string }) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
+        setProject(found || null);
         if (found) {
           const { data: processedData } = await supabase.from('processed_data').select('id, invoice_number, issue_date, buyer_name, seller_name, raw_data').eq('project_id', found.id);
           setProcessed(processedData || []);
@@ -103,7 +139,6 @@ export default function ProjectDetailsPage() {
                       className="flex items-center gap-1 text-red-400 hover:text-red-300 bg-zinc-900 border border-red-700 px-3 py-1 rounded-lg shadow transition"
                       onClick={e => { e.stopPropagation(); setShowDeleteModal(item.id); }}
                     >
-                      <Trash2 size={16} />
                       <span className="text-sm font-medium">Delete</span>
                     </button>
                   </div>
