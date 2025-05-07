@@ -59,14 +59,14 @@ const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) 
 
   return (
     <div
-      className="relative bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-2xl shadow-xl p-8 flex flex-col gap-4 border-2 border-zinc-800 transition-all duration-200 cursor-pointer group min-h-[180px]"
+      className="relative bg-zinc-900/80 rounded-xl p-6 flex flex-col gap-2 border border-zinc-800 transition-all duration-200 cursor-pointer group min-h-[140px]"
       onClick={onClick}
     >
       <div className="flex items-center gap-2 mb-2">
         {editing ? (
           <>
             <input
-              className="bg-zinc-900 text-white rounded-lg px-4 py-2 border-2 border-zinc-700 focus:border-green-400 focus:outline-none text-lg font-semibold w-full transition-all"
+              className="bg-zinc-800 text-white rounded-md px-3 py-1 border border-zinc-700 focus:border-green-400 focus:outline-none text-base font-semibold w-full transition-all"
               value={value}
               onChange={handleInputChange}
               onBlur={handleInputBlur}
@@ -75,42 +75,42 @@ const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) 
               disabled={saving}
             />
             <button
-              className="bg-green-500 hover:bg-green-400 text-white p-2 rounded-full transition-colors shadow ml-2"
+              className="bg-green-500 hover:bg-green-400 text-white p-1.5 rounded-full transition-colors ml-2"
               onClick={handleSaveClick}
               disabled={saving}
               tabIndex={-1}
               title="Save project name"
             >
-              <Check size={22} />
+              <Check size={16} />
             </button>
           </>
         ) : (
-          <span className="text-xl font-bold text-white flex-1 truncate">
+          <span className="text-base font-semibold text-white flex-1 truncate">
             {name}
           </span>
         )}
       </div>
-      <div className="text-zinc-400 text-sm mb-2">Project</div>
+      <div className="text-zinc-400 text-xs mb-2">Project</div>
       {editing && <div className="border-b border-zinc-700 mb-2"></div>}
       {success && <span className="text-green-400 text-xs">Saved!</span>}
       {error && <span className="text-red-400 text-xs">{error}</span>}
       {/* Action icons at the bottom right */}
-      <div className="absolute bottom-4 right-4 flex gap-3">
+      <div className="absolute bottom-3 right-3 flex gap-2">
         <button
-          className="bg-green-500 hover:bg-green-400 text-white rounded-full p-3 shadow-lg transition-transform duration-150 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-300"
+          className="bg-green-500 hover:bg-green-400 text-white rounded-full p-2 transition-colors"
           onClick={e => { e.stopPropagation(); handleEditClick(e); }}
           tabIndex={-1}
           title="Edit project name"
         >
-          <Pencil size={22} />
+          <Pencil size={16} />
         </button>
         {onDelete && (
           <button
-            className="bg-red-500 hover:bg-red-400 text-white rounded-full p-3 shadow-lg transition-transform duration-150 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="bg-red-500 hover:bg-red-400 text-white rounded-full p-2 transition-colors"
             onClick={e => { e.stopPropagation(); onDelete(); }}
             title="Delete project"
           >
-            <Trash2 size={22} />
+            <Trash2 size={16} />
           </button>
         )}
       </div>

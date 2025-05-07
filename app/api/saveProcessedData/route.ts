@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Look up the project by name and user_id
     const { data: projectData, error: projectError } = await supabase
       .from('projects')
       .select('id')
