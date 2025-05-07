@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fromBuffer } from 'pdf2pic';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { getGuidelinesImage } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase';
+import pdfParse from 'pdf-parse';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -31,22 +31,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-
-    const convert = fromBuffer(buffer, {
-      density: 100,
-      format: 'png',
-      saveFilename: 'preview',
-      savePath: '/tmp',
-      ...( { save: false } as { save: boolean } )
-    });
-
-    const pages = await convert.bulk(-1);
-
-    const base64Images = pages.map((page) => {
-      const casted = page as unknown as { base64: string };
-      const base64 = casted.base64;
-      return base64.split(',')[1];
-    });
+    const pdfData = await pdfParse(buffer);
+    const text = pdfData.text;
 
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -55,18 +41,7 @@ export async function POST(req: NextRequest) {
       },
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: getGuidelinesImage(),
-          },
-          ...base64Images.map((img) => ({
-            type: 'image_url' as const,
-            image_url: {
-              url: `data:image/png;base64,${img}`,
-            },
-          })),
-        ],
+        content: `${getGuidelinesImage()}\n\n${text}`,
       },
     ];
 
@@ -77,7 +52,6 @@ export async function POST(req: NextRequest) {
     });
 
     const content = completion.choices[0].message?.content || '';
-
     const jsonStart = content.indexOf('{');
     const jsonEnd = content.lastIndexOf('}') + 1;
     const parsedJson = JSON.parse(content.slice(jsonStart, jsonEnd));
