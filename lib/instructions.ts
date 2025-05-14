@@ -1,23 +1,11 @@
 export function getGuidelinesImage(): string {
   return `
-Please extract all relevant data from the image-based invoice and return the result in the exact JSON format shown, in English.
+Please extract all relevant data from the image-based invoice below and return the result in the exact JSON format shown, in English:
 
-Follow these STEPS to extract data accurately:
-
-STEP 1: Extract header information
-- Identify the seller details (name, address, tax ID, contact information)
-- Identify the buyer details (name, address, tax ID)
-- Extract invoice metadata (number, dates, payment method)
-
-STEP 2: Extract all line items 
-- Identify all invoice line items in the document, even if split across multiple pages
-- If the same product appears more than once, do NOT combine them
-- If product data is split due to page breaks or incomplete formatting, reconstruct the complete item
-- The final number of items should reflect the total number of invoice lines (including duplicates)
-
-STEP 3: Format the data according to the JSON structure below
-- Ensure all extracted information is properly organized
-- Double-check that no items are missing
+1️⃣ First, identify all invoice line items in the document, even if they are split across multiple pages or partially written.
+2️⃣ If the same product appears more than once (e.g., multiple lines for the same product), **do NOT combine them**. Each occurrence should remain as a separate entry in the "invoice_data" array.
+3️⃣ If product data is **split due to page breaks** or **incomplete formatting**, reconstruct the full item (e.g., name on one page, price on another).
+4️⃣ Then, return the items as JSON objects in the invoice_data array. The final number of items should reflect the total number of invoice lines (including duplicates if present).
 
 {
   "seller": {
@@ -48,14 +36,13 @@ STEP 3: Format the data according to the JSON structure below
   ]
 }
 
-Important guidelines:
-- Repeat items in the array for every invoice line, even if the same product appears multiple times.
-- If any field is missing, leave it empty.
-- There may be more than 20 items. You MUST extract EVERY item, even if the list is very long.
-- Items may be split across page breaks. If you find partial information for an item on one page and the rest on another, combine them into a single entry.
-- Ignore repeated headers, footers, and page numbers. Only extract actual invoice data.
-- Before finishing, check if any items are missing key fields and try to find their missing parts elsewhere in the document.
-- Only return the JSON — no explanation or extra text!
+🔁 Repeat the items in the array for every invoice line, even if the same product appears multiple times.
+🧾 If any field is missing, leave it empty.
+⚠️ There may be more than 20 items. You MUST extract EVERY item, even if the list is very long. Do NOT stop at 20. The output array MUST contain every invoice line from the invoice, even if there are 21, 30, or more. After extracting, double-check that the number of items in your JSON matches the number of invoice lines in the document.
+⚠️ Items may be split across page breaks (e.g., the name is on one page, the price is on the next). If you find partial information for an item on one page and the rest on another, combine them into a single entry in the JSON.
+⚠️ Ignore repeated headers, footers, and page numbers. Only extract actual invoice data.
+✅ Before finishing, check if any items are missing key fields (name, price, etc.) and try to find their missing parts elsewhere in the document. If you find such cases, reconstruct the full item as best as possible.
+⚠️ Only return the JSON — no explanation or extra text!
 
 Example of valid output:
 {
@@ -98,24 +85,12 @@ Example of valid output:
 
 export function getGuidelinesText(): string {
   return `
-Please extract all relevant data from the text-based invoice and return the result in the exact JSON format shown, in English.
+Please extract all relevant data from the text-based invoice PDF below and return the result in the exact JSON format shown, in English:
 
-Follow these STEPS to extract data accurately:
-
-STEP 1: Extract header information
-- Identify the seller details (name, address, tax ID, contact information)
-- Identify the buyer details (name, address, tax ID)
-- Extract invoice metadata (number, dates, payment method)
-
-STEP 2: Extract all line items 
-- Identify all invoice line items in the document, even if split across multiple pages
-- If the same product appears more than once, do NOT combine them
-- If product data is split due to page breaks or incomplete formatting, reconstruct the complete item
-- The final number of items should reflect the total number of invoice lines (including duplicates)
-
-STEP 3: Format the data according to the JSON structure below
-- Ensure all extracted information is properly organized
-- Double-check that no items are missing
+1️⃣ First, identify all invoice line items in the document, even if they are split across multiple pages or partially written.
+2️⃣ If the same product appears more than once (e.g., multiple lines for the same product), **do NOT combine them**. Each occurrence should remain as a separate entry in the "invoice_data" array.
+3️⃣ If product data is **split due to page breaks** or **incomplete formatting**, reconstruct the full item (e.g., name on one page, price on another).
+4️⃣ Then, return the items as JSON objects in the invoice_data array. The final number of items should reflect the total number of invoice lines (including duplicates if present).
 
 {
   "seller": {
@@ -146,17 +121,16 @@ STEP 3: Format the data according to the JSON structure below
   ]
 }
 
-Important guidelines:
-- Repeat items in the array for every invoice line, even if the same product appears multiple times.
-- If any field is missing, leave it empty.
-- There may be more than 20 items. You MUST extract EVERY item, even if the list is very long.
-- Items may be split across page breaks. If you find partial information for an item on one page and the rest on another, combine them into a single entry.
-- Ignore repeated headers, footers, and page numbers. Only extract actual invoice data.
-- Before finishing, check if any items are missing key fields and try to find their missing parts elsewhere in the document.
-- Do not return any explanation, only the JSON.
-- The data may appear in a table or in text form in the invoice.
+🔁 Repeat the items in the array for every invoice line, even if the same product appears multiple times.
+🧾 If any field is missing, leave it empty.
+⚠️ There may be more than 20 items. You MUST extract EVERY item, even if the list is very long. Do NOT stop at 20. The output array MUST contain every invoice line from the invoice, even if there are 21, 30, or more. After extracting, double-check that the number of items in your JSON matches the number of invoice lines in the document.
+⚠️ Items may be split across page breaks (e.g., the name is on one page, the price is on the next). If you find partial information for an item on one page and the rest on another, combine them into a single entry in the JSON.
+⚠️ Ignore repeated headers, footers, and page numbers. Only extract actual invoice data.
+✅ Before finishing, check if any items are missing key fields (name, price, etc.) and try to find their missing parts elsewhere in the document. If you find such cases, reconstruct the full item as best as possible.
+❌ Do not return any explanation, only the JSON.
+📄 The data may appear in a table or in text form in the invoice.
 
-Example of valid output:
+Example:
 {
   "seller": {
     "name": "Dell Hungary Ltd.",
