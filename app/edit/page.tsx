@@ -1,22 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import EditableFields from "../components/EditableFields";
-import ProjectSelector from "../components/ProjectSelector";
-import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-import type { EditableInvoice } from "../types";
-import PdfPreviewFrame from "../components/PdfPreviewFrame";
-import SaveButton from "../components/SaveButton";
-import { AlertCircle } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/navigation';
+import slugify from 'slugify';
+
+import EditableFields from '../components/EditableFields';
+import ProjectSelector from '../components/ProjectSelector';
+import PdfPreviewFrame from '../components/PdfPreviewFrame';
+import SaveButton from '../components/SaveButton';
+import { AlertCircle } from 'lucide-react';
+import type { EditableInvoice } from '../types';
 
 const EditPage = () => {
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
+  const supabase = useSupabaseClient();
+  const user = useUser();
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
-  const [project, setProject] = useState<string>("");
-  const [pdfUrl, setPdfUrl] = useState<string>("");
+  const [project, setProject] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
   const [projects, setProjects] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -24,60 +27,52 @@ const EditPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const raw = sessionStorage.getItem("openai_json");
-        const pdfBase64 = sessionStorage.getItem("pdf_base64");
-        
-        if (raw && pdfBase64) {
-          try {
-            const parsed = JSON.parse(raw);
-            
-            if (
-              parsed &&
-              typeof parsed === "object" &&
-              parsed.invoice_data &&
-              Array.isArray(parsed.invoice_data)
-            ) {
-              setFields({ ...parsed, id: parsed.id || crypto.randomUUID() });
-            } else {
-              setError("Invalid data structure received from AI processing");
-            }
-          } catch {
-            setError("Failed to parse JSON data from AI processing");
-          }
-          
-          setPdfUrl(pdfBase64);
-        } else {
-          setError(
-            "No data found. Please upload and process an invoice first."
-          );
+        const raw = sessionStorage.getItem('openai_json');
+        const pdfBase64 = sessionStorage.getItem('pdf_base64');
+
+        if (!raw || !pdfBase64) {
+          setError('No data found. Please upload and process an invoice first.');
+          return;
         }
 
-        const { data, error } = await supabase.from("projects").select("name");
-        if (error) throw error;
+        try {
+          const parsed = JSON.parse(raw);
+          if (
+            parsed &&
+            typeof parsed === 'object' &&
+            Array.isArray(parsed.invoice_data) &&
+            parsed.seller &&
+            parsed.buyer
+          ) {
+            setFields({ ...parsed, id: parsed.id || crypto.randomUUID() });
+            setPdfUrl(pdfBase64);
+          } else {
+            setError('Invalid data structure received from AI processing.');
+          }
+        } catch {
+          setError('Failed to parse AI-generated JSON data.');
+        }
+
+        const { data, error: projError } = await supabase.from('projects').select('name');
+        if (projError) throw projError;
         setProjects(data.map((p) => p.name));
       } catch {
-        setError("Failed to load data. Please try again.");
+        setError('Failed to load invoice or projects.');
       }
     };
 
     loadData();
-
   }, [supabase]);
 
   const createProjectIfNeeded = async () => {
-    if (!project) throw new Error("No project selected");
+    if (!project) throw new Error('No project selected');
     if (projects.includes(project)) return;
 
-    const { data: projectData } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('name', project)
-      .single();
-
-    if (!projectData) {
-      const { error } = await supabase.from("projects").insert({ name: project });
-      if (error) throw error;
-    }
+    const { error } = await supabase.from('projects').insert({
+      name: project,
+      user_id: user?.id,
+    });
+    if (error) throw error;
   };
 
   const handleSave = async () => {
@@ -92,11 +87,11 @@ const EditPage = () => {
     try {
       await createProjectIfNeeded();
 
-      const supabase = createSupabaseBrowserClient();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+
       if (!token) {
-        setError('You must be logged in to save data.');
+        setError('You must be logged in to save.');
         setIsSaving(false);
         return;
       }
@@ -110,15 +105,14 @@ const EditPage = () => {
         body: JSON.stringify({ fields, project }),
       });
 
-      if (response.ok) {
-        sessionStorage.removeItem('openai_json');
-        sessionStorage.removeItem('pdf_base64');
-        router.push('/dashboard');
-      } else {
-        throw new Error('Failed to save data');
-      }
-    } catch {
-      setError('Failed to save data. Please try again.');
+      if (!response.ok) throw new Error('Failed to save');
+
+      sessionStorage.removeItem('openai_json');
+      sessionStorage.removeItem('pdf_base64');
+
+      router.push('/dashboard');
+    } catch (err) {
+      setError((err as Error)?.message || 'Failed to save invoice data.');
     } finally {
       setIsSaving(false);
     }
@@ -129,7 +123,7 @@ const EditPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-3/4 h-[90vh] rounded-xl overflow-hidden bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 shadow-xl flex items-center justify-center">
-            {pdfUrl && <PdfPreviewFrame src={pdfUrl} />}
+            {pdfUrl ? <PdfPreviewFrame src={pdfUrl} /> : <span className="text-zinc-500">No PDF preview</span>}
           </div>
 
           <div className="w-full md:w-1/2 space-y-6 md:max-w-lg">
@@ -148,10 +142,11 @@ const EditPage = () => {
               {fields && (
                 <EditableFields fields={fields} onChange={setFields} />
               )}
+
               <ProjectSelector onSelect={setProject} />
             </div>
 
-            <div className="flex gap-4 justify-end">
+            <div className="flex justify-end">
               <SaveButton isSaving={isSaving} onSave={handleSave} />
             </div>
           </div>

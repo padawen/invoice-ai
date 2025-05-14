@@ -1,41 +1,38 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
-import PdfPreviewFrame from '../components/PdfPreviewFrame';
-import DetectTypeButton from '../components/DetectTypeButton';
-import ProcessAIButton from '../components/ProcessAIButton';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { useUser } from '@supabase/auth-helpers-react';
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
+import PdfPreviewFrame from '../components/PdfPreviewFrame';
+import DetectTypeButton from '../components/DetectTypeButton';
+import ProcessAIButton from '../components/ProcessAIButton';
+import type { EditableInvoice } from '@/app/types';
 
-export default function UploadPage() {
+const UploadPage = () => {
   const user = useUser();
+  const supabase = createSupabaseBrowserClient();
+
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [typeResult, setTypeResult] = useState<string | null>(null);
+  const [typeResult, setTypeResult] = useState<'text' | 'image' | 'unknown' | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createSupabaseBrowserClient();
+  const getToken = async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     setError(null);
-    
-    if (selectedFile && selectedFile.type === 'application/pdf') {
+
+    if (selectedFile?.type === 'application/pdf') {
       setFile(selectedFile);
-      const blobUrl = URL.createObjectURL(selectedFile);
-      setFileUrl(blobUrl);
+      setFileUrl(URL.createObjectURL(selectedFile));
       setTypeResult(null);
     } else {
       setError('Please upload a valid PDF file!');
@@ -43,33 +40,25 @@ export default function UploadPage() {
   };
 
   const handleDetectClick = async () => {
-    if (!file) {
-      setError('No file selected');
-      return;
-    }
+    if (!file) return setError('No file selected');
     setIsDetecting(true);
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        alert('You must be logged in to use this feature.');
-        return;
-      }
+      const token = await getToken();
+      if (!token) return alert('You must be logged in to use this feature.');
 
       const formData = new FormData();
       formData.append('file', file);
 
-      const detectRes = await fetch('/api/detectType', {
+      const res = await fetch('/api/detectType', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      const detectData = await detectRes.json();
-      setTypeResult(detectData.type || 'unknown');
+
+      const data: { type: 'text' | 'image' | 'unknown' } = await res.json();
+      setTypeResult(data.type || 'unknown');
     } catch {
       setError('An error occurred while detecting the file type');
     } finally {
@@ -78,21 +67,14 @@ export default function UploadPage() {
   };
 
   const handleProcessWithOpenAI = async () => {
-    if (!file || !typeResult) {
-      setError('No file or type detected');
-      return;
-    }
+    if (!file || !typeResult) return setError('No file or type detected');
 
     setIsProcessing(true);
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        alert('You must be logged in to use this feature.');
-        return;
-      }
+      const token = await getToken();
+      if (!token) return alert('You must be logged in to use this feature.');
 
       const formData = new FormData();
       formData.append('file', file);
@@ -102,73 +84,60 @@ export default function UploadPage() {
 
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
-      const clonedRes = res.clone();
-      const rawText = await clonedRes.text();
-      
-      let result;
-      try {
-        result = JSON.parse(rawText);
-        
-        if (result.error === 'PAGE_LIMIT_EXCEEDED') {
-          setError('The number of pages in the PDF exceeds the 10-page limit. Please upload a smaller document.');
-          setIsProcessing(false);
-          return;
-        }
-        
-        if (result.error && !result.fallbackData) {
-          throw new Error(result.error);
-        }
-        
-        if (result.fallbackData) {
-          result = result.fallbackData;
-        }
-        
-        const hasValidStructure = 
-          result && 
-          typeof result === 'object' && 
-          result.seller && 
-          result.buyer && 
-          Array.isArray(result.invoice_data);
-          
-        if (!hasValidStructure) {
-          throw new Error("Invalid data structure received from AI processing");
-        }
-        
-        sessionStorage.setItem('openai_json', JSON.stringify(result));
-        
-        const base64 = await fileToBase64(file);
-        sessionStorage.setItem('pdf_base64', base64);
+      const rawText = await res.text();
+      const parsed = JSON.parse(rawText);
 
-        window.location.href = '/edit';
-      } catch {
-        throw new Error("Failed to parse API response");
+      if ('error' in parsed && parsed.error === 'PAGE_LIMIT_EXCEEDED') {
+        setError('PDF exceeds the 10-page limit. Please upload a smaller document.');
+        return;
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to process file');
+
+      const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
+
+      if (!isValidStructure(result)) {
+        throw new Error('Invalid AI result structure');
+      }
+
+      sessionStorage.setItem('openai_json', JSON.stringify(result));
+      sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+
+      window.location.href = '/edit';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process file');
+    } finally {
       setIsProcessing(false);
     }
   };
 
+  const isValidStructure = (data: unknown): data is EditableInvoice => {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'seller' in data &&
+      'buyer' in data &&
+      'invoice_data' in data &&
+      Array.isArray((data as EditableInvoice).invoice_data)
+    );
+  };
+
   useEffect(() => {
     return () => {
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
-      }
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
     };
   }, [fileUrl]);
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white flex flex-col items-center justify-center">
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white">
         <div className="bg-zinc-900/80 rounded-2xl shadow-2xl p-10 border border-zinc-800 backdrop-blur-md flex flex-col items-center gap-6">
-          <h1 className="text-3xl font-bold text-green-400 mb-2">Login Required</h1>
-          <p className="text-zinc-400 text-lg mb-4">You must be logged in to upload and process invoices.</p>
+          <h1 className="text-3xl font-bold text-green-400">Login Required</h1>
+          <p className="text-zinc-400 text-lg text-center">
+            You must be logged in to upload and process invoices.
+          </p>
           <a
             href="/auth/login"
             className="px-8 py-4 bg-green-600 hover:bg-green-500 rounded-xl text-white font-semibold text-lg shadow-lg transition"
@@ -187,9 +156,7 @@ export default function UploadPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
             Upload Invoice PDF
           </h1>
-          <p className="text-zinc-400 text-lg">
-            Upload your invoice and let our AI process it for you
-          </p>
+          <p className="text-zinc-400 text-lg">Upload your invoice and let our AI process it</p>
         </div>
 
         <div className="flex flex-col items-center gap-6">
@@ -199,7 +166,7 @@ export default function UploadPage() {
               className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 rounded-xl bg-zinc-800/50 backdrop-blur-sm hover:border-green-500/50 transition-colors cursor-pointer group"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-10 h-10 mb-3 text-zinc-400 group-hover:text-green-400 transition-colors" />
+                <Upload className="w-10 h-10 mb-3 text-zinc-400 group-hover:text-green-400" />
                 <p className="mb-2 text-sm text-zinc-400">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
@@ -247,16 +214,24 @@ export default function UploadPage() {
                 {typeResult}
               </span>
             </div>
-            <div className="flex justify-center">
-              <ProcessAIButton
-                onClick={handleProcessWithOpenAI}
-                isProcessing={isProcessing}
-                large
-              />
-            </div>
+            <ProcessAIButton
+              onClick={handleProcessWithOpenAI}
+              isProcessing={isProcessing}
+              large
+            />
           </div>
         )}
       </div>
     </main>
   );
-}
+};
+
+export default UploadPage;
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });

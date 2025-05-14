@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface DeleteModalProps {
@@ -9,8 +11,16 @@ interface DeleteModalProps {
   description: string;
 }
 
-const DeleteModal: React.FC<DeleteModalProps> = ({ open, onClose, onConfirm, title, description }) => {
-  if (!open) return null;
+const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteModalProps) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!mounted || !open) return null;
+
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
       <div className="bg-zinc-900 rounded-2xl shadow-2xl p-8 max-w-md w-full border border-zinc-700">
@@ -32,8 +42,8 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ open, onClose, onConfirm, tit
         </div>
       </div>
     </div>,
-    typeof window !== 'undefined' ? document.body : (document.createElement('div') as HTMLElement)
+    document.body
   );
 };
 
-export default DeleteModal; 
+export default DeleteModal;

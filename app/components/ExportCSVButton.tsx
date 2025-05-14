@@ -1,4 +1,14 @@
+'use client';
+
 import { Download } from 'lucide-react';
+
+interface InvoiceData {
+  name: string;
+  quantity: string;
+  unit_price: string;
+  net: string;
+  gross: string;
+}
 
 interface ProcessedData {
   raw_data?: InvoiceData[];
@@ -27,14 +37,6 @@ interface ProcessedData {
   issue_date?: string;
 }
 
-interface InvoiceData {
-  name: string;
-  quantity: string;
-  unit_price: string;
-  net: string;
-  gross: string;
-}
-
 interface ExportCSVButtonProps {
   data: ProcessedData[];
   fileName?: string;
@@ -44,93 +46,112 @@ function flattenProcessedData(data: ProcessedData[]): Record<string, string>[] {
   const rows: Record<string, string>[] = [];
   let netSum = 0;
   let grossSum = 0;
+
   data.forEach((item) => {
     const invoiceData = item.raw_data || item.invoice_data || [];
     const seller = item.seller || {};
     const buyer = item.buyer || {};
-    const seller_name = item.seller_name || seller.name || '';
-    const seller_address = item.seller_address || seller.address || '';
-    const seller_tax_id = item.seller_tax_id || seller.tax_id || '';
-    const seller_email = item.seller_email || seller.email || '';
-    const seller_phone = item.seller_phone || seller.phone || '';
-    const buyer_name = item.buyer_name || buyer.name || '';
-    const buyer_address = item.buyer_address || buyer.address || '';
-    const buyer_tax_id = item.buyer_tax_id || buyer.tax_id || '';
-    const invoice_number = item.invoice_number || '';
-    const issue_date = item.issue_date || '';
-    (invoiceData.length ? invoiceData : [{} as InvoiceData]).forEach((inv: InvoiceData) => {
+
+    const sellerName = item.seller_name || seller.name || '';
+    const sellerAddress = item.seller_address || seller.address || '';
+    const sellerTaxId = item.seller_tax_id || seller.tax_id || '';
+    const sellerEmail = item.seller_email || seller.email || '';
+    const sellerPhone = item.seller_phone || seller.phone || '';
+
+    const buyerName = item.buyer_name || buyer.name || '';
+    const buyerAddress = item.buyer_address || buyer.address || '';
+    const buyerTaxId = item.buyer_tax_id || buyer.tax_id || '';
+
+    const invoiceNumber = item.invoice_number || '';
+    const issueDate = item.issue_date || '';
+
+    const safeItems = invoiceData.length > 0 ? invoiceData : [{} as InvoiceData];
+
+    safeItems.forEach((inv) => {
       const net = parseFloat(inv.net) || 0;
       const gross = parseFloat(inv.gross) || 0;
       netSum += net;
       grossSum += gross;
+
       rows.push({
-        szamlaszam: invoice_number,
-        kiallitasi_datum: issue_date,
-        elado_neve: seller_name,
-        elado_cime: seller_address,
-        elado_adoszam: seller_tax_id,
-        elado_email: seller_email,
-        elado_telefon: seller_phone,
-        vevo_neve: buyer_name,
-        vevo_cime: buyer_address,
-        vevo_adoszam: buyer_tax_id,
-        tetel_neve: inv.name || '',
-        tetel_mennyiseg: inv.quantity || '',
-        tetel_egyseg_ar: inv.unit_price || '',
-        tetel_netto: inv.net || '',
-        tetel_brutto: inv.gross || '',
+        invoice_number: invoiceNumber,
+        issue_date: issueDate,
+        seller_name: sellerName,
+        seller_address: sellerAddress,
+        seller_tax_id: sellerTaxId,
+        seller_email: sellerEmail,
+        seller_phone: sellerPhone,
+        buyer_name: buyerName,
+        buyer_address: buyerAddress,
+        buyer_tax_id: buyerTaxId,
+        item_name: inv.name || '',
+        item_quantity: inv.quantity || '',
+        item_unit_price: inv.unit_price || '',
+        item_net: inv.net || '',
+        item_gross: inv.gross || '',
       });
     });
   });
-  if (rows.length) {
+
+  if (rows.length > 0) {
     rows.push({
-      szamlaszam: 'Összesen',
-      kiallitasi_datum: '',
-      elado_neve: '',
-      elado_cime: '',
-      elado_adoszam: '',
-      elado_email: '',
-      elado_telefon: '',
-      vevo_neve: '',
-      vevo_cime: '',
-      vevo_adoszam: '',
-      tetel_neve: '',
-      tetel_mennyiseg: '',
-      tetel_egyseg_ar: '',
-      tetel_netto: netSum.toFixed(2),
-      tetel_brutto: grossSum.toFixed(2),
+      invoice_number: 'Total',
+      issue_date: '',
+      seller_name: '',
+      seller_address: '',
+      seller_tax_id: '',
+      seller_email: '',
+      seller_phone: '',
+      buyer_name: '',
+      buyer_address: '',
+      buyer_tax_id: '',
+      item_name: '',
+      item_quantity: '',
+      item_unit_price: '',
+      item_net: netSum.toFixed(2),
+      item_gross: grossSum.toFixed(2),
     });
   }
+
   return rows;
 }
 
 function toCSV(data: Record<string, string>[]): string {
   if (!data.length) return '';
-  const keys = Object.keys(data[0]);
-  const csvRows = [keys.join(';')];
+
+  const headers = Object.keys(data[0]);
+  const csvLines = [headers.join(';')];
+
   for (const row of data) {
-    csvRows.push(
-      keys.map(k => {
-        const val = row[k] ?? '';
-        if (val === '') return '';
+    const line = headers
+      .map((key) => {
+        const val = row[key] ?? '';
         const safe = String(val).replace(/"/g, '""');
         return `="${safe}"`;
-      }).join(';')
-    );
+      })
+      .join(';');
+
+    csvLines.push(line);
   }
-  return '\uFEFF' + csvRows.join('\n');
+
+  return '\uFEFF' + csvLines.join('\n');
 }
 
-const ExportCSVButton = ({ data, fileName = 'export.csv' }: ExportCSVButtonProps) => {
+const ExportCSVButton = ({
+  data,
+  fileName = 'invoices-export.csv',
+}: ExportCSVButtonProps) => {
   const handleExport = () => {
     const flat = flattenProcessedData(data);
     const csv = toCSV(flat);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
     URL.revokeObjectURL(url);
   };
 
@@ -145,4 +166,4 @@ const ExportCSVButton = ({ data, fileName = 'export.csv' }: ExportCSVButtonProps
   );
 };
 
-export default ExportCSVButton; 
+export default ExportCSVButton;

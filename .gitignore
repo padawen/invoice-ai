@@ -33,6 +33,7 @@ yarn-error.log*
 # Custom project files to ignore
 /temp/                         # temp mappa (PDF-ekhez)
 invoice_ai_summary.txt        # saját összefoglaló jegyzet
+/test/                         # test directory for PDF tests
 
 # VS Code (optional, if you don't want to share workspace settings)
 .vscode

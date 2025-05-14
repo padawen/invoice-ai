@@ -1,7 +1,11 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  serverExternalPackages: ['pdf-parse'],
-};
+const config = {
+  output: 'standalone',
+  experimental: {},
+  images: {
+    domains: ['localhost', 'invoice-ai-app.vercel.app'],
+  },
+} as NextConfig;
 
-export default nextConfig;
+export default config;

@@ -3,40 +3,67 @@ import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase';
 
+const fileFromBuffer = (
+  buffer: Buffer,
+  filename: string,
+  contentType = 'application/pdf'
+): File => {
+  return new File([buffer], filename, { type: contentType });
+};
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
+const API_KEY = process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
+
 export async function POST(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
-  const supabase = createSupabaseClient(token);
+  let isAuthenticated = false;
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const apiKey = req.headers.get('x-api-key');
+  if (apiKey && apiKey === API_KEY) {
+    isAuthenticated = true;
+  }
 
-  if (userError || !user) {
+  if (!isAuthenticated) {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    if (token) {
+      try {
+        const supabase = createSupabaseClient(token);
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (user && !error) isAuthenticated = true;
+      } catch (err) {
+        console.error('Supabase auth error:', err);
+      }
+    }
+  }
+
+  if (!isAuthenticated) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const formData = await req.formData();
-  const file = formData.get('file') as File;
+  const blob = formData.get('file') as Blob;
 
-  if (!file) {
+  if (!blob) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
   try {
+    const buffer = Buffer.from(await blob.arrayBuffer());
+
     const uploadedFile = await openai.files.create({
-      file, 
+      file: fileFromBuffer(buffer, 'invoice.pdf'),
       purpose: 'assistants',
     });
 
     const assistant = await openai.beta.assistants.create({
       name: 'PDF Assistant',
       model: 'gpt-4o',
-      instructions: 'You are an invoice reader chatbot.',
+      instructions: 'You are an invoice reader chatbot. Output a structured JSON object.',
       tools: [{ type: 'file_search' }],
     });
 
@@ -58,31 +85,58 @@ export async function POST(req: NextRequest) {
     });
 
     let result;
-    while (true) {
-      const runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    let attempts = 0;
+    const maxAttempts = 15;
 
-      if (runStatus.status === 'completed') {
+    while (attempts < maxAttempts) {
+      const status = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+
+      if (status.status === 'completed') {
         result = await openai.beta.threads.messages.list(thread.id);
         break;
-      } else if (runStatus.status === 'failed') {
+      }
+
+      if (status.status === 'failed') {
         throw new Error('OpenAI processing failed');
       }
 
       await new Promise((res) => setTimeout(res, 1000));
+      attempts++;
     }
 
-    const msgContent = result.data[0].content.find(
+    if (!result) {
+      throw new Error('Timed out waiting for OpenAI to respond');
+    }
+
+    const msg = result.data[0]?.content.find(
       (c) => c.type === 'text'
     ) as { type: 'text'; text: { value: string } };
 
-    const content = msgContent?.text?.value || '';
-    const jsonStart = content.indexOf('{');
-    const jsonEnd = content.lastIndexOf('}') + 1;
-    const parsedJson = JSON.parse(content.slice(jsonStart, jsonEnd));
+    if (!msg || !msg.text?.value) {
+      throw new Error('No valid message returned from assistant');
+    }
 
-    return NextResponse.json(parsedJson);
+    const raw = msg.text.value;
+
+    // Robust JSON extraction
+    const tryExtractJson = (text: string): any => {
+      const match = text.match(/{[\s\S]*}/);
+      if (!match) throw new Error('No JSON object found in assistant response');
+      try {
+        return JSON.parse(match[0]);
+      } catch (err) {
+        throw new Error(`Failed to parse JSON: ${(err as Error).message}`);
+      }
+    };
+
+    const parsed = tryExtractJson(raw);
+
+    return NextResponse.json(parsed);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Failed to process text PDF' }, { status: 500 });
+    console.error('Processing error:', err);
+    return NextResponse.json(
+      { error: 'Failed to process PDF with OpenAI' },
+      { status: 500 }
+    );
   }
 }

@@ -5,19 +5,14 @@ import { EditableInvoice } from '@/app/types';
 export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   const supabase = createSupabaseClient(token);
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (error || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const body = await req.json();
-    const { fields, project } = body as {
+    const { fields, project } = (await req.json()) as {
       fields: EditableInvoice;
       project: string;
     };
@@ -48,7 +43,7 @@ export async function POST(req: NextRequest) {
       invoice_data
     } = fields;
 
-    const { error } = await supabase.from('processed_data').insert({
+    const { error: insertError } = await supabase.from('processed_data').insert({
       user_id: user.id,
       project_id: projectData.id,
       seller_name: seller.name,
@@ -67,14 +62,12 @@ export async function POST(req: NextRequest) {
       raw_data: invoice_data
     });
 
-    if (error) {
-      console.error('Supabase error:', error);
+    if (insertError) {
       return NextResponse.json({ error: 'Database insert failed' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Unhandled error:', err);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

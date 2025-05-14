@@ -4,11 +4,7 @@ import { createSupabaseClient } from '@/lib/supabase';
 export async function DELETE(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   const supabase = createSupabaseClient(token);
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,20 +22,20 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', user.id)
     .single();
 
-  if (fetchError || !data) {
-    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+  if (fetchError || !data || !Array.isArray(data.raw_data)) {
+    return NextResponse.json({ error: 'Invoice not found or invalid format' }, { status: 404 });
   }
 
-  const items = Array.isArray(data.raw_data) ? [...data.raw_data] : [];
-  if (itemIndex < 0 || itemIndex >= items.length) {
+  if (itemIndex < 0 || itemIndex >= data.raw_data.length) {
     return NextResponse.json({ error: 'Invalid item index' }, { status: 400 });
   }
 
-  items.splice(itemIndex, 1);
+  const updatedItems = [...data.raw_data];
+  updatedItems.splice(itemIndex, 1);
 
   const { error: updateError } = await supabase
     .from('processed_data')
-    .update({ raw_data: items })
+    .update({ raw_data: updatedItems })
     .eq('id', invoiceId)
     .eq('user_id', user.id);
 
@@ -48,4 +44,4 @@ export async function DELETE(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true });
-} 
+}

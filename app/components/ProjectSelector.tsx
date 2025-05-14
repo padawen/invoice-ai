@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, FolderPlus, Plus } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const ProjectSelector = ({ onSelect }: Props) => {
+  const supabase = createSupabaseBrowserClient();
   const [projects, setProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [newProject, setNewProject] = useState('');
@@ -16,42 +18,42 @@ const ProjectSelector = ({ onSelect }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const supabase = createSupabaseBrowserClient();
-
-  const getSupabaseToken = useCallback(async () => {
+  const getToken = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token;
+    return session?.access_token || null;
   }, [supabase]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = await getSupabaseToken();
+        const token = await getToken();
         if (!token) return;
+
         const res = await fetch('/api/project', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = await res.json();
-        if (data.projects) {
+
+        if (Array.isArray(data.projects)) {
           setProjects(data.projects);
-          if (data.projects.length === 0) {
-            setIsCreating(true);
-          }
+          if (data.projects.length === 0) setIsCreating(true);
+        } else {
+          throw new Error();
         }
       } catch {
         setError('Failed to load projects.');
       }
     };
+
     fetchProjects();
-  }, [getSupabaseToken]);
+  }, [getToken]);
 
   const handleCreate = async () => {
-    const trimmedName = newProject.trim();
-    if (!trimmedName) return;
+    const trimmed = newProject.trim();
+    if (!trimmed) return;
 
-    if (projects.includes(trimmedName)) {
+    if (projects.includes(trimmed)) {
       setError('A project with this name already exists.');
       return;
     }
@@ -61,31 +63,39 @@ const ProjectSelector = ({ onSelect }: Props) => {
     setSuccess(false);
 
     try {
-      const token = await getSupabaseToken();
+      const token = await getToken();
       if (!token) return;
+
       const res = await fetch('/api/project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: trimmedName }),
+        body: JSON.stringify({ name: trimmed }),
       });
 
-      if (!res.ok) throw new Error('Failed to create project');
+      if (!res.ok) throw new Error();
 
-      const updated = [...projects, trimmedName];
+      const updated = [...projects, trimmed];
       setProjects(updated);
-      setSelectedProject(trimmedName);
-      onSelect(trimmedName);
+      setSelectedProject(trimmed);
       setNewProject('');
       setIsCreating(false);
       setSuccess(true);
+      onSelect(trimmed);
     } catch {
       setError('Failed to create project.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelCreate = () => {
+    setNewProject('');
+    setIsCreating(false);
+    setError(null);
+    setSuccess(false);
   };
 
   return (
@@ -95,10 +105,10 @@ const ProjectSelector = ({ onSelect }: Props) => {
         {!isCreating && (
           <button
             onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2 text-base text-green-400 hover:text-green-300 transition-colors font-bold"
+            className="flex items-center gap-2 text-base text-green-400 hover:text-green-300 transition font-bold"
           >
             <Plus size={20} />
-            <span>New Project</span>
+            New Project
           </button>
         )}
       </div>
@@ -106,7 +116,7 @@ const ProjectSelector = ({ onSelect }: Props) => {
       {isCreating ? (
         <div className="space-y-4">
           <input
-            className="w-full px-6 py-4 rounded-xl bg-zinc-800 border-2 border-zinc-700 text-white placeholder-zinc-500 text-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
+            className="w-full px-6 py-4 rounded-xl bg-zinc-800 border-2 border-zinc-700 text-white placeholder-zinc-500 text-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition"
             placeholder="Enter project name"
             value={newProject}
             onChange={(e) => setNewProject(e.target.value)}
@@ -118,24 +128,20 @@ const ProjectSelector = ({ onSelect }: Props) => {
             <button
               onClick={handleCreate}
               disabled={loading}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all border border-green-600 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg disabled:opacity-60"
+              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition border border-green-600 hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg disabled:opacity-60"
             >
               {loading ? <Loader2 size={22} className="animate-spin" /> : <FolderPlus size={22} />}
               <span>{loading ? 'Creating...' : 'Create Project'}</span>
             </button>
             <button
-              onClick={() => {
-                setIsCreating(false);
-                setNewProject('');
-                setError(null);
-                setSuccess(false);
-              }}
-              className="px-6 py-3 text-zinc-400 hover:text-zinc-300 transition-colors text-lg font-semibold"
+              onClick={cancelCreate}
+              className="px-6 py-3 text-zinc-400 hover:text-zinc-300 transition text-lg font-semibold"
               disabled={loading}
             >
               Cancel
             </button>
           </div>
+
           {error && (
             <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-lg mt-2">
               <AlertCircle size={20} />
@@ -151,7 +157,7 @@ const ProjectSelector = ({ onSelect }: Props) => {
         </div>
       ) : (
         <select
-          className="w-full px-6 py-4 rounded-xl bg-zinc-800 border-2 border-zinc-700 text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
+          className="w-full px-6 py-4 rounded-xl bg-zinc-800 border-2 border-zinc-700 text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition"
           value={selectedProject}
           onChange={(e) => {
             setSelectedProject(e.target.value);
@@ -171,3 +177,4 @@ const ProjectSelector = ({ onSelect }: Props) => {
 };
 
 export default ProjectSelector;
+

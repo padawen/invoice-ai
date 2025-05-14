@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './DeleteModal';
@@ -12,29 +12,44 @@ interface Props {
 }
 
 const EditableFields = ({ fields, onChange }: Props) => {
-  const handleTopLevelChange = (key: keyof EditableInvoice, value: string) => {
+  const supabase = createSupabaseBrowserClient();
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
+
+  const handleTopLevelChange = (
+    key: keyof Omit<EditableInvoice, 'invoice_data' | 'seller' | 'buyer' | 'id'>,
+    value: string
+  ) => {
     onChange({ ...fields, [key]: value });
   };
 
-  const handleNestedChange = (parent: 'seller' | 'buyer', key: string, value: string) => {
+  const handleNestedChange = (
+    parent: 'seller' | 'buyer',
+    key: string,
+    value: string
+  ) => {
     onChange({ ...fields, [parent]: { ...fields[parent], [key]: value } });
   };
 
-  const handleItemChange = (index: number, key: keyof InvoiceData, value: string) => {
+  const handleItemChange = (
+    index: number,
+    key: keyof InvoiceData,
+    value: string
+  ) => {
     const updated = [...fields.invoice_data];
     updated[index][key] = value;
     onChange({ ...fields, invoice_data: updated });
   };
 
-  const supabase = createSupabaseBrowserClient();
-
   const handleDeleteItem = async (index: number) => {
+    const updated = [...fields.invoice_data];
+    updated.splice(index, 1);
+
     if (!fields.id) {
-      const updated = [...fields.invoice_data];
-      updated.splice(index, 1);
       onChange({ ...fields, invoice_data: updated });
       return;
     }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -42,29 +57,28 @@ const EditableFields = ({ fields, onChange }: Props) => {
         alert('You must be logged in to delete items.');
         return;
       }
+
       const res = await fetch('/api/processed/item', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ invoiceId: fields.id, itemIndex: index }),
       });
+
       if (!res.ok) {
         const err = await res.json();
         alert('Failed to delete item: ' + (err.error || res.statusText));
         return;
       }
-      const updated = [...fields.invoice_data];
-      updated.splice(index, 1);
+
       onChange({ ...fields, invoice_data: updated });
     } catch (error: unknown) {
       console.error('Error deleting item:', error);
       alert(error instanceof Error ? error.message : 'Failed to delete item');
     }
   };
-
-  const itemsEndRef = useRef<HTMLDivElement>(null);
 
   const handleAddItem = () => {
     onChange({
@@ -74,12 +88,13 @@ const EditableFields = ({ fields, onChange }: Props) => {
         { name: '', quantity: '', unit_price: '', net: '', gross: '' },
       ],
     });
-    setTimeout(() => {
-      itemsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
 
-  const [showDeleteModal, setShowDeleteModal] = React.useState<number | null>(null);
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        itemsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }, 50);
+  };
 
   if (!fields || !fields.invoice_data) {
     return (
@@ -94,96 +109,56 @@ const EditableFields = ({ fields, onChange }: Props) => {
     <div className="space-y-10">
       {/* Seller & Buyer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
-          <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Seller</h3>
-          <div className="space-y-4">
-            {Object.entries(fields.seller).map(([key, value]) => (
-              <div key={key} className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-300 capitalize">{key.replace('_', ' ')}</label>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={e => handleNestedChange('seller', key, e.target.value)}
-                  className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' || key === 'address' ? 'font-semibold' : ''}`}
-                  placeholder={`Seller ${key}`}
-                />
-              </div>
-            ))}
+        {(['seller', 'buyer'] as const).map((section) => (
+          <div
+            key={section}
+            className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60"
+          >
+            <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">
+              {section.charAt(0).toUpperCase() + section.slice(1)}
+            </h3>
+            <div className="space-y-4">
+              {Object.entries(fields[section]).map(([key, value]) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-zinc-300 capitalize">
+                    {key.replace('_', ' ')}
+                  </label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => handleNestedChange(section, key, e.target.value)}
+                    className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${
+                      key === 'name' || key === 'address' ? 'font-semibold' : ''
+                    }`}
+                    placeholder={`${section.charAt(0).toUpperCase() + section.slice(1)} ${key}`}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
-          <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Buyer</h3>
-          <div className="space-y-4">
-            {Object.entries(fields.buyer).map(([key, value]) => (
-              <div key={key} className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-300 capitalize">{key.replace('_', ' ')}</label>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={e => handleNestedChange('buyer', key, e.target.value)}
-                  className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' || key === 'address' ? 'font-semibold' : ''}`}
-                  placeholder={`Buyer ${key}`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Invoice Details */}
       <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
-        <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">Invoice Details</h3>
+        <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2">
+          Invoice Details
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-zinc-300">Invoice Number</label>
-            <input
-              type="text"
-              value={fields.invoice_number}
-              onChange={e => handleTopLevelChange('invoice_number', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
-              placeholder="Invoice number"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-zinc-300">Issue Date</label>
-            <input
-              type="text"
-              value={fields.issue_date}
-              onChange={e => handleTopLevelChange('issue_date', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
-              placeholder="Issue date"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-zinc-300">Fulfillment Date</label>
-            <input
-              type="text"
-              value={fields.fulfillment_date}
-              onChange={e => handleTopLevelChange('fulfillment_date', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
-              placeholder="Fulfillment date"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-zinc-300">Due Date</label>
-            <input
-              type="text"
-              value={fields.due_date}
-              onChange={e => handleTopLevelChange('due_date', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
-              placeholder="Due date"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-zinc-300">Payment Method</label>
-            <input
-              type="text"
-              value={fields.payment_method}
-              onChange={e => handleTopLevelChange('payment_method', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
-              placeholder="Payment method"
-            />
-          </div>
+          {(['invoice_number', 'issue_date', 'fulfillment_date', 'due_date', 'payment_method'] as const).map((field) => (
+            <div key={field} className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-zinc-300 capitalize">
+                {field.replace('_', ' ')}
+              </label>
+              <input
+                type="text"
+                value={fields[field]}
+                onChange={(e) => handleTopLevelChange(field, e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all"
+                placeholder={field.replace('_', ' ')}
+              />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -199,6 +174,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
             <Plus size={20} /> Add Item
           </button>
         </div>
+
         <div className="space-y-6">
           {fields.invoice_data.map((item, index) => (
             <div
@@ -208,22 +184,29 @@ const EditableFields = ({ fields, onChange }: Props) => {
               <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
                 <span className="px-2 py-1 bg-green-400/10 rounded-lg">Item {index + 1}</span>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['name', ...Object.keys(item).filter(k => k !== 'name' && k !== 'address')].map((key) => (
-                  <div key={key} className={`flex flex-col gap-2 ${key === 'name' ? 'col-span-2' : ''}`}>
+                {(['name', 'quantity', 'unit_price', 'net', 'gross'] as const).map((key) => (
+                  <div
+                    key={key}
+                    className={`flex flex-col gap-2 ${key === 'name' ? 'col-span-2' : ''}`}
+                  >
                     <label className="text-sm font-medium text-zinc-300 capitalize">
                       {key.replace('_', ' ')}
                     </label>
                     <input
                       type="text"
-                      value={item[key as keyof InvoiceData]}
-                      onChange={e => handleItemChange(index, key as keyof InvoiceData, e.target.value)}
-                      className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${key === 'name' ? 'font-semibold' : ''}`}
+                      value={item[key]}
+                      onChange={(e) => handleItemChange(index, key, e.target.value)}
+                      className={`w-full max-w-2xl px-6 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500/70 transition-all ${
+                        key === 'name' ? 'font-semibold' : ''
+                      }`}
                       placeholder={`Enter ${key.replace('_', ' ')}`}
                     />
                   </div>
                 ))}
               </div>
+
               <div className="flex justify-end mt-4">
                 <button
                   type="button"
@@ -234,13 +217,19 @@ const EditableFields = ({ fields, onChange }: Props) => {
                   <Trash2 size={18} />
                   Delete
                 </button>
-                <DeleteModal
-                  open={showDeleteModal === index}
-                  onClose={() => setShowDeleteModal(null)}
-                  onConfirm={() => handleDeleteItem(index)}
-                  title="Delete Item"
-                  description={fields.id ? "Are you sure you want to delete this item? This action cannot be undone." : "Remove this item from the invoice draft?"}
-                />
+                {showDeleteModal === index && (
+                  <DeleteModal
+                    open={true}
+                    onClose={() => setShowDeleteModal(null)}
+                    onConfirm={() => handleDeleteItem(index)}
+                    title="Delete Item"
+                    description={
+                      fields.id
+                        ? 'Are you sure you want to delete this item? This action cannot be undone.'
+                        : 'Remove this item from the invoice draft?'
+                    }
+                  />
+                )}
               </div>
             </div>
           ))}
