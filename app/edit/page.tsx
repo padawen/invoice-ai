@@ -41,7 +41,7 @@ const EditPage = () => {
             } else {
               setError("Invalid data structure received from AI processing");
             }
-          } catch (parseError) {
+          } catch (_) {
             setError("Failed to parse JSON data from AI processing");
           }
           
@@ -55,7 +55,7 @@ const EditPage = () => {
         const { data, error } = await supabase.from("projects").select("name");
         if (error) throw error;
         setProjects(data.map((p) => p.name));
-      } catch (err) {
+      } catch (_) {
         setError("Failed to load data. Please try again.");
       }
     };
@@ -117,7 +117,7 @@ const EditPage = () => {
       } else {
         throw new Error('Failed to save data');
       }
-    } catch (err) {
+    } catch (_) {
       setError('Failed to save data. Please try again.');
     } finally {
       setIsSaving(false);

@@ -15,7 +15,7 @@ const openai = new OpenAI({
 async function getPageCount(pdfPath: string): Promise<number> {
   const poppler = new Poppler();
   const pdfInfo = await poppler.pdfInfo(pdfPath);
-  return typeof pdfInfo === 'object' && pdfInfo !== null ? (pdfInfo as any).pages : 0;
+  return typeof pdfInfo === 'object' && pdfInfo !== null ? (pdfInfo as Record<string, number>).pages : 0;
 }
 
 async function extractImagesFromPdf(pdfBuffer: Buffer): Promise<string[]> {
@@ -138,13 +138,13 @@ export async function POST(req: NextRequest) {
     for (const imagePath of imagePaths) {
       try {
         fs.unlinkSync(imagePath);
-      } catch (err) {}
+      } catch (_) {}
     }
     
     try {
       fs.unlinkSync(path.join(path.dirname(imagePaths[0]), 'input.pdf'));
       fs.rmdirSync(path.dirname(imagePaths[0]));
-    } catch (err) {}
+    } catch (_) {}
     
     return NextResponse.json(responseWithId);
   } catch (error: unknown) {
