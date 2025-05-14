@@ -138,13 +138,13 @@ export async function POST(req: NextRequest) {
     for (const imagePath of imagePaths) {
       try {
         fs.unlinkSync(imagePath);
-      } catch (_) {}
+      } catch {}
     }
     
     try {
       fs.unlinkSync(path.join(path.dirname(imagePaths[0]), 'input.pdf'));
       fs.rmdirSync(path.dirname(imagePaths[0]));
-    } catch (_) {}
+    } catch {}
     
     return NextResponse.json(responseWithId);
   } catch (error: unknown) {

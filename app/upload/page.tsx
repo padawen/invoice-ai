@@ -146,7 +146,7 @@ export default function UploadPage() {
         sessionStorage.setItem('pdf_base64', base64);
 
         window.location.href = '/edit';
-      } catch (_) {
+      } catch {
         throw new Error("Failed to parse API response");
       }
     } catch (error) {
