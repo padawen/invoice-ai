@@ -19,7 +19,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing invoiceId or itemIndex' }, { status: 400 });
   }
 
-  // Fetch the invoice
   const { data, error: fetchError } = await supabase
     .from('processed_data')
     .select('raw_data')

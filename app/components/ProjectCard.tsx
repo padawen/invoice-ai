@@ -6,7 +6,7 @@ interface ProjectCardProps {
   name: string;
   onSave: (id: string, newName: string) => Promise<void> | void;
   onClick: () => void;
-  onDelete?: () => void; // Optional delete handler
+  onDelete?: () => void;
 }
 
 const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) => {

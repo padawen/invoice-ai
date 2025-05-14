@@ -1,4 +1,3 @@
-// app/api/detectType/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pdf from 'pdf-parse';
 import { createSupabaseClient } from '@/lib/supabase';

@@ -61,7 +61,6 @@ export default function ProjectDetailsPage() {
     const fetchData = async () => {
       setLoading(true);
       if (user) {
-        // Get all projects, find by slug
         const { data: allProjects } = await supabase.from('projects').select('id, name');
         const found = allProjects?.find((p: { id: string; name: string }) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
         setProject(found || null);
@@ -123,7 +122,6 @@ export default function ProjectDetailsPage() {
                 key={item.id}
                 className="bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col gap-3 border border-zinc-700 hover:border-green-400 transition group relative cursor-pointer"
                 onClick={e => {
-                  // Prevent navigation if the click originated from the delete button or its children
                   const target = e.target as HTMLElement;
                   if (target.closest('button')) return;
                   router.push(`/projects/${slugify(project.name, { lower: true, strict: true })}/processed/${item.id}/edit`);

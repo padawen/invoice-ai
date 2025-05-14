@@ -27,7 +27,6 @@ export default function EditProcessedItemPage() {
     const fetchData = async () => {
       setLoading(true);
       if (user) {
-        // Find project by slug
         const { data: allProjects } = await supabase.from('projects').select('id, name');
         const found = allProjects?.find((p: { id: string; name: string }) => slugify(p.name, { lower: true, strict: true }) === projectSlug);
         if (found) {
@@ -79,7 +78,6 @@ export default function EditProcessedItemPage() {
     setSuccess(false);
     try {
       if (user) {
-        // Update in Supabase
         if (!fields) {
           throw new Error('No fields to update');
         }
@@ -101,7 +99,6 @@ export default function EditProcessedItemPage() {
         }).eq('id', itemId);
         if (error) throw error;
       } else {
-        // Update in local fake data (in-memory only)
         const fake = fakeProjects.find(p => slugify(p.name, { lower: true, strict: true }) === projectSlug);
         const item = fake?.processed.find((i: FakeProcessedItem) => i.id === itemId);
         if (item && fields) {

@@ -24,7 +24,6 @@ const Navbar = () => {
     window.location.href = '/';
   };
 
-  // Only show Upload if logged in
   const navLinks = user
     ? [
         { href: '/', label: 'Home' },

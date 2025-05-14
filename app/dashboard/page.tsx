@@ -50,14 +50,12 @@ export default function DashboardPage() {
 
   const handleDelete = async (projectId: string) => {
     if (user) {
-      // Get the user's session token
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) {
         alert('You must be logged in to delete a project.');
         return;
       }
-      // Call the API to delete the project
       const res = await fetch('/api/project', {
         method: 'DELETE',
         headers: {

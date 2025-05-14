@@ -1,5 +1,3 @@
-// types.ts
-
 export interface InvoiceData {
   name: string;
   quantity: string;

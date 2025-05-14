@@ -14,10 +14,14 @@ const PdfPreviewFrame = ({ src }: Props) => {
   }
 
   return (
-    <iframe
-      src={src}
+    <object
+      data={src}
+      type="application/pdf"
       className="w-full h-[500px] border border-zinc-700 rounded shadow-lg"
-    />
+    >
+      <embed src={src} type="application/pdf" className="w-full h-[500px]" />
+      <p>This browser does not support embedded PDFs. Please <a href={src} target="_blank" rel="noopener noreferrer">click here to download the PDF</a>.</p>
+    </object>
   );
 };
 

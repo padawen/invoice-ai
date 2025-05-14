@@ -8,7 +8,6 @@ import ProcessAIButton from '../components/ProcessAIButton';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { useUser } from '@supabase/auth-helpers-react';
 
-// Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,7 +34,6 @@ export default function UploadPage() {
     
     if (selectedFile && selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
-      // Create a blob URL for preview
       const blobUrl = URL.createObjectURL(selectedFile);
       setFileUrl(blobUrl);
       setTypeResult(null);
@@ -110,23 +108,53 @@ export default function UploadPage() {
         body: formData,
       });
 
-      const result = await res.json();
+      const clonedRes = res.clone();
+      const rawText = await clonedRes.text();
+      
+      let result;
+      try {
+        result = JSON.parse(rawText);
+        
+        if (result.error === 'PAGE_LIMIT_EXCEEDED') {
+          setError('The number of pages in the PDF exceeds the 10-page limit. Please upload a smaller document.');
+          setIsProcessing(false);
+          return;
+        }
+        
+        if (result.error && !result.fallbackData) {
+          throw new Error(result.error);
+        }
+        
+        if (result.fallbackData) {
+          result = result.fallbackData;
+        }
+        
+        const hasValidStructure = 
+          result && 
+          typeof result === 'object' && 
+          result.seller && 
+          result.buyer && 
+          Array.isArray(result.invoice_data);
+          
+        if (!hasValidStructure) {
+          throw new Error("Invalid data structure received from AI processing");
+        }
+        
+        sessionStorage.setItem('openai_json', JSON.stringify(result));
+        
+        const base64 = await fileToBase64(file);
+        sessionStorage.setItem('pdf_base64', base64);
 
-      // Store the file and result in sessionStorage
-      sessionStorage.setItem('openai_json', JSON.stringify(result));
-      // Store the file as base64
-      const base64 = await fileToBase64(file);
-      sessionStorage.setItem('pdf_base64', base64);
-
-      window.location.href = '/edit';
+        window.location.href = '/edit';
+      } catch (parseError) {
+        throw new Error("Failed to parse API response");
+      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setError(error instanceof Error ? error.message : 'Failed to upload file');
+      setError(error instanceof Error ? error.message : 'Failed to process file');
       setIsProcessing(false);
     }
   };
 
-  // Cleanup blob URL when component unmounts
   useEffect(() => {
     return () => {
       if (fileUrl) {

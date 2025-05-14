@@ -1,4 +1,3 @@
-// Fake data for demo dashboard (for non-logged-in users)
 import type { EditableInvoice } from './types';
 
 export interface FakeProcessedItem {

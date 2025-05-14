@@ -41,16 +41,13 @@ interface ExportCSVButtonProps {
 }
 
 function flattenProcessedData(data: ProcessedData[]): Record<string, string>[] {
-  // For each processed item, output one row per invoice item
   const rows: Record<string, string>[] = [];
   let netSum = 0;
   let grossSum = 0;
   data.forEach((item) => {
-    // Support both real and fake data structures
     const invoiceData = item.raw_data || item.invoice_data || [];
     const seller = item.seller || {};
     const buyer = item.buyer || {};
-    // For real data, seller/buyer fields are flat
     const seller_name = item.seller_name || seller.name || '';
     const seller_address = item.seller_address || seller.address || '';
     const seller_tax_id = item.seller_tax_id || seller.tax_id || '';
@@ -85,7 +82,6 @@ function flattenProcessedData(data: ProcessedData[]): Record<string, string>[] {
       });
     });
   });
-  // Add summary row
   if (rows.length) {
     rows.push({
       szamlaszam: 'Összesen',
@@ -116,15 +112,12 @@ function toCSV(data: Record<string, string>[]): string {
     csvRows.push(
       keys.map(k => {
         const val = row[k] ?? '';
-        // Force Excel to treat as text if not empty
         if (val === '') return '';
-        // Escape quotes
         const safe = String(val).replace(/"/g, '""');
         return `="${safe}"`;
       }).join(';')
     );
   }
-  // Add UTF-8 BOM for Excel compatibility
   return '\uFEFF' + csvRows.join('\n');
 }
 
