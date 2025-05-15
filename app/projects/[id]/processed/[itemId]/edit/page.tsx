@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useParams } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
+import { useUser } from '@/app/providers';
 import slugify from 'slugify';
 
 import EditableFields from '@/app/components/EditableFields';
@@ -13,8 +14,17 @@ import type { EditableInvoice } from '@/app/types';
 
 export default function EditProcessedItemPage() {
   const user = useUser();
-  const supabase = useSupabaseClient();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
+  
+  const [supabase] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+    return null;
+  });
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +37,7 @@ export default function EditProcessedItemPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        if (user) {
+        if (user && supabase) {
           const { data: projects, error: projErr } = await supabase
             .from('projects')
             .select('id, name');
@@ -102,7 +112,7 @@ export default function EditProcessedItemPage() {
     setError(null);
 
     try {
-      if (user) {
+      if (user && supabase) {
         const { error } = await supabase
           .from('processed_data')
           .update({

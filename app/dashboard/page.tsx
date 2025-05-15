@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/navigation";
+import { createBrowserClient } from '@supabase/ssr';
+import { useUser } from "../providers";
 import { fakeProjects } from "../fakeData";
 import ProjectCard from "../components/ProjectCard";
 import slugify from "slugify";
@@ -16,8 +17,18 @@ interface Project {
 
 export default function DashboardPage() {
   const user = useUser();
-  const supabase = useSupabaseClient();
   const router = useRouter();
+  
+  // Create Supabase client only in the browser
+  const [supabase] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+    return null;
+  });
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +36,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (user) {
+      if (user && supabase) {
         const { data, error } = await supabase.from("projects").select("id, name");
         if (!error && data) {
           setProjects(data);
@@ -40,14 +51,14 @@ export default function DashboardPage() {
   }, [user, supabase]);
 
   const handleNameSave = async (id: string, newName: string) => {
-    if (user) {
+    if (user && supabase) {
       await supabase.from("projects").update({ name: newName }).eq("id", id);
     }
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name: newName } : p)));
   };
 
   const handleDelete = async (projectId: string) => {
-    if (user) {
+    if (user && supabase) {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) {

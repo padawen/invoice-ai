@@ -2,17 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { useUser } from '@supabase/auth-helpers-react';
+import { createBrowserClient } from '@supabase/ssr';
+import { useUser } from '../providers';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import DetectTypeButton from '../components/DetectTypeButton';
 import ProcessAIButton from '../components/ProcessAIButton';
 import type { EditableInvoice } from '@/app/types';
 
+let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+
 const UploadPage = () => {
   const user = useUser();
-  const supabase = createSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!clientSideSupabase) {
+        clientSideSupabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(clientSideSupabase);
+    }
+  }, []);
 
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -22,6 +36,7 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const getToken = async (): Promise<string | null> => {
+    if (!supabase) return null;
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token || null;
   };

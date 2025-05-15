@@ -1,13 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { Session } from '@supabase/supabase-js';
 
+// Store client reference at module level for reuse
+let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+
 export default function LoginPage() {
-  const supabase = createSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Reuse existing client if available
+      if (!clientSideSupabase) {
+        clientSideSupabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(clientSideSupabase);
+    }
+  }, []);
 
   useEffect(() => {
+    if (!supabase) return;
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       if (session) window.location.href = '/upload';
     });
@@ -18,6 +37,8 @@ export default function LoginPage() {
   }, [supabase]);
 
   const handleLogin = async () => {
+    if (!supabase) return;
+
     const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/upload`
       : `${window.location.origin}/upload`;

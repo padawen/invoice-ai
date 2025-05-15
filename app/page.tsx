@@ -2,7 +2,7 @@
 
 import { ArrowRight, Upload, Github } from 'lucide-react';
 import Link from 'next/link';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useUser } from './providers';
 
 export default function Home() {
   const user = useUser();

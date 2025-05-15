@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useRouter, useParams } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
+import { useUser } from '@/app/providers';
 import slugify from 'slugify';
 
 import { fakeProjects } from '@/app/fakeData';
@@ -35,9 +36,19 @@ interface ProcessedItem {
 
 export default function ProjectDetailsPage() {
   const user = useUser();
-  const supabase = useSupabaseClient();
   const router = useRouter();
   const { id: projectSlug } = useParams() as { id: string };
+  
+  // Create Supabase client only in the browser
+  const [supabase] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+    return null;
+  });
 
   const [project, setProject] = useState<Project | null>(null);
   const [processed, setProcessed] = useState<ProcessedItem[]>([]);
@@ -48,7 +59,7 @@ export default function ProjectDetailsPage() {
     const loadProject = async () => {
       setLoading(true);
 
-      if (user) {
+      if (user && supabase) {
         const { data: projects } = await supabase.from('projects').select('id, name');
         const found = projects?.find(
           (p) => slugify(p.name, { lower: true, strict: true }) === projectSlug
@@ -80,7 +91,7 @@ export default function ProjectDetailsPage() {
   }, [user, supabase, projectSlug]);
 
   const handleDelete = async (itemId: string) => {
-    if (user) {
+    if (user && supabase) {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) return;

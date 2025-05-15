@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X, LogOut, User } from 'lucide-react';
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Geist } from 'next/font/google';
+import { createBrowserClient } from '@supabase/ssr';
+import { useUser } from '../providers';
 
 const geistSans = Geist({ subsets: ['latin'], weight: ['400', '700'] });
 
@@ -13,15 +14,26 @@ const Navbar = () => {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const user = useUser();
-  const supabase = useSupabaseClient();
+  
+  const [supabase] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+    return null;
+  });
 
   const handleLogin = () => {
     window.location.href = '/auth/login';
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    if (supabase) {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    }
   };
 
   const navLinks = [
@@ -81,7 +93,6 @@ const Navbar = () => {
     <nav className="w-full bg-zinc-900/95 backdrop-blur-sm text-white shadow-lg sticky top-0 z-50 border-b border-zinc-800 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <Link
             href="/"
             className={`text-3xl font-extrabold tracking-tight bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent hover:from-green-300 hover:to-emerald-400 transition ${geistSans.className}`}
@@ -90,7 +101,6 @@ const Navbar = () => {
             Invoice AI
           </Link>
 
-          {/* Desktop nav */}
           <div className="hidden md:flex gap-8 items-center">
             {navLinks.map((link) => (
               <LinkItem key={link.href} {...link} />
@@ -98,7 +108,6 @@ const Navbar = () => {
             <AuthButton />
           </div>
 
-          {/* Mobile menu toggle */}
           <button
             className="md:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors"
             onClick={() => setOpen(!open)}
@@ -107,7 +116,6 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile menu content */}
         {open && (
           <div className="md:hidden flex flex-col gap-3 pb-4 pt-2 border-t border-zinc-800">
             {navLinks.map((link) => (

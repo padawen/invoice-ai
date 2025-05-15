@@ -1,34 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { PropsWithChildren } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import type { PropsWithChildren } from 'react';
+
+const UserContext = createContext<User | null>(null);
+const SessionContext = createContext<Session | null>(null);
+
+export const useUser = () => useContext(UserContext);
+export const useSession = () => useContext(SessionContext);
 
 export default function Providers({ children }: PropsWithChildren) {
-  // Using useState to create the client ensures it only happens during component rendering
-  // which is at runtime, not during static build
-  const [supabaseClient] = useState(() => {
-    // This code only runs in the browser at runtime
-    if (typeof window !== 'undefined') {
-      return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-    }
-    // Return null during server-side rendering
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
-  // Only render the provider when we have a client
-  // This ensures we don't try to use an uninitialized client during SSR
-  if (!supabaseClient) {
-    return <>{children}</>;
-  }
+  const [supabaseClient] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  );
+
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [supabaseClient]);
 
   return (
-    <SessionContextProvider supabaseClient={supabaseClient}>
-      {children}
-    </SessionContextProvider>
+    <UserContext.Provider value={user}>
+      <SessionContext.Provider value={session}>
+        {children}
+      </SessionContext.Provider>
+    </UserContext.Provider>
   );
 }

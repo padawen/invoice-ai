@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, FolderPlus, Plus } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { createBrowserClient } from '@supabase/ssr';
+
+// Store client reference at module level for reuse
+let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
 interface Props {
   onSelect: (project: string) => void;
 }
 
 const ProjectSelector = ({ onSelect }: Props) => {
-  const supabase = createSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
   const [projects, setProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [newProject, setNewProject] = useState('');
@@ -18,7 +21,20 @@ const ProjectSelector = ({ onSelect }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!clientSideSupabase) {
+        clientSideSupabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(clientSideSupabase);
+    }
+  }, []);
+
   const getToken = useCallback(async () => {
+    if (!supabase) return null;
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || null;
   }, [supabase]);
@@ -46,8 +62,10 @@ const ProjectSelector = ({ onSelect }: Props) => {
       }
     };
 
-    fetchProjects();
-  }, [getToken]);
+    if (supabase) {
+      fetchProjects();
+    }
+  }, [getToken, supabase]);
 
   const handleCreate = async () => {
     const trimmed = newProject.trim();

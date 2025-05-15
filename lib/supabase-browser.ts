@@ -30,4 +30,4 @@ export const createSupabaseBrowserClient = (): SupabaseClient | null => {
   }
   
   return supabaseClientCache;
-}; 
+};
