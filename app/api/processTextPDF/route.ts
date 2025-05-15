@@ -118,8 +118,7 @@ export async function POST(req: NextRequest) {
 
     const raw = msg.text.value;
 
-    // Robust JSON extraction
-    const tryExtractJson = (text: string): any => {
+    const tryExtractJson = (text: string): unknown => {
       const match = text.match(/{[\s\S]*}/);
       if (!match) throw new Error('No JSON object found in assistant response');
       try {

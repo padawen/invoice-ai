@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useRouter } from 'next/navigation';
-import slugify from 'slugify';
 
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
