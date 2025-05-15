@@ -12,7 +12,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p test/data
 RUN touch test/data/05-versions-space.pdf
-COPY .env.local .env.local
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 RUN grep -v '^#' .env.local | sed 's/\r$//' > /tmp/envs.sh
