@@ -17,9 +17,6 @@ ENV OPENAI_API_KEY=$OPENAI_API_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN mkdir -p test/data
-RUN touch test/data/05-versions-space.pdf
-
 RUN npm run build
 
 FROM base AS runner
