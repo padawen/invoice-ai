@@ -3,21 +3,22 @@ import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase';
 
+/** Segéd: Buffer → File */
 const fileFromBuffer = (
   buffer: Buffer,
   filename: string,
   contentType = 'application/pdf'
-): File => {
-  return new File([buffer], filename, { type: contentType });
-};
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-const API_KEY = process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
+): File => new File([buffer], filename, { type: contentType });
 
 export async function POST(req: NextRequest) {
+
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  });
+
+  const API_KEY =
+    process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
+
   let isAuthenticated = false;
 
   const apiKey = req.headers.get('x-api-key');
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const blob = formData.get('file') as Blob;
+  const blob = formData.get('file') as Blob | null;
 
   if (!blob) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
     const assistant = await openai.beta.assistants.create({
       name: 'PDF Assistant',
       model: 'gpt-4o',
-      instructions: 'You are an invoice reader chatbot. Output a structured JSON object.',
+      instructions:
+        'You are an invoice reader chatbot. Output a structured JSON object.',
       tools: [{ type: 'file_search' }],
     });
 
@@ -89,7 +91,10 @@ export async function POST(req: NextRequest) {
     const maxAttempts = 15;
 
     while (attempts < maxAttempts) {
-      const status = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+      const status = await openai.beta.threads.runs.retrieve(
+        thread.id,
+        run.id
+      );
 
       if (status.status === 'completed') {
         result = await openai.beta.threads.messages.list(thread.id);
@@ -110,9 +115,9 @@ export async function POST(req: NextRequest) {
 
     const msg = result.data[0]?.content.find(
       (c) => c.type === 'text'
-    ) as { type: 'text'; text: { value: string } };
+    ) as { type: 'text'; text: { value: string } } | undefined;
 
-    if (!msg || !msg.text?.value) {
+    if (!msg?.text?.value) {
       throw new Error('No valid message returned from assistant');
     }
 
@@ -124,7 +129,9 @@ export async function POST(req: NextRequest) {
       try {
         return JSON.parse(match[0]);
       } catch (err) {
-        throw new Error(`Failed to parse JSON: ${(err as Error).message}`);
+        throw new Error(
+          `Failed to parse JSON: ${(err as Error).message}`
+        );
       }
     };
 
