@@ -19,16 +19,21 @@ export default function DashboardPage() {
   const user = useUser();
   const router = useRouter();
   
-  // Create Supabase client only in the browser
-  const [supabase] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return createBrowserClient(
+  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+
+const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    if (!clientSideSupabase) {
+      clientSideSupabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
     }
-    return null;
-  });
+    setSupabase(clientSideSupabase);
+  }
+}, []);;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);

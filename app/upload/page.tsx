@@ -2,30 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from '../providers';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import DetectTypeButton from '../components/DetectTypeButton';
 import ProcessAIButton from '../components/ProcessAIButton';
 import type { EditableInvoice } from '@/app/types';
 
-let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
-
 const UploadPage = () => {
   const user = useUser();
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!clientSideSupabase) {
-        clientSideSupabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-      }
-      setSupabase(clientSideSupabase);
-    }
+    const client = createSupabaseBrowserClient();
+    if (client) setSupabase(client);
   }, []);
 
   const [file, setFile] = useState<File | null>(null);
@@ -72,6 +63,7 @@ const UploadPage = () => {
         body: formData,
       });
 
+      if (!res.ok) throw new Error('Detection request failed');
       const data: { type: 'text' | 'image' | 'unknown' } = await res.json();
       setTypeResult(data.type || 'unknown');
     } catch {

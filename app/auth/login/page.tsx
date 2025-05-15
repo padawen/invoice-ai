@@ -10,10 +10,8 @@ let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 export default function LoginPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
-  // Initialize Supabase client only on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Reuse existing client if available
       if (!clientSideSupabase) {
         clientSideSupabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { Geist } from 'next/font/google';
 import { createBrowserClient } from '@supabase/ssr';
@@ -14,16 +14,20 @@ const Navbar = () => {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const user = useUser();
-  
-  const [supabase] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return createBrowserClient(
+  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    if (!clientSideSupabase) {
+      clientSideSupabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
     }
-    return null;
-  });
+    setSupabase(clientSideSupabase);
+  }
+}, []);
 
   const handleLogin = () => {
     window.location.href = '/auth/login';

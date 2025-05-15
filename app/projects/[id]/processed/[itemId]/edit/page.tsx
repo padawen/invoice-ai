@@ -16,15 +16,23 @@ export default function EditProcessedItemPage() {
   const user = useUser();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
   
-  const [supabase] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return createBrowserClient(
+  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+
+// Then in component:
+const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+// Initialize in useEffect
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    if (!clientSideSupabase) {
+      clientSideSupabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
     }
-    return null;
-  });
+    setSupabase(clientSideSupabase);
+  }
+}, []);
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);
