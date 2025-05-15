@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from "../providers";
@@ -19,21 +19,20 @@ export default function DashboardPage() {
   const user = useUser();
   const router = useRouter();
   
-  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
-
-const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
-
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    if (!clientSideSupabase) {
-      clientSideSupabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!supabaseRef.current) {
+        supabaseRef.current = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(supabaseRef.current);
     }
-    setSupabase(clientSideSupabase);
-  }
-}, []);;
+  }, []);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);

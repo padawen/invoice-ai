@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
 
-import { fakeProjects } from '@/app/fakeData';
+import { fakeProjects, FakeProject } from '@/app/fakeData';
 import ExportCSVButton from '@/app/components/ExportCSVButton';
 import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/DeleteModal';
@@ -39,21 +39,20 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const { id: projectSlug } = useParams() as { id: string };
   
-  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
-const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
-
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    if (!clientSideSupabase) {
-      clientSideSupabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!supabaseRef.current) {
+        supabaseRef.current = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(supabaseRef.current);
     }
-    setSupabase(clientSideSupabase);
-  }
-}, []);
+  }, []);
 
   const [project, setProject] = useState<Project | null>(null);
   const [processed, setProcessed] = useState<ProcessedItem[]>([]);
@@ -67,7 +66,7 @@ useEffect(() => {
       if (user && supabase) {
         const { data: projects } = await supabase.from('projects').select('id, name');
         const found = projects?.find(
-          (p) => slugify(p.name, { lower: true, strict: true }) === projectSlug
+          (p: Project) => slugify(p.name, { lower: true, strict: true }) === projectSlug
         );
         setProject(found || null);
 
@@ -83,7 +82,7 @@ useEffect(() => {
         }
       } else {
         const fake = fakeProjects.find(
-          (p) => slugify(p.name, { lower: true, strict: true }) === projectSlug
+          (p: FakeProject) => slugify(p.name, { lower: true, strict: true }) === projectSlug
         );
         setProject(fake ? { id: fake.id, name: fake.name } : null);
         setProcessed(fake ? fake.processed : []);
@@ -113,7 +112,7 @@ useEffect(() => {
       if (!res.ok) return;
     }
 
-    setProcessed((prev) => prev.filter((item) => item.id !== itemId));
+    setProcessed((prev: ProcessedItem[]) => prev.filter((item: ProcessedItem) => item.id !== itemId));
     setShowDeleteModal(null);
   };
 
@@ -129,7 +128,7 @@ useEffect(() => {
           <BackButton fallbackUrl="/dashboard" />
           <h1 className="text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
           <ExportCSVButton
-            data={user ? processed : processed.map((item) => ({ ...item.fields, id: item.id }))}
+            data={user ? processed : processed.map((item: ProcessedItem) => ({ ...item.fields, id: item.id }))}
             fileName={`${project.name}-processed.csv`}
           />
         </div>
@@ -138,7 +137,7 @@ useEffect(() => {
           {processed.length === 0 ? (
             <div className="col-span-2 text-center text-zinc-400">No processed items found.</div>
           ) : (
-            processed.map((item) => {
+            processed.map((item: ProcessedItem) => {
               const invoiceNumber = item.invoice_number || item.fields?.invoice_number || 'N/A';
               const buyer = item.buyer_name || item.fields?.buyer?.name || 'N/A';
               const seller = item.seller_name || item.fields?.seller?.name || 'N/A';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from '@/app/providers';
@@ -12,27 +12,29 @@ import BackButton from '@/app/components/BackButton';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice } from '@/app/types';
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 export default function EditProcessedItemPage() {
   const user = useUser();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
   
-  let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
-// Then in component:
-const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
-
-// Initialize in useEffect
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    if (!clientSideSupabase) {
-      clientSideSupabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!supabaseRef.current) {
+        supabaseRef.current = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+      }
+      setSupabase(supabaseRef.current);
     }
-    setSupabase(clientSideSupabase);
-  }
-}, []);
+  }, []);
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ useEffect(() => {
           if (projErr || !projects) throw projErr;
 
           const project = projects.find(
-            (p) => slugify(p.name, { lower: true, strict: true }) === slug
+            (p: Project) => slugify(p.name, { lower: true, strict: true }) === slug
           );
           if (!project) throw new Error('Project not found');
 
