@@ -1,17 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// We'll keep this reference at the module level for client-side caching
 let supabaseClientCache: SupabaseClient | undefined;
 
 export const createSupabaseBrowserClient = (): SupabaseClient | null => {
-  // Only create client in browser environment
   if (typeof window === 'undefined') {
     console.warn('Attempted to create Supabase client on the server');
     return null;
   }
   
-  // Reuse the client if we've already created it
   if (!supabaseClientCache) {
     try {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

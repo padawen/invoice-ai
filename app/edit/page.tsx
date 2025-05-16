@@ -106,26 +106,25 @@ const EditPage = () => {
       setError('Please complete all fields and select a project.');
       return;
     }
-
+  
     setIsSaving(true);
     setError(null);
-
+  
     try {
-      await createProjectIfNeeded();
 
       if (!supabase) {
         throw new Error('Supabase client not available');
       }
-      
+  
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-
+  
       if (!token) {
         setError('You must be logged in to save.');
         setIsSaving(false);
         return;
       }
-
+  
       const response = await fetch('/api/saveProcessedData', {
         method: 'POST',
         headers: {
@@ -134,12 +133,12 @@ const EditPage = () => {
         },
         body: JSON.stringify({ fields, project }),
       });
-
+  
       if (!response.ok) throw new Error('Failed to save');
-
+  
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
-
+  
       router.push('/dashboard');
     } catch (err) {
       setError((err as Error)?.message || 'Failed to save invoice data.');
@@ -147,6 +146,7 @@ const EditPage = () => {
       setIsSaving(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white p-6">
