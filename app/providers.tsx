@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, createContext, useContext } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { PropsWithChildren } from 'react';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 const UserContext = createContext<User | null>(null);
 const SessionContext = createContext<Session | null>(null);
@@ -16,18 +16,12 @@ export default function Providers({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
 
   const [supabaseClient] = useState(() => {
-    if (
-      typeof window === 'undefined' ||
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
+    try {
+      return createSupabaseBrowserClient();
+    } catch (error) {
+      console.error('Failed to create Supabase client:', error);
       return null;
     }
-
-    return createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
   });
 
   useEffect(() => {

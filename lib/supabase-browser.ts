@@ -1,7 +1,9 @@
-import { createBrowserClient } from '@supabase/ssr';
+'use client';
+
+import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-let supabaseClientCache: SupabaseClient | undefined;
+let supabaseClientCache: SupabaseClient | null = null;
 
 export const createSupabaseBrowserClient = (): SupabaseClient | null => {
   if (typeof window === 'undefined') return null;
@@ -10,9 +12,12 @@ export const createSupabaseBrowserClient = (): SupabaseClient | null => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || !anonKey) return null;
+    if (!url || !anonKey) {
+      console.error('Missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY');
+      return null;
+    }
 
-    supabaseClientCache = createBrowserClient(url, anonKey);
+    supabaseClientCache = createClient(url, anonKey);
   }
 
   return supabaseClientCache;
