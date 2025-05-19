@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { Geist } from 'next/font/google';
-import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { useUser } from '../providers';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 const geistSans = Geist({ subsets: ['latin'], weight: ['400', '700'] });
 
@@ -14,17 +15,14 @@ const Navbar = () => {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const user = useUser();
-  
-  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+
+  const supabaseRef = useRef<SupabaseClient | null>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (!supabaseRef.current) {
-        supabaseRef.current = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        supabaseRef.current = createSupabaseBrowserClient();
       }
       setSupabase(supabaseRef.current);
     }
@@ -45,9 +43,9 @@ const Navbar = () => {
     { href: '/', label: 'Home' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },
-      { href: '/upload', label: 'Upload' }
+      { href: '/upload', label: 'Upload' },
     ] : [
-      { href: '/dashboard', label: 'Dashboard' }
+      { href: '/dashboard', label: 'Dashboard' },
     ]),
   ];
 
