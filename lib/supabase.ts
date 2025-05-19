@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Only create the client when the function is called (at runtime)
 export const createSupabaseClient = (accessToken?: string): SupabaseClient => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -10,7 +9,6 @@ export const createSupabaseClient = (accessToken?: string): SupabaseClient => {
     throw new Error('Supabase URL or ANON KEY is missing in environment variables.');
   }
 
-  // Create the client on demand
   return createClient(url, anonKey, {
     global: {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},

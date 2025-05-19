@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Session } from '@supabase/supabase-js';
 
-// Store client reference at module level for reuse
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
 export default function LoginPage() {

@@ -27,7 +27,7 @@ const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) 
 
   const cancelEditing = () => {
     setEditing(false);
-    setValue(name); // Reset value if canceled
+    setValue(name); 
   };
 
   const saveName = async () => {

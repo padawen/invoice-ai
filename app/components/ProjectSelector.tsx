@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, FolderPlus, Plus } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
-// Store client reference at module level for reuse
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
 interface Props {

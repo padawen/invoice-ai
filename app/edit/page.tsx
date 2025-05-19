@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { useUser } from '../providers';
 
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
@@ -12,20 +11,15 @@ import SaveButton from '../components/SaveButton';
 import { AlertCircle } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 
-// This will only be executed on the client side
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
 const EditPage = () => {
   const router = useRouter();
-  const user = useUser();
   
-  // This state is initialized conditionally only on the client side
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
-  // Initialize Supabase client only on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Reuse existing client if available
       if (!clientSideSupabase) {
         clientSideSupabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +33,6 @@ const EditPage = () => {
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [project, setProject] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
-  const [projects, setProjects] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -72,18 +65,15 @@ const EditPage = () => {
           setError('Failed to parse AI-generated JSON data.');
         }
 
-        // Only fetch projects if we have a valid supabase client
         if (supabase) {
-          const { data, error: projError } = await supabase.from('projects').select('name');
+          const { error: projError } = await supabase.from('projects').select('name');
           if (projError) throw projError;
-          setProjects(data.map((p: { name: string }) => p.name));
         }
       } catch {
         setError('Failed to load invoice or projects.');
       }
     };
 
-    // Only run this effect on the client side
     if (typeof window !== 'undefined') {
       loadData();
     }

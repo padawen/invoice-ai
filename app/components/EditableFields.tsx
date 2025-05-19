@@ -6,7 +6,6 @@ import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './DeleteModal';
 import { createBrowserClient } from '@supabase/ssr';
 
-// Store client reference at module level for reuse
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
 interface Props {
@@ -19,10 +18,8 @@ const EditableFields = ({ fields, onChange }: Props) => {
   const itemsEndRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
 
-  // Initialize Supabase client only on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Reuse existing client if available
       if (!clientSideSupabase) {
         clientSideSupabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,

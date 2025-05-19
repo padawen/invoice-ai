@@ -55,14 +55,13 @@ export async function POST(req: NextRequest) {
     const fileName = file.name.toLowerCase();
     const fileSize = buffer.length;
 
-    // Feltételezett oldalankénti méret (ha nincs oldalszámunk)
     const estimatedPages = Math.max(Math.round(fileSize / 500_000), 1);
     const averageSizePerPage = fileSize / estimatedPages;
 
     const isLikelyImage =
       fileName.includes('scan') ||
       fileName.includes('image') ||
-      averageSizePerPage > 1024 * 1024 || // >1MB per page
+      averageSizePerPage > 1024 * 1024 ||
       isMostlyBinary(buffer);
 
     return NextResponse.json({
