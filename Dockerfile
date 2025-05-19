@@ -11,9 +11,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG OPENAI_API_KEY
-ENV OPENAI_API_KEY=$OPENAI_API_KEY
-
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
