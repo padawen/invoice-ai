@@ -1,11 +1,10 @@
-import { NextConfig } from 'next';
-
+/** @type {import('next').NextConfig} */
 const config = {
   output: 'standalone',
   experimental: {},
   images: {
     domains: ['localhost', 'invoice-ai-app.vercel.app'],
   },
-} as NextConfig;
+};
 
-export default config;
+module.exports = config;
