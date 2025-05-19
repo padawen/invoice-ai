@@ -10,6 +10,7 @@ import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import SaveButton from '../components/SaveButton';
 import { AlertCircle } from 'lucide-react';
 import type { EditableInvoice } from '../types';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -19,17 +20,15 @@ const EditPage = () => {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!clientSideSupabase) {
-        clientSideSupabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+    if (!clientSideSupabase) {
+      const client = createSupabaseBrowserClient();
+      if (client) {
+        clientSideSupabase = client;
+        setSupabase(client);
       }
-      setSupabase(clientSideSupabase);
     }
   }, []);
-
+  
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [project, setProject] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');

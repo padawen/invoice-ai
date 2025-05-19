@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Session } from '@supabase/supabase-js';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -10,17 +11,15 @@ export default function LoginPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!clientSideSupabase) {
-        clientSideSupabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+    if (!clientSideSupabase) {
+      const client = createSupabaseBrowserClient();
+      if (client) {
+        clientSideSupabase = client;
+        setSupabase(client);
       }
-      setSupabase(clientSideSupabase);
     }
   }, []);
-
+  
   useEffect(() => {
     if (!supabase) return;
 

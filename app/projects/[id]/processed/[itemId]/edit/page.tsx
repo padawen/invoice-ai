@@ -11,6 +11,7 @@ import SaveButton from '@/app/components/SaveButton';
 import BackButton from '@/app/components/BackButton';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice } from '@/app/types';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface Project {
   id: string;
@@ -25,16 +26,14 @@ export default function EditProcessedItemPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!supabaseRef.current) {
-        supabaseRef.current = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+    if (!supabaseRef.current) {
+      const client = createSupabaseBrowserClient();
+      if (client) {
+        supabaseRef.current = client;
+        setSupabase(client);
       }
-      setSupabase(supabaseRef.current);
     }
-  }, []);
+  }, []);  
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);

@@ -11,6 +11,7 @@ import ExportCSVButton from '@/app/components/ExportCSVButton';
 import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/DeleteModal';
 import { InvoiceData } from '@/app/types';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface Project {
   id: string;
@@ -43,14 +44,12 @@ export default function ProjectDetailsPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!supabaseRef.current) {
-        supabaseRef.current = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+    if (!supabaseRef.current) {
+      const client = createSupabaseBrowserClient();
+      if (client) {
+        supabaseRef.current = client;
+        setSupabase(client);
       }
-      setSupabase(supabaseRef.current);
     }
   }, []);
 

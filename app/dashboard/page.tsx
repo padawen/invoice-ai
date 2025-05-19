@@ -9,6 +9,7 @@ import ProjectCard from "../components/ProjectCard";
 import slugify from "slugify";
 import BackButton from "../components/BackButton";
 import DeleteModal from "../components/DeleteModal";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 interface Project {
   id: string;
@@ -23,17 +24,15 @@ export default function DashboardPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!supabaseRef.current) {
-        supabaseRef.current = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+    if (!supabaseRef.current) {
+      const client = createSupabaseBrowserClient();
+      if (client) {
+        supabaseRef.current = client;
+        setSupabase(client);
       }
-      setSupabase(supabaseRef.current);
     }
   }, []);
-
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; name: string } | null>(null);
