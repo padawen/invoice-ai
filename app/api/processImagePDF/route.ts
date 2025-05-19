@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
 import { getGuidelinesImage } from '@/lib/instructions';
-import { createSupabaseClient } from '@/lib/supabase';
+import { createSupabaseClient } from '@/lib/supabase-server';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';

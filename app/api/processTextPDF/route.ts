@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
-import { createSupabaseClient } from '@/lib/supabase';
+import { createSupabaseClient } from '@/lib/supabase-server';
 
-/** Segéd: Buffer → File */
 const fileFromBuffer = (
   buffer: Buffer,
   filename: string,
