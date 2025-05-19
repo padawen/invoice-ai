@@ -89,18 +89,6 @@ const EditPage = () => {
     }
   }, [supabase]);
 
-  const createProjectIfNeeded = async () => {
-    if (!project) throw new Error('No project selected');
-    if (projects.includes(project)) return;
-    if (!supabase) throw new Error('Supabase client not available');
-
-    const { error } = await supabase.from('projects').insert({
-      name: project,
-      user_id: user?.id,
-    });
-    if (error) throw error;
-  };
-
   const handleSave = async () => {
     if (!project || !fields) {
       setError('Please complete all fields and select a project.');
