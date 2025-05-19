@@ -6,7 +6,7 @@ export const createSupabaseClient = (accessToken?: string): SupabaseClient => {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    throw new Error('Supabase URL or ANON KEY is missing in environment variables.');
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
   }
 
   return createClient(url, anonKey, {
