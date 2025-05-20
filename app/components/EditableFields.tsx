@@ -4,10 +4,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './DeleteModal';
-import { createBrowserClient } from '@supabase/ssr';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
-let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 interface Props {
   fields: EditableInvoice;
@@ -15,7 +14,7 @@ interface Props {
 }
 
 const EditableFields = ({ fields, onChange }: Props) => {
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const itemsEndRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
 

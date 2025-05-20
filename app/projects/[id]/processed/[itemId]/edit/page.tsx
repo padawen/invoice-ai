@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
-
 import EditableFields from '@/app/components/EditableFields';
 import SaveButton from '@/app/components/SaveButton';
 import BackButton from '@/app/components/BackButton';
@@ -22,8 +20,8 @@ export default function EditProcessedItemPage() {
   const user = useUser();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
   
-  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
     if (!supabaseRef.current) {

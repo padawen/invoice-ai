@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
@@ -12,12 +10,12 @@ import { AlertCircle } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
-let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 const EditPage = () => {
   const router = useRouter();
   
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
     if (!clientSideSupabase) {

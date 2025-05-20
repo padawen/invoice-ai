@@ -2,17 +2,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, CheckCircle, AlertCircle, FolderPlus, Plus } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
-let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 interface Props {
   onSelect: (project: string) => void;
 }
 
 const ProjectSelector = ({ onSelect }: Props) => {
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [projects, setProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [newProject, setNewProject] = useState('');

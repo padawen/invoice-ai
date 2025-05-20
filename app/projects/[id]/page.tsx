@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
-
 import { fakeProjects, FakeProject } from '@/app/fakeData';
 import ExportCSVButton from '@/app/components/ExportCSVButton';
 import BackButton from '@/app/components/BackButton';
@@ -40,8 +38,8 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const { id: projectSlug } = useParams() as { id: string };
   
-  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
     if (!supabaseRef.current) {
