@@ -17,7 +17,7 @@ export default function Home() {
             Automate Invoicing.<br />Free Your Time.
           </h1>
           <p className="text-xl md:text-2xl text-zinc-300 max-w-xl mx-auto">
-            AI-driven invoice processing that feels like magic — from PDF to structured data in seconds.
+            AI-driven invoice processing that feels like magic - from PDF to structured data in seconds.
           </p>
         </header>
 
