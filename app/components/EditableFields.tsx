@@ -5,6 +5,7 @@ import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './DeleteModal';
 import { createBrowserClient } from '@supabase/ssr';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -21,10 +22,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (!clientSideSupabase) {
-        clientSideSupabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        clientSideSupabase = createSupabaseBrowserClient();
       }
       setSupabase(clientSideSupabase);
     }
