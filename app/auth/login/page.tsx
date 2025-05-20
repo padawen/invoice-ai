@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 import { Session } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
-let clientSideSupabase: ReturnType<typeof createBrowserClient> | null = null;
+let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 export default function LoginPage() {
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
     if (!clientSideSupabase) {

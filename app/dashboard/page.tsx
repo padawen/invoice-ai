@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from '@supabase/ssr';
 import { useUser } from "../providers";
 import { fakeProjects } from "../fakeData";
 import ProjectCard from "../components/ProjectCard";
@@ -20,8 +19,8 @@ export default function DashboardPage() {
   const user = useUser();
   const router = useRouter();
   
-  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   
   useEffect(() => {
     if (!supabaseRef.current) {
