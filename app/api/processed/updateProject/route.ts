@@ -16,7 +16,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  // First verify that both the item and project belong to the user
   const { data: item, error: itemError } = await supabase
     .from('processed_data')
     .select('id')
@@ -39,7 +38,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 });
   }
 
-  // Update the project_id for the processed item
   const { error: updateError } = await supabase
     .from('processed_data')
     .update({ project_id: projectId })
