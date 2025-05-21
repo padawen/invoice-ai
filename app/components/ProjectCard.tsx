@@ -3,6 +3,7 @@
 import { Trash2 } from 'lucide-react';
 
 interface ProjectCardProps {
+  id?: string;
   name: string;
   onClick: () => void;
   onDelete?: () => void;
