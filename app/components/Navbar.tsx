@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X, LogOut, User, Loader2 } from 'lucide-react';
 import { Geist } from 'next/font/google';
-import { useUser, useSession } from '../providers';
+import { useUser } from '../providers';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 const geistSans = Geist({ subsets: ['latin'], weight: ['400', '700'] });
@@ -18,12 +18,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const user = useUser();
-  const session = useSession();
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-
-  useEffect(() => {
-    console.log("Navbar - Auth state:", { user, session });
-  }, [user, session]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

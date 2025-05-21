@@ -18,8 +18,8 @@ export default function Providers({ children }: PropsWithChildren) {
   const [supabaseClient] = useState(() => {
     try {
       return createSupabaseBrowserClient();
-    } catch (error) {
-      console.error('Failed to create Supabase client:', error);
+    } catch {
+      console.error('Authentication service initialization failed');
       return null;
     }
   });

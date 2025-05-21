@@ -90,7 +90,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
       onChange({ ...fields, invoice_data: updatedItems });
       setDeleteError(null);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Failed to delete item');
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete item');
     } finally {
       setShowDeleteModal(null);

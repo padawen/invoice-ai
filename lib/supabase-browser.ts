@@ -13,7 +13,7 @@ export const createSupabaseBrowserClient = (): SupabaseClient | null => {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !anonKey) {
-      console.error('Missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY');
+      console.error('Missing required environment variables for authentication');
       return null;
     }
 

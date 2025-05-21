@@ -154,7 +154,7 @@ const UploadPage = () => {
       const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
 
       if (!isValidStructure(result)) {
-        throw new Error('Invalid AI result structure');
+        throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
       }
 
       sessionStorage.setItem('openai_json', JSON.stringify(result));
