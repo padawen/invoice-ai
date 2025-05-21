@@ -65,9 +65,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
+  let imagePaths: string[] = [];
+  
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const imagePaths = await extractImagesFromPdf(buffer);
+    imagePaths = await extractImagesFromPdf(buffer);
     if (!imagePaths.length)
       throw new Error('No images extracted from PDF');
 
@@ -90,14 +92,27 @@ export async function POST(req: NextRequest) {
     const responseText = choices[0].message?.content ?? '';
     const jsonStart = responseText.indexOf('{');
     const jsonEnd = responseText.lastIndexOf('}') + 1;
-    if (jsonStart === -1 || jsonEnd <= jsonStart)
+    if (jsonStart === -1 || jsonEnd <= jsonStart) {
+      console.error('Invalid JSON format in OpenAI response:', responseText);
       throw new Error('No valid JSON found in OpenAI response');
+    }
 
-    const parsed = JSON.parse(responseText.slice(jsonStart, jsonEnd));
-    const output = { id: crypto.randomUUID(), ...parsed };
+    try {
+      const jsonStr = responseText.slice(jsonStart, jsonEnd);
+      const parsed = JSON.parse(jsonStr);
+      
+      if (!parsed.seller || !parsed.buyer || !Array.isArray(parsed.invoice_data)) {
+        throw new Error('OpenAI response missing required fields (seller, buyer, or invoice_data)');
+      }
+      
+      const output = { id: crypto.randomUUID(), ...parsed };
 
-    cleanupTempFiles(imagePaths);
-    return NextResponse.json(output);
+      cleanupTempFiles(imagePaths);
+      return NextResponse.json(output);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      throw new Error(`Failed to parse JSON from OpenAI response: ${(parseError as Error).message}`);
+    }
   } catch (err: unknown) {
     if (err instanceof Error && err.message === 'PAGE_LIMIT_EXCEEDED') {
       return NextResponse.json(
@@ -105,8 +120,25 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    
+    cleanupTempFiles(imagePaths || []);
+    
     return NextResponse.json(
-      { error: (err as Error).message || 'Unexpected server error' },
+      { 
+        error: (err as Error).message || 'Unexpected server error',
+        fallbackData: {
+          id: crypto.randomUUID(),
+          seller: { name: '', address: '', tax_id: '', email: '', phone: '' },
+          buyer: { name: '', address: '', tax_id: '' },
+          invoice_number: '',
+          issue_date: '',
+          fulfillment_date: '',
+          due_date: '',
+          payment_method: '',
+          currency: 'HUF',
+          invoice_data: []
+        }
+      },
       { status: 500 }
     );
   }

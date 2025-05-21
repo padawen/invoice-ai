@@ -94,7 +94,6 @@ export default function DashboardPage() {
         return;
       }
     } else {
-      // Show message for fake data deletion
       alert("This is a demo mode - your project is not actually being deleted from a database.");
     }
 

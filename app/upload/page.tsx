@@ -118,25 +118,22 @@ const UploadPage = () => {
     };
 
     try {
-      // Try up to 3 times
       let lastError: Error | null = null;
       for (let i = 0; i < 3; i++) {
         try {
           const data = await attemptDetection(i);
           setTypeResult(data.type || 'unknown');
-          return; // Success, exit the function
+          return; 
         } catch (err) {
           console.log(`Attempt ${i + 1} failed, ${i < 2 ? 'retrying...' : 'giving up.'}`);
           lastError = err instanceof Error ? err : new Error(String(err));
           
-          // Wait a bit before retrying
           if (i < 2) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
       }
       
-      // All retries failed
       throw lastError || new Error('Failed after multiple attempts');
     } catch (err) {
       console.error('All detection attempts failed:', err);

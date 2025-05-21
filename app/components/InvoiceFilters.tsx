@@ -31,19 +31,37 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
     searchTerm: '',
   });
 
-  const handleFilterChange = (key: string, value: string | { [key: string]: string }) => {
-    const newFilters = { ...filters };
-    
-    if (typeof value === 'string') {
-      // @ts-expect-error: Dynamic property assignment
-      newFilters[key] = value;
-    } else {
-      // @ts-expect-error: Dynamic property assignment
-      newFilters[key] = { ...newFilters[key], ...value };
+  const handleFilterChange = (
+    key: keyof FilterOptions, 
+    value: string | { start?: string; end?: string } | { min?: string; max?: string }
+  ) => {
+    if (key === 'buyer' || key === 'seller' || key === 'searchTerm') {
+      if (typeof value === 'string') {
+        setFilters(prev => {
+          const newFilters = { ...prev, [key]: value };
+          onFilterChange(newFilters);
+          return newFilters;
+        });
+      }
+    } else if (key === 'dateRange' && typeof value === 'object') {
+      setFilters(prev => {
+        const newFilters = { 
+          ...prev, 
+          dateRange: { ...prev.dateRange, ...value as { start?: string; end?: string } }
+        };
+        onFilterChange(newFilters);
+        return newFilters;
+      });
+    } else if (key === 'amountRange' && typeof value === 'object') {
+      setFilters(prev => {
+        const newFilters = {
+          ...prev,
+          amountRange: { ...prev.amountRange, ...value as { min?: string; max?: string } }
+        };
+        onFilterChange(newFilters);
+        return newFilters;
+      });
     }
-    
-    setFilters(newFilters);
-    onFilterChange(newFilters);
   };
 
   const clearFilters = () => {

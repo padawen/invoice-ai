@@ -55,8 +55,9 @@ const EditableFields = ({ fields, onChange }: Props) => {
   };
 
   const handleDeleteItem = async (index: number) => {
-    // For new entries (no ID) or demo mode (no supabase client)
-    if (!fields.id || !supabase) {
+    const isOnEditPage = typeof window !== 'undefined' && window.location.pathname === '/edit';
+    
+    if (!fields.id || !supabase || isOnEditPage) {
       const updated = [...fields.invoice_data];
       updated.splice(index, 1);
       onChange({ ...fields, invoice_data: updated });
@@ -69,7 +70,6 @@ const EditableFields = ({ fields, onChange }: Props) => {
       const token = session?.access_token;
       
       if (!token) {
-        // Demo mode or not authenticated, just update the UI
         const updated = [...fields.invoice_data];
         updated.splice(index, 1);
         onChange({ ...fields, invoice_data: updated });
@@ -77,7 +77,6 @@ const EditableFields = ({ fields, onChange }: Props) => {
         return;
       }
 
-      // Try to delete via API
       const response = await fetch('/api/processed/item', {
         method: 'DELETE',
         headers: {
@@ -95,7 +94,6 @@ const EditableFields = ({ fields, onChange }: Props) => {
         throw new Error(errorData.error || 'Failed to delete item');
       }
 
-      // API call successful, update UI
       const updatedItems = [...fields.invoice_data];
       updatedItems.splice(index, 1);
       onChange({ ...fields, invoice_data: updatedItems });
