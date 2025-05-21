@@ -1,98 +1,77 @@
-# 🧠 Invoice AI
+# 💸 Invoice AI: Because Tax Season Made Us Lose Our Damn Minds 😵‍💫
 
-A modern, AI-powered invoice processing application that automatically extracts and processes data from PDF invoices. Built with Next.js, Supabase, and OpenAI.
+![Money Burning](https://media.giphy.com/media/l0HFkA6omUyjVYqw8/giphy.gif)
 
-![Invoice AI](https://i.imgur.com/placeholder.png)
+## 🤔 What The Hell Is This?
 
-## ✨ Features
+**Invoice AI** is what happens when developers get tired of manually entering invoice data and think,  
+**"Fuck it, let's make the robots do it."** 🤖💥  
+This unholy creation uses AI to process invoices so you can spend less time with Excel and more time questioning your life choices. 🧾🧠
 
-- 🤖 **AI-Powered Processing**: Automatically extract data from both text and image-based PDF invoices
-- 📱 **Modern UI**: Beautiful, responsive interface with dark mode support
-- 🔄 **Real-time Preview**: Preview and edit extracted data before saving
-- 📊 **Project Management**: Organize invoices by projects
-- 🔒 **Authentication**: Secure login with Google OAuth
-- 🎯 **Smart Detection**: Automatically detects PDF type (text/image) for optimal processing
-- ✏️ **Easy Editing**: Intuitive interface for reviewing and editing extracted data
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Supabase account
-- OpenAI API key
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/invoice-ai.git
-cd invoice-ai
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-Fill in your environment variables:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENAI_API_KEY=your_openai_api_key
-```
-
-4. Run the development server:
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000` to see the application.
-
-## 🛠️ Tech Stack
-
-- **Framework**: [Next.js 14](https://nextjs.org/)
-- **Database**: [Supabase](https://supabase.com/)
-- **Authentication**: [Supabase Auth](https://supabase.com/auth)
-- **AI Processing**: [OpenAI API](https://openai.com/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Icons**: [Lucide Icons](https://lucide.dev/)
-- **PDF Processing**: [PDF.js](https://mozilla.github.io/pdf.js/)
-
-## 📝 Usage
-
-1. **Upload**: Drag and drop or select a PDF invoice
-2. **Detect**: The system automatically detects the PDF type
-3. **Process**: AI extracts relevant data from the invoice
-4. **Review**: Edit and verify the extracted data
-5. **Save**: Store the processed invoice in your project
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- OpenAI for providing the AI capabilities
-- Supabase for the backend infrastructure
-- Next.js team for the amazing framework
-- All contributors who have helped shape this project
+> _"This app saved my accounting department so much time that we now have 3 extra hours per day to stare blankly at the wall."_  
+> – Some CFO who definitely exists 🧍‍♂️💼🧱
 
 ---
 
-Made with ❤️ and Next.js
+## ✨ Features So Good You'll Question Reality
+
+- 🤖 **AI-Powered Processing**: Reads invoices better than your boss reads your resignation letter
+- 📁 **Project Organization**: Sort invoices into projects, or as we call them, _"piles of financial regret"_
+- 🌚 **Dark Mode**: Because your financial situation is already dark enough
+- 📤 **Data Export**: Export to CSV — perfect for when your accountant doesn’t believe you
+- 📱 **Responsive Design**: Works on all devices, because bad financial news should follow you everywhere
+
+---
+
+## 📦 Installation Guide For People Who Hate Reading Guides
+
+\`\`\`bash
+# Clone this repo (or just copy-paste like the rest of us)
+git clone https://github.com/your-financial-nightmare/invoice-ai.git
+
+# Enter the void
+cd invoice-ai
+
+# Install dependencies (and your dependency on this app)
+npm install --save-sanity
+
+# Start questioning your decisions
+npm run dev
+\`\`\`
+
+---
+
+## 🧠 How To Use This Masterpiece
+
+1. 📤 **Upload Invoice**: Drag and drop your invoice. Yes, it’s that simple. No, we won’t judge the amount.
+2. ⚙️ **Let AI Work**: Watch as our AI extracts data faster than you extract yourself from awkward conversations.
+3. 📝 **Edit If Necessary**: Sometimes AI makes mistakes. Just like your ex. 😬
+4. 🗂 **Save To Project**: Organize by client... or by “people who still owe me money.” 💀
+5. 📊 **Export When Needed**: Great for when the tax authorities come knocking 🚪🧾🚓
+
+---
+
+## 🔥 The "Oh Shit, Something's Wrong" Guide
+
+**❌ Problem**: AI isn’t recognizing my invoice  
+**✅ Solution**: Did you upload an actual invoice or a pizza menu? 🍕 Be honest.
+
+**❌ Problem**: The dashboard isn’t loading  
+**✅ Solution**: Try turning it off and on again. If that doesn’t work, try turning your life off and on again. 🔄🧘‍♂️
+
+**❌ Problem**: I accidentally deleted an important invoice  
+**✅ Solution**: This is why your parents never said they were proud of you. 😐
+
+---
+
+## 👥 Contributors
+
+Made with ❤️ (and a lot of 🍺) by developers who are still paying off their student loans.
+
+## 📜 License
+
+This project is licensed under the "Do Whatever The Hell You Want With It, We're Not Your Parents" License.
+
+---
+
+*If you’ve read this far, you deserve a cookie. But we can’t give you one because we spent the entire budget on AI API calls.* 🍪

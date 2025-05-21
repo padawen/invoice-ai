@@ -59,7 +59,9 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
   );
 
   return (
-    <nav className={`w-full bg-zinc-900/95 backdrop-blur-sm text-white shadow-lg sticky top-0 z-50 border-b transition-colors duration-300 ${isProcessing ? 'border-green-800/30' : 'border-zinc-800'} font-sans`}>
+    <nav className={`w-full backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b transition-colors duration-300 
+      ${isProcessing ? 'border-green-800/30' : 'border-zinc-800'} 
+      bg-zinc-900/95 text-white font-sans`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center gap-2">

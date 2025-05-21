@@ -10,7 +10,10 @@ import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/modals/DeleteModal';
 import { InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { Pencil, Check } from 'lucide-react';
+import { Pencil, Check, Trash2, FileText } from 'lucide-react';
+import InvoiceCard from '@/app/components/InvoiceCard';
+import InvoiceFilters, { FilterOptions } from '@/app/components/InvoiceFilters';
+import FinancialSummary from '@/app/components/FinancialSummary';
 
 interface Project {
   id: string;
@@ -60,6 +63,14 @@ export default function ProjectDetailsPage() {
   const [editing, setEditing] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [filteredProcessed, setFilteredProcessed] = useState<ProcessedItem[]>([]);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    dateRange: { start: '', end: '' },
+    amountRange: { min: '', max: '' },
+    buyer: '',
+    seller: '',
+    searchTerm: '',
+  });
 
   useEffect(() => {
     if (project) {
@@ -101,6 +112,78 @@ export default function ProjectDetailsPage() {
 
     loadProject();
   }, [user, supabase, projectSlug]);
+
+  useEffect(() => {
+    if (!processed) return;
+    
+    let filtered = [...processed];
+    
+    // Filter by search term (across multiple fields)
+    if (filterOptions.searchTerm) {
+      const term = filterOptions.searchTerm.toLowerCase();
+      filtered = filtered.filter(item => {
+        const invoiceNumber = (item.invoice_number || item.fields?.invoice_number || '').toLowerCase();
+        const buyer = (item.buyer_name || item.fields?.buyer?.name || '').toLowerCase();
+        const seller = (item.seller_name || item.fields?.seller?.name || '').toLowerCase();
+        
+        return invoiceNumber.includes(term) || buyer.includes(term) || seller.includes(term);
+      });
+    }
+    
+    // Filter by date range
+    if (filterOptions.dateRange.start) {
+      const startDate = new Date(filterOptions.dateRange.start);
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.issue_date || item.fields?.issue_date || '');
+        return !isNaN(itemDate.getTime()) && itemDate >= startDate;
+      });
+    }
+    
+    if (filterOptions.dateRange.end) {
+      const endDate = new Date(filterOptions.dateRange.end);
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.issue_date || item.fields?.issue_date || '');
+        return !isNaN(itemDate.getTime()) && itemDate <= endDate;
+      });
+    }
+    
+    // Filter by buyer
+    if (filterOptions.buyer) {
+      const buyerTerm = filterOptions.buyer.toLowerCase();
+      filtered = filtered.filter(item => {
+        const buyer = (item.buyer_name || item.fields?.buyer?.name || '').toLowerCase();
+        return buyer.includes(buyerTerm);
+      });
+    }
+    
+    // Filter by seller
+    if (filterOptions.seller) {
+      const sellerTerm = filterOptions.seller.toLowerCase();
+      filtered = filtered.filter(item => {
+        const seller = (item.seller_name || item.fields?.seller?.name || '').toLowerCase();
+        return seller.includes(sellerTerm);
+      });
+    }
+    
+    // Filter by amount range (need to find total from invoice items)
+    if (filterOptions.amountRange.min || filterOptions.amountRange.max) {
+      filtered = filtered.filter(item => {
+        const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
+        let total = 0;
+        
+        invoiceItems.forEach(invItem => {
+          total += parseFloat(invItem.gross) || 0;
+        });
+        
+        const min = filterOptions.amountRange.min ? parseFloat(filterOptions.amountRange.min) : 0;
+        const max = filterOptions.amountRange.max ? parseFloat(filterOptions.amountRange.max) : Infinity;
+        
+        return total >= min && total <= max;
+      });
+    }
+    
+    setFilteredProcessed(filtered);
+  }, [processed, filterOptions]);
 
   const handleDelete = async (itemId: string) => {
     if (user && supabase) {
@@ -155,6 +238,10 @@ export default function ProjectDetailsPage() {
     setEditing(false);
   };
 
+  const handleFilterChange = (newFilters: FilterOptions) => {
+    setFilterOptions(newFilters);
+  };
+
   if (loading) return <div className="p-8 text-center text-zinc-400">Loading...</div>;
   if (!project) return <div className="p-8 text-center text-red-400">Project not found.</div>;
 
@@ -193,14 +280,18 @@ export default function ProjectDetailsPage() {
               </>
             ) : (
               <>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
-                <button
-                  onClick={() => setEditing(true)}
-                  className="bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition ml-2"
-                  title="Edit project name"
-                >
-                  <Pencil size={16} />
-                </button>
+                <div className="flex items-center relative">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                    <span className="text-green-400">Project:</span> <span className="text-white">{project.name}</span>
+                  </h1>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="ml-2 bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition hover:shadow-lg hover:shadow-green-900/20"
+                    title="Edit project name"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -210,11 +301,19 @@ export default function ProjectDetailsPage() {
           />
         </div>
 
+        <FinancialSummary data={processed} />
+
+        <InvoiceFilters onFilterChange={handleFilterChange} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {processed.length === 0 ? (
-            <div className="col-span-2 text-center text-zinc-400">No processed items found.</div>
+          {filteredProcessed.length === 0 ? (
+            <div className="col-span-2 text-center text-zinc-400">
+              {processed.length > 0 
+                ? "No invoices match the current filters." 
+                : "No processed items found."}
+            </div>
           ) : (
-            processed.map((item: ProcessedItem) => {
+            filteredProcessed.map((item: ProcessedItem) => {
               const invoiceNumber = item.invoice_number || item.fields?.invoice_number || 'N/A';
               const buyer = item.buyer_name || item.fields?.buyer?.name || 'N/A';
               const seller = item.seller_name || item.fields?.seller?.name || 'N/A';
@@ -223,40 +322,17 @@ export default function ProjectDetailsPage() {
                 item.raw_data?.length ?? item.fields?.invoice_data?.length ?? 0;
 
               return (
-                <div
+                <InvoiceCard 
                   key={item.id}
-                  className="bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col gap-3 border border-zinc-700 hover:border-green-400 transition group relative"
+                  id={item.id}
+                  invoiceNumber={invoiceNumber}
+                  buyer={buyer}
+                  seller={seller}
+                  date={date}
+                  itemsCount={itemsCount}
                   onClick={() => router.push(`/projects/${slug}/processed/${item.id}/edit`)}
-                  tabIndex={0}
-                  role="button"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      router.push(`/projects/${slug}/processed/${item.id}/edit`);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg font-semibold truncate">
-                      Invoice #{invoiceNumber}
-                    </span>
-                    <button
-                      className="text-red-400 hover:text-red-300 text-sm border border-red-600 bg-zinc-900 rounded-lg px-3 py-1 shadow"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowDeleteModal(item.id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-1 text-sm text-zinc-300">
-                    <span><strong>Buyer:</strong> {buyer}</span>
-                    <span><strong>Seller:</strong> {seller}</span>
-                    <span><strong>Date:</strong> {date}</span>
-                    <span><strong>Items:</strong> {itemsCount}</span>
-                  </div>
-                  <div className="mt-4 text-xs text-zinc-400 italic">Click on the card to edit/view</div>
-                </div>
+                  onDelete={(id) => setShowDeleteModal(id)}
+                />
               );
             })
           )}

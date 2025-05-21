@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
 import EditableFields from '@/app/components/EditableFields';
 import SaveButton from '@/app/components/SaveButton';
 import BackButton from '@/app/components/BackButton';
+import ProjectSelector from '@/app/components/ProjectSelector';
+import { AlertTriangle } from 'lucide-react';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
@@ -18,6 +20,7 @@ interface Project {
 
 export default function EditProcessedItemPage() {
   const user = useUser();
+  const router = useRouter();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
   
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
@@ -38,7 +41,12 @@ export default function EditProcessedItemPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState<string>('');
+  const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<string>('');
+  const [selectedProjectName, setSelectedProjectName] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [projectChanging, setProjectChanging] = useState(false);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,24 +58,33 @@ export default function EditProcessedItemPage() {
             .select('id, name');
 
           if (projErr || !projects) throw projErr;
+          
+          setAllProjects(projects);
 
           const project = projects.find(
             (p: Project) => slugify(p.name, { lower: true, strict: true }) === slug
           );
           if (!project) throw new Error('Project not found');
 
-          setProjectName(project.name);
+          setCurrentProjectName(project.name);
+          setCurrentProjectId(project.id);
+          setSelectedProjectName(project.name); // Initialize selected with current
+          setSelectedProjectId(project.id);
 
           const { data, error: itemErr } = await supabase
             .from('processed_data')
             .select(
-              'id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, raw_data'
+              'id, project_id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, raw_data'
             )
             .eq('id', itemId)
-            .eq('project_id', project.id)
             .single();
 
           if (itemErr || !data) throw itemErr;
+
+          if (data.project_id !== project.id) {
+            router.push(`/dashboard`);
+            throw new Error('Invoice does not belong to this project');
+          }
 
           setFields({
             id: data.id,
@@ -98,7 +115,11 @@ export default function EditProcessedItemPage() {
             );
             if (!fake) throw new Error('Project not found');
             
-            setProjectName(fake.name);
+            setCurrentProjectName(fake.name);
+            setCurrentProjectId(fake.id);
+            setSelectedProjectName(fake.name);
+            setSelectedProjectId(fake.id);
+            setAllProjects(fakeProjects.map(p => ({ id: p.id, name: p.name })));
 
             const item = fake.processed.find((i) => i.id === itemId);
             if (!item) throw new Error('Item not found');
@@ -120,6 +141,17 @@ export default function EditProcessedItemPage() {
     loadData();
   }, [user, supabase, slug, itemId]);
 
+  // Handle project selection (just stores selected project, doesn't apply it yet)
+  const handleProjectSelect = (newProjectName: string) => {
+    const selectedProject = allProjects.find(p => p.name === newProjectName);
+    if (!selectedProject) return;
+    
+    setSelectedProjectName(newProjectName);
+    setSelectedProjectId(selectedProject.id);
+  };
+
+  const hasProjectChanged = currentProjectId !== selectedProjectId;
+
   const handleSave = async () => {
     if (!fields) return;
     setSaving(true);
@@ -128,6 +160,7 @@ export default function EditProcessedItemPage() {
 
     try {
       if (user && supabase) {
+        // First, update the invoice data
         const { error } = await supabase
           .from('processed_data')
           .update({
@@ -149,25 +182,78 @@ export default function EditProcessedItemPage() {
           .eq('id', itemId);
 
         if (error) throw error;
+
+        // If project has changed, update the project assignment
+        if (hasProjectChanged) {
+          setProjectChanging(true);
+          
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          
+          if (!token) {
+            throw new Error('Authentication token not found');
+          }
+          
+          const response = await fetch('/api/processed/updateProject', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              itemId: fields.id,
+              projectId: selectedProjectId
+            })
+          });
+          
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to update project');
+          }
+          
+          // Update current project values after successful change
+          setCurrentProjectName(selectedProjectName);
+          setCurrentProjectId(selectedProjectId);
+          
+          // Navigate to the new project page after a short delay
+          setTimeout(() => {
+            const newSlug = slugify(selectedProjectName, { lower: true, strict: true });
+            router.push(`/projects/${newSlug}/processed/${itemId}/edit`);
+          }, 1500);
+        }
       } else {
+        // Handle demo mode
         const fake = fakeProjects.find(
           (p) => slugify(p.name, { lower: true, strict: true }) === slug
         );
         const item = fake?.processed.find((i: FakeProcessedItem) => i.id === itemId);
         if (item) item.fields = fields;
+        
+        // Simulate project change in demo mode
+        if (hasProjectChanged) {
+          setProjectChanging(true);
+          setCurrentProjectName(selectedProjectName);
+          setCurrentProjectId(selectedProjectId);
+          
+          setTimeout(() => {
+            const newSlug = slugify(selectedProjectName, { lower: true, strict: true });
+            router.push(`/projects/${newSlug}/processed/${itemId}/edit`);
+          }, 1500);
+        }
       }
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-      setError('Failed to save changes.');
+      setError(err instanceof Error ? err.message : 'Failed to save changes.');
+      setProjectChanging(false);
     } finally {
       setSaving(false);
     }
   };
 
-  const fallbackUrl = `/projects/${slugify(projectName, { lower: true, strict: true })}`;
+  const fallbackUrl = `/projects/${slugify(currentProjectName, { lower: true, strict: true })}`;
 
   if (loading) return <div className="p-8 text-center text-zinc-400">Loading...</div>;
   if (!fields) return <div className="p-8 text-center text-red-400">Processed item not found.</div>;
@@ -178,18 +264,60 @@ export default function EditProcessedItemPage() {
         <div className="mb-8 flex flex-col sm:flex-row items-center">
           <BackButton fallbackUrl={fallbackUrl} />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-green-400 flex-1 mt-4 sm:mt-0">
-            Edit Processed Data{projectName ? ` — ${projectName}` : ''}
+            Edit Processed Data
           </h1>
         </div>
 
         <EditableFields fields={fields} onChange={setFields} />
 
-        <div className="flex gap-4 justify-end mt-10">
-          <SaveButton isSaving={saving} onSave={handleSave} />
+        {/* Project assignment and save section at the bottom */}
+        <div className="mt-10 bg-zinc-800/60 rounded-xl p-6 border border-zinc-700/60">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-green-400 mb-4">Project Assignment</h3>
+              <div className="max-w-md">
+                <ProjectSelector 
+                  onSelect={handleProjectSelect}
+                  initialProject={currentProjectName}
+                />
+                
+                {hasProjectChanged && (
+                  <div className="mt-4 py-3 px-4 bg-amber-900/30 border border-amber-500/30 rounded-lg flex items-center gap-2">
+                    <AlertTriangle size={18} className="text-amber-400" />
+                    <div className="text-amber-400 text-sm">
+                      <p>Project change will be applied when you save.</p>
+                      <p className="mt-1">
+                        <span className="font-medium">From:</span> {currentProjectName}
+                        <span className="mx-2">→</span>
+                        <span className="font-medium">To:</span> {selectedProjectName}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-center lg:justify-end">
+              <SaveButton 
+                isSaving={saving || projectChanging} 
+                onSave={handleSave} 
+                className="w-full lg:w-auto"
+              />
+            </div>
+          </div>
         </div>
 
-        {success && <div className="mt-4 text-green-400 text-center">Saved!</div>}
-        {error && <div className="mt-4 text-red-400 text-center">{error}</div>}
+        {success && (
+          <div className="mt-6 py-3 px-4 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-center">
+            {hasProjectChanged || projectChanging ? 'Project changed and data saved successfully!' : 'Changes saved successfully!'}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-6 py-3 px-4 bg-red-900/30 border border-red-500/30 rounded-lg text-red-400 text-center">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );

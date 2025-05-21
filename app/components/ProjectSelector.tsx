@@ -7,11 +7,12 @@ import ProjectModal from './modals/ProjectModal';
 
 interface Props {
   onSelect: (project: string) => void;
+  initialProject?: string;
 }
 
-const ProjectSelector = ({ onSelect }: Props) => {
+const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
   const [projects, setProjects] = useState<string[]>([]);
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState(initialProject);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -51,6 +52,12 @@ const ProjectSelector = ({ onSelect }: Props) => {
 
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (initialProject) {
+      setSelectedProject(initialProject);
+    }
+  }, [initialProject]);
 
   const handleSelectProject = (project: string) => {
     setSelectedProject(project);
