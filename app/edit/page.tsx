@@ -162,7 +162,7 @@ const EditPage = () => {
         }
       }
       
-      const result = await response.json();
+      await response.json();
       
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
@@ -291,7 +291,7 @@ const EditPage = () => {
             {processingMethod === 'text' && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-amber-900/20 border border-amber-500/30 rounded-lg p-4">
                 <p className="text-amber-400">
-                  This invoice was processed using text-based extraction. If the results aren't optimal, try image-based extraction.
+                  This invoice was processed using text-based extraction. If the results aren&apos;t optimal, try image-based extraction.
                 </p>
                 <button
                   onClick={handleReprocessWithImage}
