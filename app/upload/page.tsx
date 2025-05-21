@@ -85,24 +85,62 @@ const UploadPage = () => {
     setIsDetecting(true);
     setError(null);
 
+    const attemptDetection = async (retryCount = 0): Promise<{ type: 'text' | 'image' | 'unknown' }> => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          throw new Error('Authentication token not available');
+        }
+
+        const formData = new FormData();
+        formData.append('file', pdfFile);
+
+        console.log(`Attempting detection (retry: ${retryCount})...`);
+        
+        const res = await fetch('/api/detectType', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Detection request failed:', res.status, errorText);
+          throw new Error(`Detection request failed with status ${res.status}: ${errorText}`);
+        }
+        
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        console.error('Detection error:', err);
+        throw err;
+      }
+    };
+
     try {
-      const token = await getToken();
-      if (!token) return alert('You must be logged in to use this feature.');
-
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-
-      const res = await fetch('/api/detectType', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Detection request failed');
-      const data: { type: 'text' | 'image' | 'unknown' } = await res.json();
-      setTypeResult(data.type || 'unknown');
-    } catch {
-      setError('An error occurred while detecting the file type');
+      // Try up to 3 times
+      let lastError: Error | null = null;
+      for (let i = 0; i < 3; i++) {
+        try {
+          const data = await attemptDetection(i);
+          setTypeResult(data.type || 'unknown');
+          return; // Success, exit the function
+        } catch (err) {
+          console.log(`Attempt ${i + 1} failed, ${i < 2 ? 'retrying...' : 'giving up.'}`);
+          lastError = err instanceof Error ? err : new Error(String(err));
+          
+          // Wait a bit before retrying
+          if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
+      // All retries failed
+      throw lastError || new Error('Failed after multiple attempts');
+    } catch (err) {
+      console.error('All detection attempts failed:', err);
+      setError(`Detection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsDetecting(false);
     }
@@ -128,13 +166,22 @@ const UploadPage = () => {
       formData.append('processor', type);
 
       let endpoint = '/api/processTextPDF';
+      let processingMethod = 'text';
 
       if (type === 'openai') {
-        endpoint = typeResult === 'text' ? '/api/processTextPDF' : '/api/processImagePDF';
+        if (typeResult === 'text') {
+          endpoint = '/api/processTextPDF';
+          processingMethod = 'text';
+        } else {
+          endpoint = '/api/processImagePDF';
+          processingMethod = 'image';
+        }
       } else if (type === 'localllm') {
         endpoint = '/api/processLocalLLM'; 
+        processingMethod = 'text';
       } else if (type === 'doctr') {
         endpoint = '/api/processDoctr';
+        processingMethod = 'image';
       }
 
       const res = await fetch(endpoint, {
@@ -159,6 +206,7 @@ const UploadPage = () => {
 
       sessionStorage.setItem('openai_json', JSON.stringify(result));
       sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+      sessionStorage.setItem('processing_method', processingMethod);
 
       window.location.href = '/edit';
     } catch (err) {

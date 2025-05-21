@@ -113,7 +113,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
       ...fields,
       invoice_data: [
         ...fields.invoice_data,
-        { name: '', quantity: '', unit_price: '', net: '', gross: '' },
+        { name: '', quantity: '', unit_price: '', net: '', gross: '', currency: fields.currency || '' },
       ],
     });
 
@@ -212,7 +212,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          {(['invoice_number', 'issue_date', 'fulfillment_date', 'due_date', 'payment_method'] as const).map((field) => (
+          {(['invoice_number', 'issue_date', 'fulfillment_date', 'due_date', 'payment_method', 'currency'] as const).map((field) => (
             <div key={field} className="flex flex-col gap-2">
               <label className="text-base font-medium text-zinc-300 capitalize">
                 {field.replace('_', ' ')}
@@ -321,6 +321,19 @@ const EditableFields = ({ fields, onChange }: Props) => {
                       onChange={(e) => handleItemChange(index, 'gross', e.target.value)}
                       className="w-full bg-zinc-800 border border-zinc-700/60 px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
                       placeholder="Gross amount"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-zinc-400">Item Currency (overrides invoice currency if set)</label>
+                    <input
+                      type="text"
+                      value={item.currency || ''}
+                      onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700/60 px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
+                      placeholder="Currency (e.g. USD, EUR, HUF)"
                     />
                   </div>
                 </div>
