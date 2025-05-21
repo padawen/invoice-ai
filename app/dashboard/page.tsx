@@ -7,7 +7,7 @@ import { fakeProjects } from "../fakeData";
 import ProjectCard from "../components/ProjectCard";
 import slugify from "slugify";
 import BackButton from "../components/BackButton";
-import DeleteModal from "../components/DeleteModal";
+import DeleteModal from "../components/modals/DeleteModal";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 interface Project {
@@ -110,7 +110,7 @@ export default function DashboardPage() {
           <div className="w-full flex items-center justify-between mb-4">
             <BackButton fallbackUrl="/" />
             <div className="flex-1 flex justify-center">
-              <h1 className="text-4xl font-extrabold text-green-400 text-center tracking-tight drop-shadow-lg">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-green-400 text-center tracking-tight drop-shadow-lg">
                 Dashboard
               </h1>
             </div>

@@ -44,7 +44,6 @@ export default function EditProcessedItemPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Only attempt to load real data if user is logged in and supabase client is available
         if (user && supabase) {
           const { data: projects, error: projErr } = await supabase
             .from('projects')
@@ -93,7 +92,6 @@ export default function EditProcessedItemPage() {
           });
           setLoading(false);
         } else if (!user) {
-          // Only load fake data if user is not logged in
           try {
             const fake = fakeProjects.find(
               (p) => slugify(p.name, { lower: true, strict: true }) === slug
@@ -112,7 +110,6 @@ export default function EditProcessedItemPage() {
             throw new Error('Failed to load invoice data. Please log in to view real data.');
           }
         }
-        // If user is logged in but supabase is not yet available, keep loading until supabase is ready
       } catch (err) {
         console.error(err);
         setError('Failed to load data.');
@@ -178,9 +175,9 @@ export default function EditProcessedItemPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-10 px-4">
       <div className="w-full max-w-7xl mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-8 border border-zinc-800 backdrop-blur-md">
-        <div className="mb-8 flex items-center">
+        <div className="mb-8 flex flex-col sm:flex-row items-center">
           <BackButton fallbackUrl={fallbackUrl} />
-          <h1 className="text-3xl font-bold text-center text-green-400 flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-green-400 flex-1 mt-4 sm:mt-0">
             Edit Processed Data{projectName ? ` — ${projectName}` : ''}
           </h1>
         </div>

@@ -7,7 +7,7 @@ import slugify from 'slugify';
 import { fakeProjects, FakeProject } from '@/app/fakeData';
 import ExportCSVButton from '@/app/components/ExportCSVButton';
 import BackButton from '@/app/components/BackButton';
-import DeleteModal from '@/app/components/DeleteModal';
+import DeleteModal from '@/app/components/modals/DeleteModal';
 import { InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { Pencil, Check } from 'lucide-react';
@@ -57,7 +57,6 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   
-  // Project name editing states
   const [editing, setEditing] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -140,19 +139,15 @@ export default function ProjectDetailsPage() {
           .update({ name: projectName.trim() })
           .eq('id', project.id);
           
-        // Update project in state
         setProject({ ...project, name: projectName.trim() });
         
-        // Redirect to the new slug URL
         const newSlug = slugify(projectName.trim(), { lower: true, strict: true });
         router.push(`/projects/${newSlug}`);
       } catch (error) {
         console.error('Error updating project name:', error);
-        // Revert to original name on error
         setProjectName(project.name);
       }
     } else {
-      // For demo mode
       setProject({ ...project, name: projectName.trim() });
     }
     
@@ -168,9 +163,9 @@ export default function ProjectDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white">
       <div className="max-w-4xl mx-auto py-10 px-4">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <BackButton fallbackUrl="/dashboard" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 order-first sm:order-none mb-2 sm:mb-0">
             {editing ? (
               <>
                 <input
@@ -198,7 +193,7 @@ export default function ProjectDetailsPage() {
               </>
             ) : (
               <>
-                <h1 className="text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
                 <button
                   onClick={() => setEditing(true)}
                   className="bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition ml-2"

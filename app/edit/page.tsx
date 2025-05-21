@@ -192,19 +192,25 @@ const EditPage = () => {
               )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="col-span-2 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
-                <h3 className="text-xl font-bold text-green-400 mb-6">Project Assignment</h3>
-                <p className="text-zinc-400 mb-6">Assign this invoice to an existing project or create a new one</p>
-                <ProjectSelector onSelect={setProject} />
-              </div>
-
-              <div className="flex flex-col justify-center items-center bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
-                <SaveButton
-                  isSaving={isSaving}
-                  onSave={handleSave}
-                  disabled={localProcessing}
-                />
+            {/* Project Assignment and Save Section */}
+            <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-green-400 mb-4">Project Assignment</h3>
+                  <p className="text-zinc-400 mb-6">Assign this invoice to an existing project or create a new one</p>
+                  <div className="max-w-md">
+                    <ProjectSelector onSelect={setProject} />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-center md:justify-end">
+                  <SaveButton
+                    isSaving={isSaving}
+                    onSave={handleSave}
+                    disabled={localProcessing}
+                    className="w-full md:w-auto"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -7,9 +7,10 @@ export interface SaveButtonProps {
   isSaving: boolean;
   onSave: () => void;
   disabled?: boolean;
+  className?: string;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ isSaving, onSave, disabled = false }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ isSaving, onSave, disabled = false, className = '' }) => {
   return (
     <button
       onClick={onSave}
@@ -18,7 +19,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ isSaving, onSave, disabled = fa
         isSaving || disabled
           ? 'bg-zinc-600 cursor-not-allowed'
           : 'bg-green-600 hover:bg-green-500 cursor-pointer'
-      } transition-colors`}
+      } transition-colors ${className}`}
     >
       {isSaving ? (
         <>

@@ -4,7 +4,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
-import DeleteModal from './DeleteModal';
+import DeleteModal from './modals/DeleteModal';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
