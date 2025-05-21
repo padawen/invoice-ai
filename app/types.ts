@@ -4,6 +4,7 @@ export interface InvoiceData {
   unit_price: string;
   net: string;
   gross: string;
+  currency?: string;
 }
 
 export interface EditableInvoice {
@@ -25,5 +26,6 @@ export interface EditableInvoice {
   fulfillment_date: string;
   due_date: string;
   payment_method: string;
+  currency: string;
   invoice_data: InvoiceData[];
 }
