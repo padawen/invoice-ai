@@ -272,6 +272,7 @@ export default function EditProcessedItemPage() {
                 <ProjectSelector 
                   onSelect={handleProjectSelect}
                   initialProject={currentProjectName}
+                  isDemo={!user || !supabase}
                 />
                 
                 {hasProjectChanged && (
@@ -295,6 +296,7 @@ export default function EditProcessedItemPage() {
                 isSaving={saving || projectChanging} 
                 onSave={handleSave} 
                 className="w-full lg:w-auto"
+                isDemo={!user || !supabase}
               />
             </div>
           </div>

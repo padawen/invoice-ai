@@ -23,9 +23,9 @@ const ProjectCard = ({ name, onClick, onDelete }: ProjectCardProps) => {
       }}
     >
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <Folder className="text-green-400" size={20} />
-          <span className="text-xl font-semibold truncate text-white">
+        <div className="flex items-center space-x-2 max-w-[80%] min-w-0">
+          <Folder className="text-green-400 flex-shrink-0" size={20} />
+          <span className="text-xl font-semibold truncate text-white" title={name}>
             {name}
           </span>
         </div>
@@ -36,7 +36,7 @@ const ProjectCard = ({ name, onClick, onDelete }: ProjectCardProps) => {
               onDelete();
             }}
             title="Delete project"
-            className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md"
+            className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md flex-shrink-0 ml-2"
             aria-label="Delete project"
           >
             <Trash2 size={16} />

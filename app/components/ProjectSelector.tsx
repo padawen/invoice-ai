@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Folder, ChevronDown } from 'lucide-react';
+import { AlertCircle, Folder, ChevronDown, Info } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import ProjectModal from './modals/ProjectModal';
 
 interface Props {
   onSelect: (project: string) => void;
   initialProject?: string;
+  isDemo?: boolean;
 }
 
-const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
+const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Props) => {
   const [projects, setProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState(initialProject);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,11 +70,14 @@ const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
       {/* Project Selector Trigger Button */}
       <div 
         onClick={() => setIsModalOpen(true)} 
-        className="flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-green-500/50 text-white cursor-pointer shadow-md transition-all group"
+        className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${
+          isDemo ? 'border-amber-500/50 hover:border-amber-400/70' : 'border-zinc-700 hover:border-green-500/50'
+        } text-white cursor-pointer shadow-md transition-all group`}
+        title={isDemo ? "Demo Mode - Project selection is for demonstration purposes only" : "Select a project"}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-green-600/20 text-green-400">
-            <Folder size={20} />
+          <div className={`p-2 rounded-lg ${isDemo ? 'bg-amber-600/20 text-amber-400' : 'bg-green-600/20 text-green-400'}`}>
+            {isDemo ? <Info size={20} /> : <Folder size={20} />}
           </div>
           <div>
             {selectedProject ? (
@@ -83,8 +87,8 @@ const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
             )}
           </div>
         </div>
-        <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
-          <ChevronDown className="text-green-500" size={18} />
+        <div className={`h-9 w-9 flex items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors ${isDemo ? 'text-amber-500' : 'text-green-500'}`}>
+          <ChevronDown size={18} />
         </div>
       </div>
 
@@ -95,6 +99,7 @@ const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
         onSelect={handleSelectProject}
         selectedProject={selectedProject}
         existingProjects={projects}
+        isDemo={isDemo}
       />
 
       {/* Display error message */}
@@ -102,6 +107,13 @@ const ProjectSelector = ({ onSelect, initialProject = '' }: Props) => {
         <div className="mt-4 flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-3 rounded-lg">
           <AlertCircle size={18} />
           <span>{error}</span>
+        </div>
+      )}
+      
+      {/* Demo indicator */}
+      {isDemo && (
+        <div className="mt-2 text-xs text-amber-400 text-center">
+          Demo mode - project selection is for demonstration only
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle, AlertCircle, Plus, X, Search } from 'lucide-react';
+import { CheckCircle, AlertCircle, Plus, X, Search, Info } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ProjectCreator from './ProjectCreator';
 import ProjectList from './ProjectList';
@@ -12,6 +12,7 @@ interface ProjectModalProps {
   onSelect: (project: string) => void;
   selectedProject: string;
   existingProjects: string[];
+  isDemo?: boolean;
 }
 
 const ProjectModal = ({ 
@@ -19,7 +20,8 @@ const ProjectModal = ({
   onClose, 
   onSelect,
   selectedProject,
-  existingProjects
+  existingProjects,
+  isDemo = false
 }: ProjectModalProps) => {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,22 +83,30 @@ const ProjectModal = ({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all">
       <div 
         ref={modalRef}
-        className="w-[95%] max-w-md max-h-[85vh] bg-zinc-900 rounded-xl border border-zinc-800 shadow-2xl transform"
+        className={`w-[95%] max-w-md max-h-[85vh] bg-zinc-900 rounded-xl border ${isDemo ? 'border-amber-500/30' : 'border-zinc-800'} shadow-2xl transform`}
         style={{ animation: 'modal-pop 0.25s ease-out' }}
         onClick={(e) => e.stopPropagation()}
       >
+        {isDemo && (
+          <div className="px-5 pt-4 pb-0 flex items-center gap-2 text-amber-400">
+            <Info size={16} />
+            <span className="text-sm font-medium">Demo Mode</span>
+          </div>
+        )}
+        
         {isCreating ? (
           <ProjectCreator 
             onCancel={() => setIsCreating(false)}
             onProjectCreated={handleProjectCreated}
             onError={handleError}
             existingProjects={existingProjects}
+            isDemo={isDemo}
           />
         ) : (
           <div>
-            <div className="p-5 border-b border-zinc-800">
+            <div className={`p-5 border-b ${isDemo ? 'border-amber-500/30' : 'border-zinc-800'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-green-400">Select Project</h3>
+                <h3 className={`text-lg font-medium ${isDemo ? 'text-amber-400' : 'text-green-400'}`}>Select Project</h3>
                 <button 
                   onClick={onClose}
                   className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors"
@@ -114,13 +124,13 @@ const ProjectModal = ({
                   placeholder="Search projects..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-green-500 transition-colors"
+                  className={`w-full pl-10 pr-4 py-3 bg-zinc-800 border ${isDemo ? 'border-amber-500/30 focus:border-amber-400' : 'border-zinc-700 focus:border-green-500'} rounded-lg text-white focus:outline-none transition-colors`}
                   autoFocus
                 />
               </div>
               <button
                 onClick={() => setIsCreating(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium shadow-md transition-colors"
+                className={`w-full flex items-center justify-center gap-2 py-3 ${isDemo ? 'bg-amber-600 hover:bg-amber-500' : 'bg-green-600 hover:bg-green-500'} text-white rounded-lg font-medium shadow-md transition-colors`}
               >
                 <Plus size={18} />
                 Create New Project
@@ -135,6 +145,7 @@ const ProjectModal = ({
                 onClose();
               }}
               searchQuery={searchQuery}
+              isDemo={isDemo}
             />
           </div>
         )}

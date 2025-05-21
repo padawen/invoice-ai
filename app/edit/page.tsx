@@ -36,6 +36,7 @@ const EditPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [localProcessing, setLocalProcessing] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -89,19 +90,47 @@ const EditPage = () => {
     setIsSaving(true);
     setLocalProcessing(true);
     setError(null);
+    setSaveSuccess(false);
   
     try {
       if (!supabase) {
-        throw new Error('Supabase client not available');
+        // Handle case when using fake data
+        // Show a message before redirecting
+        alert('This is a demo mode - your data is not actually being saved to a database.');
+        sessionStorage.removeItem('openai_json');
+        sessionStorage.removeItem('pdf_base64');
+        
+        // Show success message
+        setSaveSuccess(true);
+        setIsSaving(false);
+        setLocalProcessing(false);
+        
+        // Wait a bit so users can see the success message before redirecting
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
+        return;
       }
   
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
   
       if (!token) {
-        setError('You must be logged in to save.');
+        // Handle case when using fake data with no session
+        // Show a message before redirecting
+        alert('This is a demo mode - your data is not actually being saved to a database.');
+        sessionStorage.removeItem('openai_json');
+        sessionStorage.removeItem('pdf_base64');
+        
+        // Show success message
+        setSaveSuccess(true);
         setIsSaving(false);
         setLocalProcessing(false);
+        
+        // Wait a bit so users can see the success message before redirecting
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
         return;
       }
   
@@ -128,10 +157,17 @@ const EditPage = () => {
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
       
-      router.push('/dashboard');
+      // Show success message
+      setSaveSuccess(true);
+      setIsSaving(false);
+      setLocalProcessing(false);
+      
+      // Wait a bit so users can see the success message before redirecting
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (err) {
       setError((err as Error)?.message || 'Failed to save invoice data.');
-    } finally {
       setIsSaving(false);
       setLocalProcessing(false);
     }
@@ -183,6 +219,12 @@ const EditPage = () => {
                 <span>{error}</span>
               </div>
             )}
+            
+            {saveSuccess && (
+              <div className="py-3 px-4 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-center text-lg">
+                Changes saved successfully!
+              </div>
+            )}
 
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
               {fields ? (
@@ -199,7 +241,7 @@ const EditPage = () => {
                   <h3 className="text-xl font-bold text-green-400 mb-4">Project Assignment</h3>
                   <p className="text-zinc-400 mb-6">Assign this invoice to an existing project or create a new one</p>
                   <div className="max-w-md">
-                    <ProjectSelector onSelect={setProject} />
+                    <ProjectSelector onSelect={setProject} isDemo={!supabase} />
                   </div>
                 </div>
                 
@@ -209,6 +251,7 @@ const EditPage = () => {
                     onSave={handleSave}
                     disabled={localProcessing}
                     className="w-full md:w-auto"
+                    isDemo={!supabase}
                   />
                 </div>
               </div>

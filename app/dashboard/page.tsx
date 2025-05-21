@@ -93,6 +93,9 @@ export default function DashboardPage() {
         setShowDeleteModal(null);
         return;
       }
+    } else {
+      // Show message for fake data deletion
+      alert("This is a demo mode - your project is not actually being deleted from a database.");
     }
 
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
