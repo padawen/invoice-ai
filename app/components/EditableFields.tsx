@@ -55,7 +55,8 @@ const EditableFields = ({ fields, onChange }: Props) => {
   };
 
   const handleDeleteItem = async (index: number) => {
-    if (!fields.id) {
+    // For new entries (no ID) or demo mode (no supabase client)
+    if (!fields.id || !supabase) {
       const updated = [...fields.invoice_data];
       updated.splice(index, 1);
       onChange({ ...fields, invoice_data: updated });
@@ -64,33 +65,43 @@ const EditableFields = ({ fields, onChange }: Props) => {
     }
 
     try {
-      if (!supabase) {
-        throw new Error('Supabase client not available');
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       
       if (!token) {
-        throw new Error('You must be logged in to delete items');
+        // Demo mode or not authenticated, just update the UI
+        const updated = [...fields.invoice_data];
+        updated.splice(index, 1);
+        onChange({ ...fields, invoice_data: updated });
+        setShowDeleteModal(null);
+        return;
       }
 
+      // Try to delete via API
+      const response = await fetch('/api/processed/item', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          invoiceId: fields.id,
+          itemIndex: index 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete item');
+      }
+
+      // API call successful, update UI
       const updatedItems = [...fields.invoice_data];
       updatedItems.splice(index, 1);
-      
-      const { error: updateError } = await supabase
-        .from('processed_data')
-        .update({ raw_data: updatedItems })
-        .eq('id', fields.id);
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-
       onChange({ ...fields, invoice_data: updatedItems });
       setDeleteError(null);
     } catch (error) {
-      console.error('Failed to delete item');
+      console.error('Failed to delete item:', error);
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete item');
     } finally {
       setShowDeleteModal(null);

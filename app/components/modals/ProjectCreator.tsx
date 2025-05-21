@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Loader2, FolderPlus, X } from 'lucide-react';
+import { Loader2, FolderPlus, X, Info } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface ProjectCreatorProps {
@@ -9,13 +9,15 @@ interface ProjectCreatorProps {
   onProjectCreated: (project: string) => void;
   onError: (error: string) => void;
   existingProjects: string[];
+  isDemo?: boolean;
 }
 
 const ProjectCreator = ({ 
   onCancel, 
   onProjectCreated, 
   onError,
-  existingProjects 
+  existingProjects,
+  isDemo = false
 }: ProjectCreatorProps) => {
   const [newProject, setNewProject] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,6 +41,14 @@ const ProjectCreator = ({
     setLoading(true);
 
     try {
+      if (isDemo) {
+        // Demo mode - just simulate success after a delay
+        setTimeout(() => {
+          onProjectCreated(trimmed);
+        }, 800);
+        return;
+      }
+      
       const token = await getToken();
       if (!token) {
         onError('Authentication error. Please log in again.');
@@ -68,7 +78,9 @@ const ProjectCreator = ({
   return (
     <div className="p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-green-400">Create New Project</h3>
+        <h3 className={`text-lg font-medium ${isDemo ? 'text-amber-400' : 'text-green-400'}`}>
+          Create New Project
+        </h3>
         <button 
           onClick={onCancel}
           className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors"
@@ -77,9 +89,19 @@ const ProjectCreator = ({
           <X size={18} />
         </button>
       </div>
+      
+      {isDemo && (
+        <div className="mb-4 py-2 px-3 bg-amber-950/20 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+          <Info size={16} />
+          <span>This is demo mode - project creation is simulated</span>
+        </div>
+      )}
+      
       <div className="mb-4">
         <input
-          className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:border-green-500 text-white placeholder-zinc-500 focus:outline-none transition-colors"
+          className={`w-full px-4 py-3 rounded-lg bg-zinc-800 border ${
+            isDemo ? 'border-amber-500/30 focus:border-amber-400' : 'border-zinc-700 focus:border-green-500'
+          } text-white placeholder-zinc-500 focus:outline-none transition-colors`}
           placeholder="Enter project name"
           value={newProject}
           onChange={(e) => setNewProject(e.target.value)}
@@ -93,9 +115,13 @@ const ProjectCreator = ({
         <button
           onClick={handleCreate}
           disabled={loading || !newProject.trim()}
-          className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-3 rounded-lg font-medium shadow-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className={`flex-1 flex items-center justify-center gap-2 ${
+            isDemo 
+              ? 'bg-amber-600 hover:bg-amber-500' 
+              : 'bg-green-600 hover:bg-green-500'
+          } text-white px-4 py-3 rounded-lg font-medium shadow-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed`}
         >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <FolderPlus size={18} />}
+          {loading ? <Loader2 size={18} className="animate-spin" /> : (isDemo ? <Info size={18} /> : <FolderPlus size={18} />)}
           <span>{loading ? 'Creating...' : 'Create Project'}</span>
         </button>
         <button

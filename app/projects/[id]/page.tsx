@@ -196,6 +196,9 @@ export default function ProjectDetailsPage() {
       });
 
       if (!res.ok) return;
+    } else {
+      // Show message for fake data deletion
+      alert("This is a demo mode - your invoice is not actually being deleted from a database.");
     }
 
     setProcessed((prev: ProcessedItem[]) => prev.filter((item: ProcessedItem) => item.id !== itemId));
