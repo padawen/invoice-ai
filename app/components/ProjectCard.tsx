@@ -1,118 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { Pencil, Check, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface ProjectCardProps {
-  id: string;
   name: string;
-  onSave: (id: string, newName: string) => Promise<void> | void;
   onClick: () => void;
   onDelete?: () => void;
 }
 
-const ProjectCard = ({ id, name, onSave, onClick, onDelete }: ProjectCardProps) => {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(name);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const startEditing = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditing(true);
-    setSuccess(false);
-    setError(null);
-  };
-
-  const cancelEditing = () => {
-    setEditing(false);
-    setValue(name); 
-  };
-
-  const saveName = async () => {
-    if (value.trim() && value !== name) {
-      setSaving(true);
-      setError(null);
-      try {
-        await onSave(id, value.trim());
-        setSuccess(true);
-      } catch (err) {
-        console.error('Error saving project name:', err);
-        setError('Failed to save project name');
-      }
-      setSaving(false);
-    }
-    setEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') saveName();
-    if (e.key === 'Escape') cancelEditing();
-  };
-
+const ProjectCard = ({ name, onClick, onDelete }: ProjectCardProps) => {
   return (
     <div
-      className="relative bg-zinc-900/80 rounded-xl p-6 flex flex-col gap-2 border border-zinc-800 transition hover:border-green-500/50 cursor-pointer group min-h-[140px]"
+      className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl p-6 border border-zinc-800 shadow-lg transition-all duration-300 hover:border-green-500/40 hover:shadow-green-900/20 hover:shadow-xl cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-center gap-2 mb-2">
-        {editing ? (
-          <>
-            <input
-              className="bg-zinc-800 text-white rounded-md px-3 py-1 border border-zinc-700 focus:border-green-400 focus:outline-none text-base font-semibold w-full transition"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={saveName}
-              autoFocus
-              disabled={saving}
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                saveName();
-              }}
-              disabled={saving}
-              title="Save project name"
-              className="bg-green-500 hover:bg-green-400 text-white p-1.5 rounded-full transition"
-            >
-              <Check size={16} />
-            </button>
-          </>
-        ) : (
-          <span className="text-base font-semibold text-white flex-1 truncate">
-            {name}
-          </span>
-        )}
+      <div className="flex flex-col gap-3">
+        {/* Project name */}
+        <span className="text-lg font-bold text-white truncate group-hover:text-green-400 transition-colors duration-300">
+          {name}
+        </span>
+        
+        {/* Visual elements */}
+        <div className="absolute top-0 right-0 h-20 w-20 -mr-10 -mt-10 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-full blur-xl transform group-hover:scale-150 transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
+        
+        {/* Decorative line */}
+        <div className="w-16 h-0.5 bg-gradient-to-r from-green-500/50 to-transparent rounded-full mt-auto"></div>
       </div>
 
-      <div className="text-zinc-400 text-xs mb-2">Project</div>
-
-      {success && <span className="text-green-400 text-xs">Saved!</span>}
-      {error && <span className="text-red-400 text-xs">{error}</span>}
-
-      <div className="absolute bottom-3 right-3 flex gap-2">
+      {/* Delete button */}
+      {onDelete && (
         <button
-          onClick={startEditing}
-          title="Edit project name"
-          className="bg-green-500 hover:bg-green-400 text-white rounded-full p-2 transition"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          title="Delete project"
+          className="absolute bottom-3 right-3 bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md"
         >
-          <Pencil size={16} />
+          <Trash2 size={16} />
         </button>
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            title="Delete project"
-            className="bg-red-500 hover:bg-red-400 text-white rounded-full p-2 transition"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 };

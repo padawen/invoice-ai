@@ -1,21 +1,36 @@
 'use client';
 
-import { Save } from 'lucide-react';
+import React from 'react';
+import { Save, Loader2 } from 'lucide-react';
 
-interface SaveButtonProps {
+export interface SaveButtonProps {
   isSaving: boolean;
   onSave: () => void;
+  disabled?: boolean;
 }
 
-const SaveButton = ({ isSaving, onSave }: SaveButtonProps) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ isSaving, onSave, disabled = false }) => {
   return (
     <button
       onClick={onSave}
-      disabled={isSaving}
-      className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled={isSaving || disabled}
+      className={`px-8 py-4 rounded-xl text-white text-lg font-semibold flex items-center gap-2 shadow-lg ${
+        isSaving || disabled
+          ? 'bg-zinc-600 cursor-not-allowed'
+          : 'bg-green-600 hover:bg-green-500 cursor-pointer'
+      } transition-colors`}
     >
-      <Save size={20} className={isSaving ? 'animate-pulse' : ''} />
-      <span>{isSaving ? 'Saving...' : 'Save to Database'}</span>
+      {isSaving ? (
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Saving...
+        </>
+      ) : (
+        <>
+          <Save className="w-5 h-5" />
+          Save
+        </>
+      )}
     </button>
   );
 };

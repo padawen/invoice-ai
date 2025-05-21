@@ -10,6 +10,7 @@ import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/DeleteModal';
 import { InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { Pencil, Check } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -55,6 +56,17 @@ export default function ProjectDetailsPage() {
   const [processed, setProcessed] = useState<ProcessedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  
+  // Project name editing states
+  const [editing, setEditing] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (project) {
+      setProjectName(project.name);
+    }
+  }, [project]);
 
   useEffect(() => {
     const loadProject = async () => {
@@ -112,6 +124,41 @@ export default function ProjectDetailsPage() {
     setProcessed((prev: ProcessedItem[]) => prev.filter((item: ProcessedItem) => item.id !== itemId));
     setShowDeleteModal(null);
   };
+  
+  const saveProjectName = async () => {
+    if (!project || !projectName.trim() || projectName === project.name) {
+      setEditing(false);
+      return;
+    }
+    
+    setSaving(true);
+    
+    if (user && supabase) {
+      try {
+        await supabase
+          .from('projects')
+          .update({ name: projectName.trim() })
+          .eq('id', project.id);
+          
+        // Update project in state
+        setProject({ ...project, name: projectName.trim() });
+        
+        // Redirect to the new slug URL
+        const newSlug = slugify(projectName.trim(), { lower: true, strict: true });
+        router.push(`/projects/${newSlug}`);
+      } catch (error) {
+        console.error('Error updating project name:', error);
+        // Revert to original name on error
+        setProjectName(project.name);
+      }
+    } else {
+      // For demo mode
+      setProject({ ...project, name: projectName.trim() });
+    }
+    
+    setSaving(false);
+    setEditing(false);
+  };
 
   if (loading) return <div className="p-8 text-center text-zinc-400">Loading...</div>;
   if (!project) return <div className="p-8 text-center text-red-400">Project not found.</div>;
@@ -123,7 +170,45 @@ export default function ProjectDetailsPage() {
       <div className="max-w-4xl mx-auto py-10 px-4">
         <div className="flex items-center justify-between mb-6">
           <BackButton fallbackUrl="/dashboard" />
-          <h1 className="text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  disabled={saving}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveProjectName();
+                    if (e.key === 'Escape') {
+                      setProjectName(project.name);
+                      setEditing(false);
+                    }
+                  }}
+                  className="bg-zinc-800 text-white rounded-md px-3 py-1 text-2xl md:text-3xl font-bold border border-zinc-700 focus:border-green-400 focus:outline-none transition"
+                />
+                <button
+                  onClick={saveProjectName}
+                  disabled={saving}
+                  className="bg-green-500 hover:bg-green-400 text-white p-2 rounded-md transition"
+                >
+                  <Check size={20} />
+                </button>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl md:text-3xl font-bold text-green-400">Project: {project.name}</h1>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition ml-2"
+                  title="Edit project name"
+                >
+                  <Pencil size={16} />
+                </button>
+              </>
+            )}
+          </div>
           <ExportCSVButton
             data={user ? processed : processed.map((item: ProcessedItem) => ({ ...item.fields, id: item.id }))}
             fileName={`${project.name}-processed.csv`}

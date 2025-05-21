@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
+import { Upload, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useUser } from '../providers';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { useProcessing } from '../client-provider';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
-import DetectTypeButton from '../components/DetectTypeButton';
-import ProcessAIButton from '../components/ProcessAIButton';
 import type { EditableInvoice } from '@/app/types';
 
 const UploadPage = () => {
   const user = useUser();
+  const { setIsProcessing } = useProcessing();
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
@@ -23,8 +23,17 @@ const UploadPage = () => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [typeResult, setTypeResult] = useState<'text' | 'image' | 'unknown' | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [localProcessing, setLocalProcessing] = useState(false);
+  const [processingType, setProcessingType] = useState<'openai' | 'localllm' | 'doctr' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isOperationInProgress = isDetecting || localProcessing;
+  
+  useEffect(() => {
+    setIsProcessing(isOperationInProgress);
+    return () => setIsProcessing(false);
+  }, [isOperationInProgress, setIsProcessing]);
 
   const getToken = async (): Promise<string | null> => {
     if (!supabase) return null;
@@ -34,19 +43,45 @@ const UploadPage = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
+    processFile(selectedFile);
+  };
+
+  const processFile = (selectedFile?: File) => {
     setError(null);
 
-    if (selectedFile?.type === 'application/pdf') {
+    if (!selectedFile) return;
+
+    if (selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
       setFileUrl(URL.createObjectURL(selectedFile));
       setTypeResult(null);
+      
+      handleDetectType(selectedFile);
     } else {
       setError('Please upload a valid PDF file!');
     }
   };
 
-  const handleDetectClick = async () => {
-    if (!file) return setError('No file selected');
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    processFile(droppedFile);
+  };
+
+  const handleDetectType = async (pdfFile: File) => {
+    if (!pdfFile) return setError('No file selected');
     setIsDetecting(true);
     setError(null);
 
@@ -55,7 +90,7 @@ const UploadPage = () => {
       if (!token) return alert('You must be logged in to use this feature.');
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', pdfFile);
 
       const res = await fetch('/api/detectType', {
         method: 'POST',
@@ -74,9 +109,14 @@ const UploadPage = () => {
   };
 
   const handleProcessWithOpenAI = async () => {
+    await processInvoice('openai');
+  };
+
+  const processInvoice = async (type: 'openai' | 'localllm' | 'doctr') => {
     if (!file || !typeResult) return setError('No file or type detected');
 
-    setIsProcessing(true);
+    setLocalProcessing(true);
+    setProcessingType(type);
     setError(null);
 
     try {
@@ -85,9 +125,17 @@ const UploadPage = () => {
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('processor', type);
 
-      const endpoint =
-        typeResult === 'text' ? '/api/processTextPDF' : '/api/processImagePDF';
+      let endpoint = '/api/processTextPDF';
+
+      if (type === 'openai') {
+        endpoint = typeResult === 'text' ? '/api/processTextPDF' : '/api/processImagePDF';
+      } else if (type === 'localllm') {
+        endpoint = '/api/processLocalLLM'; 
+      } else if (type === 'doctr') {
+        endpoint = '/api/processDoctr';
+      }
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -116,7 +164,8 @@ const UploadPage = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process file');
     } finally {
-      setIsProcessing(false);
+      setLocalProcessing(false);
+      setProcessingType(null);
     }
   };
 
@@ -170,10 +219,17 @@ const UploadPage = () => {
           <div className="w-full max-w-md">
             <label
               htmlFor="file-upload"
-              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 rounded-xl bg-zinc-800/50 backdrop-blur-sm hover:border-green-500/50 transition-colors cursor-pointer group"
+              className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${
+                isDragging ? 'border-green-500 bg-green-500/10' : 'border-zinc-700 bg-zinc-800/50'
+              } rounded-xl backdrop-blur-sm hover:border-green-500/50 transition-colors cursor-pointer group ${
+                isOperationInProgress ? 'opacity-50 pointer-events-none' : ''
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-10 h-10 mb-3 text-zinc-400 group-hover:text-green-400" />
+                <Upload className={`w-10 h-10 mb-3 ${isDragging ? 'text-green-400' : 'text-zinc-400'} group-hover:text-green-400`} />
                 <p className="mb-2 text-sm text-zinc-400">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
@@ -185,6 +241,7 @@ const UploadPage = () => {
                 accept="application/pdf"
                 onChange={handleFileChange}
                 className="hidden"
+                disabled={isOperationInProgress}
               />
             </label>
           </div>
@@ -197,35 +254,70 @@ const UploadPage = () => {
           )}
 
           {fileUrl && (
-            <div className="w-full max-w-2xl">
+            <div className="w-full">
               <div className="flex items-center gap-2 mb-2">
                 <FileText size={20} className="text-green-400" />
                 <span className="text-zinc-300">{file?.name}</span>
               </div>
-              <PdfPreviewFrame src={fileUrl} />
+              <div className="h-[600px]">
+                <PdfPreviewFrame src={fileUrl} />
+              </div>
             </div>
           )}
         </div>
 
-        {!typeResult && file && (
+        {isDetecting && (
           <div className="flex justify-center mt-8">
-            <DetectTypeButton onClick={handleDetectClick} isDetecting={isDetecting} large />
+            <div className="flex items-center gap-3 text-green-400">
+              <Loader2 size={24} className="animate-spin" />
+              <span>Detecting document type...</span>
+            </div>
           </div>
         )}
 
         {typeResult && (
           <div className="space-y-6 flex flex-col items-center mt-8">
-            <div className="flex items-center justify-center gap-2 text-lg">
+            <div className="flex items-center justify-center gap-2 text-lg mb-4">
               <span className="text-zinc-400">Detected type:</span>
               <span className="px-3 py-1 bg-zinc-800 rounded-lg text-green-400 font-medium">
                 {typeResult}
               </span>
             </div>
-            <ProcessAIButton
-              onClick={handleProcessWithOpenAI}
-              isProcessing={isProcessing}
-              large
-            />
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+              <button
+                onClick={handleProcessWithOpenAI}
+                disabled={isOperationInProgress}
+                className={`px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                  localProcessing && processingType === 'openai' ? 'animate-pulse' : ''
+                } ${isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {localProcessing && processingType === 'openai' ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>Extract with OpenAI</>
+                )}
+              </button>
+              
+              <button
+                disabled={true}
+                className="px-6 py-3 bg-blue-600/40 text-white/70 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
+              >
+                Extract with Local LLM - Ollama
+                <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
+              </button>
+              
+              <button
+                disabled={true}
+                className="px-6 py-3 bg-purple-600/40 text-white/70 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
+              >
+                Extract with Simple Doctr
+                <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

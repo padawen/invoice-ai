@@ -1,27 +1,24 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import Navbar from './components/Navbar';
 import Providers from './providers';
+import ClientProvider from './client-provider';
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
   subsets: ['latin'],
+  variable: '--font-geist-sans',
   display: 'swap',
 });
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
   subsets: ['latin'],
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: 'Invoice AI',
-  description: 'Smart AI-powered invoice processing with PDF preview and editing',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  description: 'Extract data from invoices with AI',
 };
 
 export default function RootLayout({
@@ -35,8 +32,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} bg-zinc-950 text-white antialiased`}
       >
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <ClientProvider>
+            <main className="min-h-screen">{children}</main>
+          </ClientProvider>
         </Providers>
       </body>
     </html>

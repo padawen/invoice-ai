@@ -43,31 +43,41 @@ export async function POST(req: NextRequest) {
       invoice_data
     } = fields;
 
-    const { error: insertError } = await supabase.from('processed_data').insert({
-      user_id: user.id,
-      project_id: projectData.id,
-      seller_name: seller.name,
-      seller_address: seller.address,
-      seller_tax_id: seller.tax_id,
-      seller_email: seller.email,
-      seller_phone: seller.phone,
-      buyer_name: buyer.name,
-      buyer_address: buyer.address,
-      buyer_tax_id: buyer.tax_id,
-      invoice_number,
-      issue_date,
-      fulfillment_date,
-      due_date,
-      payment_method,
-      raw_data: invoice_data
-    });
+    const { data: insertedData, error: insertError } = await supabase
+      .from('processed_data')
+      .insert({
+        user_id: user.id,
+        project_id: projectData.id,
+        seller_name: seller.name,
+        seller_address: seller.address,
+        seller_tax_id: seller.tax_id,
+        seller_email: seller.email,
+        seller_phone: seller.phone,
+        buyer_name: buyer.name,
+        buyer_address: buyer.address,
+        buyer_tax_id: buyer.tax_id,
+        invoice_number,
+        issue_date,
+        fulfillment_date,
+        due_date,
+        payment_method,
+        raw_data: invoice_data
+      })
+      .select('id')
+      .single();
 
     if (insertError) {
       return NextResponse.json({ error: 'Database insert failed' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
+    return NextResponse.json({ 
+      success: true, 
+      id: insertedData?.id,
+      projectId: projectData.id,
+      projectName: project
+    });
+  } catch (err) {
+    console.error('Save error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

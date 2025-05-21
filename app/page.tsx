@@ -32,7 +32,7 @@ export default function Home() {
           </Link>
 
           <a
-            href="https://github.com/your-repo"
+            href="https://github.com/padawen/"
             target="_blank"
             rel="noopener noreferrer"
             className="group px-8 py-4 bg-zinc-800 hover:bg-zinc-700 transition-all rounded-xl text-white font-semibold shadow-lg flex items-center gap-2 hover:scale-105"

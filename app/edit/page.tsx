@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import SaveButton from '../components/SaveButton';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
@@ -16,6 +16,9 @@ const EditPage = () => {
   const router = useRouter();
   
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [expandedView, setExpandedView] = useState(false);
+  const itemsContainerRef = useRef<HTMLDivElement>(null);
+  const stickyContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!clientSideSupabase) {
@@ -32,6 +35,7 @@ const EditPage = () => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [localProcessing, setLocalProcessing] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -83,10 +87,10 @@ const EditPage = () => {
     }
   
     setIsSaving(true);
+    setLocalProcessing(true);
     setError(null);
   
     try {
-
       if (!supabase) {
         throw new Error('Supabase client not available');
       }
@@ -97,6 +101,7 @@ const EditPage = () => {
       if (!token) {
         setError('You must be logged in to save.');
         setIsSaving(false);
+        setLocalProcessing(false);
         return;
       }
   
@@ -109,50 +114,98 @@ const EditPage = () => {
         body: JSON.stringify({ fields, project }),
       });
   
-      if (!response.ok) throw new Error('Failed to save');
-  
+      if (!response.ok) {
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save');
+        } catch {
+          throw new Error(`Failed to save: ${response.statusText}`);
+        }
+      }
+      
+      await response.json();
+      
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
-  
+      
       router.push('/dashboard');
     } catch (err) {
       setError((err as Error)?.message || 'Failed to save invoice data.');
     } finally {
       setIsSaving(false);
+      setLocalProcessing(false);
     }
   };
+
+  const toggleExpandedView = () => {
+    setExpandedView(!expandedView);
+  };
   
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-3/4 h-[90vh] rounded-xl overflow-hidden bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 shadow-xl flex items-center justify-center">
-            {pdfUrl ? <PdfPreviewFrame src={pdfUrl} /> : <span className="text-zinc-500">No PDF preview</span>}
-          </div>
-
-          <div className="w-full md:w-1/2 space-y-6 md:max-w-lg">
-            <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 space-y-6">
-              <h2 className="text-2xl font-semibold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                Edit Invoice Data
-              </h2>
-
-              {error && (
-                <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-lg">
-                  <AlertCircle size={20} />
-                  <span>{error}</span>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-8 px-4">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+            Edit Invoice Data
+          </h2>
+          <button 
+            onClick={toggleExpandedView}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 transition-colors"
+            title={expandedView ? "Show PDF preview" : "Hide PDF preview"}
+          >
+            {expandedView ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            <span className="hidden sm:inline">{expandedView ? "Show Preview" : "Full Edit View"}</span>
+          </button>
+        </div>
+        
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
+          {/* PDF Preview - Sticky */}
+          {!expandedView && (
+            <div 
+              ref={stickyContainerRef}
+              className="xl:sticky xl:top-8 w-full xl:w-1/3 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 shadow-xl overflow-hidden transition-all"
+              style={{ height: 'calc(100vh - 120px)' }}
+            >
+              {pdfUrl ? 
+                <PdfPreviewFrame src={pdfUrl} /> : 
+                <div className="h-full w-full flex items-center justify-center text-zinc-500">
+                  No PDF preview
                 </div>
-              )}
-
-              {fields && (
-                <EditableFields fields={fields} onChange={setFields} />
-              )}
-
-              <ProjectSelector onSelect={setProject} />
+              }
             </div>
+          )}
 
-            <div className="flex justify-end">
-              <SaveButton isSaving={isSaving} onSave={handleSave} />
+          {/* Editable Fields */}
+          <div className={`w-full ${expandedView ? 'xl:w-full' : 'xl:w-2/3'} space-y-8`}>
+            {error && (
+              <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-6 py-4 rounded-xl text-lg">
+                <AlertCircle size={24} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
+              {fields ? (
+                <EditableFields fields={fields} onChange={setFields} />
+              ) : (
+                <div className="text-center py-12 text-zinc-400">Loading invoice data...</div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="col-span-2 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
+                <h3 className="text-xl font-bold text-green-400 mb-6">Project Assignment</h3>
+                <p className="text-zinc-400 mb-6">Assign this invoice to an existing project or create a new one</p>
+                <ProjectSelector onSelect={setProject} />
+              </div>
+
+              <div className="flex flex-col justify-center items-center bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
+                <SaveButton
+                  isSaving={isSaving}
+                  onSave={handleSave}
+                  disabled={localProcessing}
+                />
+              </div>
             </div>
           </div>
         </div>

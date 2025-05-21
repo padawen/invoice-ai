@@ -44,6 +44,7 @@ export default function EditProcessedItemPage() {
     const loadData = async () => {
       setLoading(true);
       try {
+        // Only attempt to load real data if user is logged in and supabase client is available
         if (user && supabase) {
           const { data: projects, error: projErr } = await supabase
             .from('projects')
@@ -90,21 +91,31 @@ export default function EditProcessedItemPage() {
             payment_method: data.payment_method,
             invoice_data: data.raw_data || [],
           });
-        } else {
-          const fake = fakeProjects.find(
-            (p) => slugify(p.name, { lower: true, strict: true }) === slug
-          );
-          if (!fake) throw new Error('Project not found');
-          setProjectName(fake.name);
+          setLoading(false);
+        } else if (!user) {
+          // Only load fake data if user is not logged in
+          try {
+            const fake = fakeProjects.find(
+              (p) => slugify(p.name, { lower: true, strict: true }) === slug
+            );
+            if (!fake) throw new Error('Project not found');
+            
+            setProjectName(fake.name);
 
-          const item = fake.processed.find((i) => i.id === itemId);
-          if (!item) throw new Error('Item not found');
-          setFields({ ...item.fields, id: item.id });
+            const item = fake.processed.find((i) => i.id === itemId);
+            if (!item) throw new Error('Item not found');
+            
+            setFields({ ...item.fields, id: item.id });
+            setLoading(false);
+          } catch (fakeErr) {
+            console.error('Error with demo data:', fakeErr);
+            throw new Error('Failed to load invoice data. Please log in to view real data.');
+          }
         }
+        // If user is logged in but supabase is not yet available, keep loading until supabase is ready
       } catch (err) {
         console.error(err);
         setError('Failed to load data.');
-      } finally {
         setLoading(false);
       }
     };
@@ -165,18 +176,18 @@ export default function EditProcessedItemPage() {
   if (!fields) return <div className="p-8 text-center text-red-400">Processed item not found.</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white flex items-center justify-center">
-      <div className="w-full max-w-2xl mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-10 border border-zinc-800 backdrop-blur-md">
-        <div className="mb-6 flex items-center">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-10 px-4">
+      <div className="w-full max-w-7xl mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-8 border border-zinc-800 backdrop-blur-md">
+        <div className="mb-8 flex items-center">
           <BackButton fallbackUrl={fallbackUrl} />
-          <h1 className="text-2xl font-bold text-center text-green-400 flex-1">
+          <h1 className="text-3xl font-bold text-center text-green-400 flex-1">
             Edit Processed Data{projectName ? ` — ${projectName}` : ''}
           </h1>
         </div>
 
         <EditableFields fields={fields} onChange={setFields} />
 
-        <div className="flex gap-4 justify-end mt-8">
+        <div className="flex gap-4 justify-end mt-10">
           <SaveButton isSaving={saving} onSave={handleSave} />
         </div>
 

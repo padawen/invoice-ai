@@ -35,29 +35,39 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; name: string } | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  useEffect(() => {
+    if (user !== undefined) {
+      setAuthInitialized(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchProjects = async () => {
+      if (!authInitialized) return;
+      
       if (user && supabase) {
-        const { data, error } = await supabase.from("projects").select("id, name");
-        if (!error && data) {
-          setProjects(data);
+        try {
+          const { data, error } = await supabase.from("projects").select("id, name");
+          if (error) {
+            console.error("Error fetching projects:", error);
+            return;
+          }
+          if (data) {
+            setProjects(data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch projects:", err);
         }
-      } else {
+      } else if (authInitialized && !user) {
         setProjects(fakeProjects);
       }
       setLoading(false);
     };
 
     fetchProjects();
-  }, [user, supabase]);
-
-  const handleNameSave = async (id: string, newName: string) => {
-    if (user && supabase) {
-      await supabase.from("projects").update({ name: newName }).eq("id", id);
-    }
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name: newName } : p)));
-  };
+  }, [user, supabase, authInitialized]);
 
   const handleDelete = async (projectId: string) => {
     if (user && supabase) {
@@ -89,7 +99,7 @@ export default function DashboardPage() {
     setShowDeleteModal(null);
   };
 
-  if (loading) {
+  if (loading || !authInitialized) {
     return <div className="p-8 text-center text-zinc-400">Loading...</div>;
   }
 
@@ -129,7 +139,6 @@ export default function DashboardPage() {
                     key={id}
                     id={id}
                     name={name}
-                    onSave={handleNameSave}
                     onClick={() => router.push(`/projects/${slug}`)}
                     onDelete={() => setShowDeleteModal({ id, name })}
                   />
