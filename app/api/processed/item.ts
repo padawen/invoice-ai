@@ -22,7 +22,6 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing invoiceId or itemIndex' }, { status: 400 });
     }
 
-    // First, get the current data
     const { data, error: fetchError } = await supabase
       .from('processed_data')
       .select('raw_data')
@@ -43,11 +42,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid item index' }, { status: 400 });
     }
 
-    // Update the items array by removing the specified item
     const updatedItems = [...data.raw_data];
     updatedItems.splice(itemIndex, 1);
 
-    // Save the updated items array
     const { error: updateError } = await supabase
       .from('processed_data')
       .update({ raw_data: updatedItems })

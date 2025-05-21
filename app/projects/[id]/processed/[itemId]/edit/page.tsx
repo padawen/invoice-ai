@@ -139,9 +139,8 @@ export default function EditProcessedItemPage() {
     };
 
     loadData();
-  }, [user, supabase, slug, itemId]);
+  }, [user, supabase, slug, itemId, router]);
 
-  // Handle project selection (just stores selected project, doesn't apply it yet)
   const handleProjectSelect = (newProjectName: string) => {
     const selectedProject = allProjects.find(p => p.name === newProjectName);
     if (!selectedProject) return;
@@ -160,7 +159,6 @@ export default function EditProcessedItemPage() {
 
     try {
       if (user && supabase) {
-        // First, update the invoice data
         const { error } = await supabase
           .from('processed_data')
           .update({
@@ -183,7 +181,6 @@ export default function EditProcessedItemPage() {
 
         if (error) throw error;
 
-        // If project has changed, update the project assignment
         if (hasProjectChanged) {
           setProjectChanging(true);
           
@@ -211,25 +208,21 @@ export default function EditProcessedItemPage() {
             throw new Error(data.error || 'Failed to update project');
           }
           
-          // Update current project values after successful change
           setCurrentProjectName(selectedProjectName);
           setCurrentProjectId(selectedProjectId);
           
-          // Navigate to the new project page after a short delay
           setTimeout(() => {
             const newSlug = slugify(selectedProjectName, { lower: true, strict: true });
             router.push(`/projects/${newSlug}/processed/${itemId}/edit`);
           }, 1500);
         }
       } else {
-        // Handle demo mode
         const fake = fakeProjects.find(
           (p) => slugify(p.name, { lower: true, strict: true }) === slug
         );
         const item = fake?.processed.find((i: FakeProcessedItem) => i.id === itemId);
         if (item) item.fields = fields;
         
-        // Simulate project change in demo mode
         if (hasProjectChanged) {
           setProjectChanging(true);
           setCurrentProjectName(selectedProjectName);

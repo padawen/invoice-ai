@@ -10,7 +10,7 @@ import BackButton from '@/app/components/BackButton';
 import DeleteModal from '@/app/components/modals/DeleteModal';
 import { InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { Pencil, Check, Trash2, FileText } from 'lucide-react';
+import { Pencil, Check } from 'lucide-react';
 import InvoiceCard from '@/app/components/InvoiceCard';
 import InvoiceFilters, { FilterOptions } from '@/app/components/InvoiceFilters';
 import FinancialSummary from '@/app/components/FinancialSummary';
@@ -118,7 +118,6 @@ export default function ProjectDetailsPage() {
     
     let filtered = [...processed];
     
-    // Filter by search term (across multiple fields)
     if (filterOptions.searchTerm) {
       const term = filterOptions.searchTerm.toLowerCase();
       filtered = filtered.filter(item => {
@@ -130,7 +129,6 @@ export default function ProjectDetailsPage() {
       });
     }
     
-    // Filter by date range
     if (filterOptions.dateRange.start) {
       const startDate = new Date(filterOptions.dateRange.start);
       filtered = filtered.filter(item => {
@@ -147,7 +145,6 @@ export default function ProjectDetailsPage() {
       });
     }
     
-    // Filter by buyer
     if (filterOptions.buyer) {
       const buyerTerm = filterOptions.buyer.toLowerCase();
       filtered = filtered.filter(item => {
@@ -156,7 +153,6 @@ export default function ProjectDetailsPage() {
       });
     }
     
-    // Filter by seller
     if (filterOptions.seller) {
       const sellerTerm = filterOptions.seller.toLowerCase();
       filtered = filtered.filter(item => {
@@ -165,7 +161,6 @@ export default function ProjectDetailsPage() {
       });
     }
     
-    // Filter by amount range (need to find total from invoice items)
     if (filterOptions.amountRange.min || filterOptions.amountRange.max) {
       filtered = filtered.filter(item => {
         const invoiceItems = item.raw_data || item.fields?.invoice_data || [];

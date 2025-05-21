@@ -35,10 +35,10 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
     const newFilters = { ...filters };
     
     if (typeof value === 'string') {
-      // @ts-ignore: Dynamic property assignment
+      // @ts-expect-error: Dynamic property assignment
       newFilters[key] = value;
     } else {
-      // @ts-ignore: Dynamic property assignment
+      // @ts-expect-error: Dynamic property assignment
       newFilters[key] = { ...newFilters[key], ...value };
     }
     

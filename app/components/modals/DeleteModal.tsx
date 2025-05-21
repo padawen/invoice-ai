@@ -21,13 +21,13 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
 
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+      document.body.style.overflow = 'hidden'; 
     } else {
-      document.body.style.overflow = ''; // Restore scrolling when modal closes
+      document.body.style.overflow = ''; 
     }
     
     return () => {
-      document.body.style.overflow = ''; // Ensure scrolling is restored on unmount
+      document.body.style.overflow = ''; 
     };
   }, [open]);
 

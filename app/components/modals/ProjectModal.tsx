@@ -33,7 +33,6 @@ const ProjectModal = ({
     return () => setMounted(false);
   }, []);
 
-  // Handle ESC key press and body scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -46,14 +45,12 @@ const ProjectModal = ({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = ''; // Restore scrolling when modal closes
+      document.body.style.overflow = ''; 
     };
   }, [isOpen, onClose]);
 
-  // Focus trap and initialization
   useEffect(() => {
     if (isOpen && modalRef.current) {
-      // Focus the modal container or first focusable element
       const focusableElements = modalRef.current.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
@@ -66,7 +63,6 @@ const ProjectModal = ({
 
   const handleProjectCreated = (project: string) => {
     setSuccess(true);
-    // Immediately select the project and close the modal
     onSelect(project);
     onClose();
   };

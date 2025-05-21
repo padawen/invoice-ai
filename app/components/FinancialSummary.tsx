@@ -37,42 +37,34 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       totalAmount: 0,
       monthlyTotals: {},
       quarterlyTotals: {
-        Q1: 0, // Jan-Mar
-        Q2: 0, // Apr-Jun
-        Q3: 0, // Jul-Sep
-        Q4: 0, // Oct-Dec
+        Q1: 0, 
+        Q2: 0, 
+        Q3: 0, 
+        Q4: 0, 
       },
       topBuyers: [],
       topSellers: [],
     };
 
-    // Maps to track totals by entity
     const buyerTotals: Record<string, number> = {};
     const sellerTotals: Record<string, number> = {};
     
     data.forEach(item => {
-      // Get invoice items
       const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
       
-      // Get invoice date
       const dateString = item.issue_date || item.fields?.issue_date || '';
       const date = new Date(dateString);
       
-      // Skip invalid dates
       if (isNaN(date.getTime())) return;
       
-      // Format for month key
       const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
       
-      // Determine quarter
       const quarterNum = Math.floor(date.getMonth() / 3) + 1;
       const quarterKey = `Q${quarterNum}`;
       
-      // Get buyer/seller
       const buyer = item.buyer_name || item.fields?.buyer?.name || 'Unknown';
       const seller = item.seller_name || item.fields?.seller?.name || 'Unknown';
       
-      // Initialize if needed
       if (!summary.monthlyTotals[month]) {
         summary.monthlyTotals[month] = 0;
       }
@@ -85,14 +77,12 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         sellerTotals[seller] = 0;
       }
       
-      // Calculate invoice total
       let invoiceTotal = 0;
       invoiceItems.forEach(invItem => {
         const amount = parseFloat(invItem.gross) || 0;
         invoiceTotal += amount;
       });
       
-      // Update totals
       summary.totalAmount += invoiceTotal;
       summary.monthlyTotals[month] += invoiceTotal;
       summary.quarterlyTotals[quarterKey] += invoiceTotal;
@@ -100,7 +90,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       sellerTotals[seller] += invoiceTotal;
     });
     
-    // Convert buyer and seller maps to sorted arrays
     summary.topBuyers = Object.entries(buyerTotals)
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount)
@@ -114,11 +103,9 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
     return summary;
   }, [data]);
 
-  // Get last 6 months only for display
   const recentMonths = useMemo(() => {
     return Object.entries(summaryData.monthlyTotals)
       .sort((a, b) => {
-        // Convert month strings back to dates for sorting
         const dateA = new Date(a[0]);
         const dateB = new Date(b[0]);
         return dateB.getTime() - dateA.getTime();
