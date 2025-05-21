@@ -131,20 +131,29 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-              {projects.map(({ id, name }) => {
-                const slug = slugify(name, { lower: true, strict: true });
-                return (
-                  <ProjectCard
-                    key={id}
-                    id={id}
-                    name={name}
-                    onClick={() => router.push(`/projects/${slug}`)}
-                    onDelete={() => setShowDeleteModal({ id, name })}
-                  />
-                );
-              })}
-            </div>
+            <>
+              <div className="flex items-center mb-8">
+                <h2 className="text-2xl font-bold text-white">Your Projects</h2>
+                <div className="ml-3 px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">
+                  {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+                {projects.map(({ id, name }) => {
+                  const slug = slugify(name, { lower: true, strict: true });
+                  return (
+                    <ProjectCard
+                      key={id}
+                      id={id}
+                      name={name}
+                      onClick={() => router.push(`/projects/${slug}`)}
+                      onDelete={() => setShowDeleteModal({ id, name })}
+                    />
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {showDeleteModal && (
