@@ -37,6 +37,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-02',
           due_date: '2024-06-15',
           payment_method: 'Bank transfer',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Widget', quantity: '10', unit_price: '100', net: '1000', gross: '1270' },
             { name: 'Gadget', quantity: '5', unit_price: '200', net: '1000', gross: '1270' },
@@ -64,6 +65,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-04',
           due_date: '2024-06-18',
           payment_method: 'Cash',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Thingamajig', quantity: '2', unit_price: '500', net: '1000', gross: '1270' },
           ],
@@ -90,6 +92,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-06',
           due_date: '2024-06-20',
           payment_method: 'Card',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Doohickey', quantity: '1', unit_price: '1500', net: '1500', gross: '1905' },
           ],
@@ -122,6 +125,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-08',
           due_date: '2024-06-22',
           payment_method: 'Bank transfer',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Widget', quantity: '3', unit_price: '100', net: '300', gross: '381' },
           ],
@@ -148,6 +152,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-10',
           due_date: '2024-06-24',
           payment_method: 'Cash',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Gadget', quantity: '7', unit_price: '200', net: '1400', gross: '1778' },
           ],
@@ -174,6 +179,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-12',
           due_date: '2024-06-26',
           payment_method: 'Card',
+          currency: 'EUR',
           invoice_data: [
             { name: 'Doohickey', quantity: '2', unit_price: '1500', net: '3000', gross: '3810' },
           ],
@@ -206,6 +212,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-14',
           due_date: '2024-06-28',
           payment_method: 'Bank transfer',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Widget', quantity: '4', unit_price: '100', net: '400', gross: '508' },
           ],
@@ -232,6 +239,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-16',
           due_date: '2024-06-30',
           payment_method: 'Cash',
+          currency: 'EUR',
           invoice_data: [
             { name: 'Gadget', quantity: '6', unit_price: '200', net: '1200', gross: '1524' },
           ],
@@ -258,6 +266,7 @@ export const fakeProjects: FakeProject[] = [
           fulfillment_date: '2024-06-18',
           due_date: '2024-07-02',
           payment_method: 'Card',
+          currency: 'HUF',
           invoice_data: [
             { name: 'Doohickey', quantity: '3', unit_price: '1500', net: '4500', gross: '5715' },
           ],
