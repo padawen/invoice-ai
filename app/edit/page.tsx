@@ -10,11 +10,13 @@ import { AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import slugify from 'slugify';
+import { useProcessing } from '../client-provider';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 const EditPage = () => {
   const router = useRouter();
+  const { setIsProcessing } = useProcessing();
   
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [expandedView, setExpandedView] = useState(false);
@@ -40,6 +42,11 @@ const EditPage = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [processingMethod, setProcessingMethod] = useState<'text' | 'image' | null>(null);
   const [isReprocessing, setIsReprocessing] = useState(false);
+
+  useEffect(() => {
+    setIsProcessing(isReprocessing);
+    return () => setIsProcessing(false);
+  }, [isReprocessing, setIsProcessing]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -104,18 +111,14 @@ const EditPage = () => {
   
     try {
       if (!supabase) {
-        // Handle case when using fake data
-        // Show a message before redirecting
         alert('This is a demo mode - your data is not actually being saved to a database.');
         sessionStorage.removeItem('openai_json');
         sessionStorage.removeItem('pdf_base64');
         
-        // Show success message
         setSaveSuccess(true);
         setIsSaving(false);
         setLocalProcessing(false);
         
-        // Wait a bit so users can see the success message before redirecting
         setTimeout(() => {
           router.push('/dashboard');
         }, 1500);
@@ -126,18 +129,14 @@ const EditPage = () => {
       const token = session?.access_token;
   
       if (!token) {
-        // Handle case when using fake data with no session
-        // Show a message before redirecting
         alert('This is a demo mode - your data is not actually being saved to a database.');
         sessionStorage.removeItem('openai_json');
         sessionStorage.removeItem('pdf_base64');
         
-        // Show success message
         setSaveSuccess(true);
         setIsSaving(false);
         setLocalProcessing(false);
         
-        // Wait a bit so users can see the success message before redirecting
         setTimeout(() => {
           router.push('/dashboard');
         }, 1500);
@@ -167,14 +166,11 @@ const EditPage = () => {
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
       
-      // Show success message
       setSaveSuccess(true);
       setIsSaving(false);
       setLocalProcessing(false);
       
-      // Wait a bit so users can see the success message before redirecting
       setTimeout(() => {
-        // Redirect to the project page instead of dashboard
         const projectSlug = slugify(project, { lower: true, strict: true });
         router.push(`/projects/${projectSlug}`);
       }, 1500);
@@ -195,16 +191,13 @@ const EditPage = () => {
     setError(null);
     
     try {
-      // Convert base64 to file
       const base64Response = await fetch(pdfUrl);
       const blob = await base64Response.blob();
       const file = new File([blob], 'invoice.pdf', { type: 'application/pdf' });
       
-      // Create form data
       const formData = new FormData();
       formData.append('file', file);
       
-      // Send request to processImagePDF
       const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
       
       const response = await fetch('/api/processImagePDF', {
@@ -213,22 +206,37 @@ const EditPage = () => {
         body: formData
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to reprocess with image method');
+      let result;
+      
+      try {
+        const rawText = await response.text();
+        result = JSON.parse(rawText);
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        throw new Error('Failed to parse API response. The server may be experiencing issues.');
       }
       
-      const result = await response.json();
+      if (!response.ok) {
+        if (result?.fallbackData) {
+          setError(`Warning: ${result.error || 'API processing error'}. Using fallback structure.`);
+          result = result.fallbackData;
+        } else {
+          throw new Error(result?.error || 'Failed to reprocess with image method');
+        }
+      }
       
-      // Update session storage
+      if (!result.seller || !result.buyer || !Array.isArray(result.invoice_data)) {
+        throw new Error('The API response is missing required invoice data fields');
+      }
+      
       sessionStorage.setItem('openai_json', JSON.stringify(result));
       sessionStorage.setItem('processing_method', 'image');
       
-      // Update state
       setFields({ ...result, id: result.id || crypto.randomUUID() });
       setProcessingMethod('image');
       
     } catch (err) {
+      console.error('Reprocessing error:', err);
       setError((err as Error)?.message || 'Failed to reprocess PDF.');
     } finally {
       setIsReprocessing(false);

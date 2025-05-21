@@ -42,7 +42,6 @@ const ProjectCreator = ({
 
     try {
       if (isDemo) {
-        // Demo mode - just simulate success after a delay
         setTimeout(() => {
           onProjectCreated(trimmed);
         }, 800);

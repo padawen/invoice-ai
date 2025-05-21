@@ -71,7 +71,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       const seller = item.seller_name || item.fields?.seller?.name || 'Unknown';
       
       invoiceItems.forEach(invItem => {
-        // Use item currency first, then fall back to invoice-level currency, then to item-level currency, default to USD
         const currency = invoiceCurrency || invItem.currency || 'USD';
         availableCurrencies.add(currency);
         
@@ -119,7 +118,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       });
     });
     
-    // Process buyer totals
     const topBuyersByCurrency: Record<string, Array<{ name: string; amount: number; currency: string }>> = {};
     
     Object.entries(buyerTotals).forEach(([buyer, currencyAmounts]) => {
@@ -136,7 +134,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       });
     });
     
-    // Process seller totals
     const topSellersByCurrency: Record<string, Array<{ name: string; amount: number; currency: string }>> = {};
     
     Object.entries(sellerTotals).forEach(([seller, currencyAmounts]) => {
@@ -153,7 +150,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       });
     });
     
-    // Sort and get top buyers/sellers for each currency
     Object.keys(topBuyersByCurrency).forEach(currency => {
       topBuyersByCurrency[currency].sort((a, b) => b.amount - a.amount);
     });
@@ -162,7 +158,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       topSellersByCurrency[currency].sort((a, b) => b.amount - a.amount);
     });
     
-    // Combine all top buyers/sellers
     summary.topBuyers = Object.values(topBuyersByCurrency)
       .flatMap(buyers => buyers.slice(0, 5));
     
@@ -175,7 +170,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
     };
   }, [data]);
   
-  // Use the first currency as default if none selected
   const displayCurrency = selectedCurrency || currencies[0] || 'USD';
   
   const recentMonths = useMemo(() => {
