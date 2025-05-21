@@ -74,7 +74,7 @@ export default function EditProcessedItemPage() {
           const { data, error: itemErr } = await supabase
             .from('processed_data')
             .select(
-              'id, project_id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, raw_data'
+              'id, project_id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, currency, raw_data'
             )
             .eq('id', itemId)
             .single();
@@ -105,6 +105,7 @@ export default function EditProcessedItemPage() {
             fulfillment_date: data.fulfillment_date,
             due_date: data.due_date,
             payment_method: data.payment_method,
+            currency: data.currency || 'HUF',
             invoice_data: data.raw_data || [],
           });
           setLoading(false);
@@ -175,6 +176,7 @@ export default function EditProcessedItemPage() {
             fulfillment_date: fields.fulfillment_date,
             due_date: fields.due_date,
             payment_method: fields.payment_method,
+            currency: fields.currency,
             raw_data: fields.invoice_data,
           })
           .eq('id', itemId);
