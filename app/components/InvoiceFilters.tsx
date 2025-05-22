@@ -36,7 +36,7 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
     value: string | { start?: string; end?: string } | { min?: string; max?: string }
   ) => {
     if (key === 'buyer' || key === 'seller' || key === 'searchTerm') {
-      if (typeof value === 'string') {
+    if (typeof value === 'string') {
         setFilters(prev => {
           const newFilters = { ...prev, [key]: value };
           onFilterChange(newFilters);
@@ -58,7 +58,7 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
           ...prev,
           amountRange: { ...prev.amountRange, ...value as { min?: string; max?: string } }
         };
-        onFilterChange(newFilters);
+    onFilterChange(newFilters);
         return newFilters;
       });
     }

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       fulfillment_date,
       due_date,
       payment_method,
+      currency,
       invoice_data
     } = fields;
 
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
         fulfillment_date,
         due_date,
         payment_method,
+        currency,
         raw_data: invoice_data
       })
       .select('id')
