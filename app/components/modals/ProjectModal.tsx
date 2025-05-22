@@ -42,7 +42,7 @@ const ProjectModal = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {

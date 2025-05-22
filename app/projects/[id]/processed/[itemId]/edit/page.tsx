@@ -68,7 +68,7 @@ export default function EditProcessedItemPage() {
 
           setCurrentProjectName(project.name);
           setCurrentProjectId(project.id);
-          setSelectedProjectName(project.name); // Initialize selected with current
+          setSelectedProjectName(project.name);
           setSelectedProjectId(project.id);
 
           const { data, error: itemErr } = await supabase
