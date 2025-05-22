@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
-import { EditableInvoice } from '@/app/types';
+import { EditableInvoice, InvoiceData } from '@/app/types';
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -44,27 +44,32 @@ export async function POST(req: NextRequest) {
       invoice_data
     } = fields;
 
+    const insertData: Record<string, string | string[] | number | null | InvoiceData[]> = {
+      user_id: user.id,
+      project_id: projectData.id,
+      seller_name: seller.name,
+      raw_data: invoice_data
+    };
+
+    if (seller.address) insertData.seller_address = seller.address;
+    if (seller.tax_id) insertData.seller_tax_id = seller.tax_id;
+    if (seller.email) insertData.seller_email = seller.email;
+    if (seller.phone) insertData.seller_phone = seller.phone;
+    
+    if (buyer.name) insertData.buyer_name = buyer.name;
+    if (buyer.address) insertData.buyer_address = buyer.address;
+    if (buyer.tax_id) insertData.buyer_tax_id = buyer.tax_id;
+    
+    if (invoice_number) insertData.invoice_number = invoice_number;
+    if (issue_date) insertData.issue_date = issue_date;
+    if (fulfillment_date) insertData.fulfillment_date = fulfillment_date;
+    if (due_date) insertData.due_date = due_date;
+    if (payment_method) insertData.payment_method = payment_method;
+    if (currency) insertData.currency = currency;
+
     const { data: insertedData, error: insertError } = await supabase
       .from('processed_data')
-      .insert({
-        user_id: user.id,
-        project_id: projectData.id,
-        seller_name: seller.name,
-        seller_address: seller.address,
-        seller_tax_id: seller.tax_id,
-        seller_email: seller.email,
-        seller_phone: seller.phone,
-        buyer_name: buyer.name,
-        buyer_address: buyer.address,
-        buyer_tax_id: buyer.tax_id,
-        invoice_number,
-        issue_date,
-        fulfillment_date,
-        due_date,
-        payment_method,
-        currency,
-        raw_data: invoice_data
-      })
+      .insert(insertData)
       .select('id')
       .single();
 

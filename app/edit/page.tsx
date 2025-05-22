@@ -100,7 +100,13 @@ const EditPage = () => {
 
   const handleSave = async () => {
     if (!project || !fields) {
-      setError('Please complete all fields and select a project.');
+      setError('Please select a project and provide at least the seller name.');
+      return;
+    }
+
+    // Validate required fields
+    if (!fields.seller || !fields.seller.name) {
+      setError('Seller name is required.');
       return;
     }
   

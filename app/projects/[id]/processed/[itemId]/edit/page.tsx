@@ -10,7 +10,7 @@ import BackButton from '@/app/components/BackButton';
 import ProjectSelector from '@/app/components/ProjectSelector';
 import { AlertTriangle } from 'lucide-react';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
-import type { EditableInvoice } from '@/app/types';
+import type { EditableInvoice, InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface Project {
@@ -160,25 +160,35 @@ export default function EditProcessedItemPage() {
 
     try {
       if (user && supabase) {
+        // Create update object with only fields that are present
+        const updateData: Record<string, string | string[] | number | null | InvoiceData[]> = {};
+        
+        // Add seller fields if they exist
+        if (fields.seller.name) updateData.seller_name = fields.seller.name;
+        if (fields.seller.address) updateData.seller_address = fields.seller.address;
+        if (fields.seller.tax_id) updateData.seller_tax_id = fields.seller.tax_id;
+        if (fields.seller.email) updateData.seller_email = fields.seller.email;
+        if (fields.seller.phone) updateData.seller_phone = fields.seller.phone;
+        
+        // Add buyer fields if they exist
+        if (fields.buyer.name) updateData.buyer_name = fields.buyer.name;
+        if (fields.buyer.address) updateData.buyer_address = fields.buyer.address;
+        if (fields.buyer.tax_id) updateData.buyer_tax_id = fields.buyer.tax_id;
+        
+        // Add invoice details if they exist
+        if (fields.invoice_number) updateData.invoice_number = fields.invoice_number;
+        if (fields.issue_date) updateData.issue_date = fields.issue_date;
+        if (fields.fulfillment_date) updateData.fulfillment_date = fields.fulfillment_date;
+        if (fields.due_date) updateData.due_date = fields.due_date;
+        if (fields.payment_method) updateData.payment_method = fields.payment_method;
+        if (fields.currency) updateData.currency = fields.currency;
+        
+        // Always include invoice_data
+        updateData.raw_data = fields.invoice_data;
+
         const { error } = await supabase
           .from('processed_data')
-          .update({
-            seller_name: fields.seller.name,
-            seller_address: fields.seller.address,
-            seller_tax_id: fields.seller.tax_id,
-            seller_email: fields.seller.email,
-            seller_phone: fields.seller.phone,
-            buyer_name: fields.buyer.name,
-            buyer_address: fields.buyer.address,
-            buyer_tax_id: fields.buyer.tax_id,
-            invoice_number: fields.invoice_number,
-            issue_date: fields.issue_date,
-            fulfillment_date: fields.fulfillment_date,
-            due_date: fields.due_date,
-            payment_method: fields.payment_method,
-            currency: fields.currency,
-            raw_data: fields.invoice_data,
-          })
+          .update(updateData)
           .eq('id', itemId);
 
         if (error) throw error;

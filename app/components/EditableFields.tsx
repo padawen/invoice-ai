@@ -149,14 +149,15 @@ const EditableFields = ({ fields, onChange }: Props) => {
                 .map(([key, value]) => (
                   <div key={key} className="flex flex-col gap-2">
                     <label className="text-base font-medium text-zinc-300 capitalize">
-                      {key.replace('_', ' ')}
+                      {key.replace('_', ' ')} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="text"
                       value={value}
                       onChange={(e) => handleNestedChange(section, key, e.target.value)}
                       className="w-full bg-zinc-900/70 border border-zinc-700/60 px-4 py-3 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
-                      placeholder={`Enter ${key.replace('_', ' ')}`}
+                      placeholder={`Enter ${key.replace('_', ' ')} (required)`}
+                      required
                     />
                   </div>
                 ))
@@ -174,7 +175,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
                       value={value}
                       onChange={(e) => handleNestedChange(section, key, e.target.value)}
                       className="w-full bg-zinc-900/70 border border-zinc-700/60 px-4 py-3 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
-                      placeholder={`Enter ${key.replace('_', ' ')}`}
+                      placeholder={`Enter ${key.replace('_', ' ')} (optional)`}
                     />
                   </div>
                 ))
@@ -194,7 +195,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
                       value={value}
                       onChange={(e) => handleNestedChange(section, key, e.target.value)}
                       className="w-full bg-zinc-900/70 border border-zinc-700/60 px-4 py-3 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
-                      placeholder={`Enter ${key.replace('_', ' ')}`}
+                      placeholder={`Enter ${key.replace('_', ' ')} (optional)`}
                     />
                   </div>
                 ))
@@ -220,7 +221,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
                 value={fields[field]}
                 onChange={(e) => handleTopLevelChange(field, e.target.value)}
                 className="w-full bg-zinc-900/70 border border-zinc-700/60 px-4 py-3 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:border-green-400/50"
-                placeholder={`Enter ${field.replace('_', ' ')}`}
+                placeholder={`Enter ${field.replace('_', ' ')} (optional)`}
               />
             </div>
           ))}
