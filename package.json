@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npx playwright install --with-deps"
+    "postinstall": "npx playwright install"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
