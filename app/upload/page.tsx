@@ -96,8 +96,6 @@ const UploadPage = () => {
 
         const formData = new FormData();
         formData.append('file', pdfFile);
-
-        console.log(`Attempting detection (retry: ${retryCount})...`);
         
         const res = await fetch('/api/detectType', {
           method: 'POST',
@@ -127,7 +125,6 @@ const UploadPage = () => {
           setTypeResult(data.type || 'unknown');
           return; 
         } catch (err) {
-          console.log(`Attempt ${i + 1} failed, ${i < 2 ? 'retrying...' : 'giving up.'}`);
           lastError = err instanceof Error ? err : new Error(String(err));
           
           if (i < 2) {
@@ -136,6 +133,7 @@ const UploadPage = () => {
         }
       }
       
+      console.error('All detection attempts failed:', lastError);
       throw lastError || new Error('Failed after multiple attempts');
     } catch (err) {
       console.error('All detection attempts failed:', err);

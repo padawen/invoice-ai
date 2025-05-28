@@ -20,113 +20,6 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
   
   try {
-    const pdfBase64 = pdfBuffer.toString('base64');
-    
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: white;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #pdf-container {
-            width: 794px;
-            height: 1123px;
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            border: 1px solid #ccc;
-        }
-        #loading {
-            font-family: Arial, sans-serif;
-            color: #666;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-</head>
-<body>
-    <div id="pdf-container">
-        <div id="loading">Loading PDF...</div>
-        <canvas id="pdf-canvas" style="display: none;"></canvas>
-    </div>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        async function renderPDF() {
-            try {
-                const pdfData = '${pdfBase64}';
-                const binaryString = atob(pdfData);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-                
-                if (pdf.numPages === 0) {
-                    throw new Error('PDF has no pages');
-                }
-                
-                const page = await pdf.getPage(1);
-                
-                const canvas = document.getElementById('pdf-canvas');
-                const context = canvas.getContext('2d');
-                
-                const viewport = page.getViewport({ scale: 1 });
-                const scaleX = 794 / viewport.width;
-                const scaleY = 1123 / viewport.height;
-                const scale = Math.min(scaleX, scaleY, 2);
-                
-                const scaledViewport = page.getViewport({ scale });
-                
-                canvas.width = scaledViewport.width;
-                canvas.height = scaledViewport.height;
-                
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: scaledViewport
-                };
-                
-                await page.render(renderContext).promise;
-                
-                document.getElementById('loading').style.display = 'none';
-                canvas.style.display = 'block';
-                
-                document.body.setAttribute('data-pdf-rendered', 'true');
-                
-            } catch (error) {
-                document.getElementById('loading').textContent = 'Error loading PDF: ' + error.message;
-                document.body.setAttribute('data-pdf-error', 'true');
-            }
-        }
-        
-        window.addEventListener('load', renderPDF);
-    </script>
-</body>
-</html>`;
-    
-    const htmlPath = path.join(tempDir, 'pdf-viewer.html');
-    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-    
     const browser = await chromium.launch({
       headless: true,
       args: [
@@ -206,106 +99,28 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
     }
 
     const canvasElements = await page.$$('canvas');
-    const images: string[] = [];
+    const imagePaths: string[] = [];
     
-    for (const canvas of canvasElements) {
+    for (let i = 0; i < canvasElements.length; i++) {
       try {
-        const screenshot = await canvas.screenshot({ 
-          type: 'png'
+        const screenshot = await canvasElements[i].screenshot({ 
+          type: 'png',
+          path: path.join(tempDir, `page-${i + 1}.png`)
         });
-        images.push(screenshot.toString('base64'));
-      } catch {
-        console.warn('Failed to screenshot canvas, skipping');
+        imagePaths.push(path.join(tempDir, `page-${i + 1}.png`));
+      } catch (error) {
+        console.warn('Failed to screenshot canvas, skipping:', error);
         continue;
       }
     }
 
     await browser.close();
 
-    if (images.length === 0) {
+    if (imagePaths.length === 0) {
       throw new Error('No images were generated from the PDF');
     }
 
-    console.log(`Successfully converted PDF to ${images.length} images`);
-
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    
-    const openaiResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Please extract all invoice data from these images and return a JSON object with the following structure:
-
-{
-  "seller": {
-    "name": "Company Name",
-    "address": "Full Address",
-    "tax_id": "Tax ID if available",
-    "email": "Email if available",
-    "phone": "Phone if available"
-  },
-  "buyer": {
-    "name": "Buyer Name",
-    "address": "Buyer Address",
-    "tax_id": "Buyer Tax ID if available"
-  },
-  "invoice_number": "Invoice Number",
-  "issue_date": "Issue Date",
-  "fulfillment_date": "Fulfillment Date if available",
-  "due_date": "Due Date if available", 
-  "payment_method": "Payment Method if available",
-  "currency": "Currency (e.g., HUF, EUR, USD)",
-  "invoice_data": [
-    {
-      "name": "Item/Service Name",
-      "quantity": "Quantity",
-      "unit_price": "Unit Price",
-      "net": "Net Amount",
-      "gross": "Gross Amount",
-      "currency": "Item Currency"
-    }
-  ]
-}
-
-Extract all line items from the invoice. If any field is not available, use an empty string. Return only the JSON object, no additional text.`
-            },
-            ...images.map((image) => ({
-              type: "image_url" as const,
-              image_url: {
-                url: `data:image/png;base64,${image}`,
-                detail: "high" as const
-              }
-            }))
-          ]
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.1
-    });
-
-    const content = openaiResponse.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
-
-    let parsedData;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
-      parsedData = JSON.parse(jsonString);
-    } catch {
-      throw new Error('Failed to parse OpenAI response as JSON');
-    }
-
-    if (!parsedData.seller || !parsedData.buyer || !Array.isArray(parsedData.invoice_data)) {
-      throw new Error('Invalid response structure from OpenAI');
-    }
-
-    return parsedData;
+    return imagePaths;
 
   } catch (error) {
     console.error('PDF processing error:', error);
@@ -486,6 +301,12 @@ export async function POST(req: NextRequest) {
     }
     
     const errorMessage = (_ as Error).message || 'Unexpected server error';
+    console.error('ProcessImagePDF Error:', {
+      message: errorMessage,
+      stack: (_ as Error).stack,
+      name: (_ as Error).name,
+      timestamp: new Date().toISOString()
+    });
     
     return NextResponse.json(
       { 

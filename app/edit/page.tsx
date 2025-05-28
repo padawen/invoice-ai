@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
@@ -270,7 +270,16 @@ const EditPage = () => {
   const toggleExpandedView = () => {
     setExpandedView(!expandedView);
   };
+
+  const handleFieldChange = useCallback((updated: EditableInvoice) => {
+    setFields(prev => {
+      if (!prev) return updated;
+      if (JSON.stringify(prev) === JSON.stringify(updated)) return prev;
+      return updated;
+    });
+  }, []);
   
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-8 px-4">
       <div className="max-w-[1600px] mx-auto">
@@ -293,8 +302,8 @@ const EditPage = () => {
           {!expandedView && (
             <div 
               ref={stickyContainerRef}
-              className="xl:sticky xl:top-8 w-full xl:w-1/3 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 shadow-xl overflow-hidden transition-all"
-              style={{ height: 'calc(100vh - 120px)' }}
+              className="xl:sticky xl:top-8 w-full xl:w-1/4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 shadow-xl overflow-hidden transition-all"
+              style={{ height: 'calc(100vh - 200px)' }}
             >
               {pdfUrl ? 
                 <PdfPreviewFrame src={pdfUrl} /> : 
@@ -306,7 +315,7 @@ const EditPage = () => {
           )}
 
           {/* Editable Fields */}
-          <div className={`w-full ${expandedView ? 'xl:w-full' : 'xl:w-2/3'} space-y-8`}>
+          <div className={`w-full ${expandedView ? 'xl:w-full' : 'xl:w-3/4'} space-y-8`}>
             {error && (
               <div ref={errorRef} className="flex items-center gap-2 text-red-400 bg-red-400/10 px-6 py-4 rounded-xl text-lg">
                 <AlertCircle size={24} />
@@ -337,7 +346,7 @@ const EditPage = () => {
 
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
               {fields ? (
-                <EditableFields fields={fields} onChange={setFields} />
+                <EditableFields fields={fields} onChange={handleFieldChange} />
               ) : (
                 <div className="text-center py-12 text-zinc-400">Loading invoice data...</div>
               )}

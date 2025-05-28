@@ -55,25 +55,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    console.log('Request body received:', JSON.stringify(body, null, 2));
-    
-    const { fields, project } = body as {
-      fields: EditableInvoice;
-      project: string;
-    };
+
+    const { fields, project } = body;
 
     if (!fields || !project) {
       console.error('Missing required fields:', { fields: !!fields, project: !!project });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Validate seller name is present
-    if (!fields.seller || !fields.seller.name) {
+    if (!fields.seller?.name) {
       console.error('Seller name is required but missing');
       return NextResponse.json({ error: 'Seller name is required' }, { status: 400 });
     }
-
-    console.log('Looking for project:', project, 'for user:', user.id);
 
     const { data: projectData, error: projectError } = await supabase
       .from('projects')
@@ -84,15 +77,13 @@ export async function POST(req: NextRequest) {
 
     if (projectError) {
       console.error('Project query error:', projectError);
-      return NextResponse.json({ error: `Project error: ${projectError.message}` }, { status: 400 });
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     if (!projectData) {
       console.error('Project not found:', project);
-      return NextResponse.json({ error: 'Project not found' }, { status: 400 });
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
-
-    console.log('Project found:', projectData);
 
     const {
       seller,
@@ -129,8 +120,6 @@ export async function POST(req: NextRequest) {
     if (payment_method) insertData.payment_method = payment_method;
     if (currency) insertData.currency = currency;
 
-    console.log('Attempting to insert data:', JSON.stringify(insertData, null, 2));
-
     const { data: insertedData, error: insertError } = await supabase
       .from('processed_data')
       .insert(insertData)
@@ -144,8 +133,6 @@ export async function POST(req: NextRequest) {
         details: insertError.message 
       }, { status: 500 });
     }
-
-    console.log('Successfully inserted data with ID:', insertedData?.id);
 
     return NextResponse.json({ 
       success: true, 
