@@ -24,77 +24,85 @@ const extractImagesFromPdf = async (pdfBuffer: Buffer): Promise<string[]> => {
   console.log(`PDF has ${pageCount} pages`);
   if (pageCount > 10) throw new Error('PAGE_LIMIT_EXCEEDED');
 
-  // Convert each page to a separate PNG image
   const poppler = new Poppler();
-  const outputBaseName = path.join(tempDir, 'page');
-  
-  console.log(`Converting PDF pages to images in: ${tempDir}`);
-  await poppler.pdfToCairo(inputPdfPath, outputBaseName, {
-    pngFile: true,
-    resolutionXYAxis: 300,
-    singleFile: false,
-    firstPageToConvert: 1,
-    lastPageToConvert: Math.min(pageCount, 10),
-  });
+  const imagePaths: string[] = [];
 
-  // Get all generated PNG files and sort them by page number
-  const allFiles = fs.readdirSync(tempDir);
-  console.log(`Files in temp directory after conversion:`, allFiles);
-  
-  const pngFiles = allFiles
-    .filter((f) => f.endsWith('.png'))
-    .sort((a, b) => {
-      // Extract page numbers from filenames like 'page-1.png', 'page-2.png', etc.
-      const pageNumA = parseInt(a.match(/page-(\d+)\.png$/)?.[1] || '0');
-      const pageNumB = parseInt(b.match(/page-(\d+)\.png$/)?.[1] || '0');
-      return pageNumA - pageNumB;
-    })
-    .map((f) => path.join(tempDir, f));
+  // Convert each page to a separate PNG image (like the Python version)
+  for (let pageNum = 1; pageNum <= Math.min(pageCount, 10); pageNum++) {
+    const outputPath = path.join(tempDir, `page_${pageNum}`);
+    
+    try {
+      console.log(`Converting page ${pageNum} to image...`);
+      
+      // Convert single page to PNG
+      await poppler.pdfToCairo(inputPdfPath, outputPath, {
+        pngFile: true,
+        resolutionXYAxis: 200, // Match Python DPI
+        singleFile: true,
+        firstPageToConvert: pageNum,
+        lastPageToConvert: pageNum,
+      });
 
-  console.log(`Found ${pngFiles.length} PNG files:`, pngFiles.map(p => path.basename(p)));
+      // Check for the generated file with different possible naming patterns
+      const possiblePaths = [
+        `${outputPath}.png`,
+        `${outputPath}-1.png`,
+        `${outputPath}-${pageNum}.png`,
+        path.join(tempDir, `page_${pageNum}.png`),
+      ];
 
-  // If no PNG files were generated, try alternative approach
-  if (pngFiles.length === 0) {
-    console.log('No PNG files found, trying page-by-page conversion...');
-    // Try converting pages one by one
-    const imagePaths: string[] = [];
-    for (let i = 1; i <= Math.min(pageCount, 10); i++) {
-      const pageOutputPath = path.join(tempDir, `page-${i}.png`);
-      try {
-        await poppler.pdfToCairo(inputPdfPath, pageOutputPath.replace('.png', ''), {
-          pngFile: true,
-          resolutionXYAxis: 300,
-          singleFile: true,
-          firstPageToConvert: i,
-          lastPageToConvert: i,
-        });
-        
-        // Check if the file was created (might have different naming)
-        const possibleNames = [
-          pageOutputPath,
-          path.join(tempDir, `page-${i}-1.png`),
-          path.join(tempDir, `page-${i}.png`),
-        ];
-        
-        for (const possiblePath of possibleNames) {
-          if (fs.existsSync(possiblePath)) {
-            console.log(`Successfully converted page ${i} to: ${path.basename(possiblePath)}`);
-            imagePaths.push(possiblePath);
-            break;
-          }
+      let foundPath = null;
+      for (const possiblePath of possiblePaths) {
+        if (fs.existsSync(possiblePath)) {
+          foundPath = possiblePath;
+          break;
         }
-      } catch (error) {
-        console.warn(`Failed to convert page ${i}:`, error);
       }
+
+      if (foundPath) {
+        console.log(`Successfully converted page ${pageNum} to: ${path.basename(foundPath)}`);
+        imagePaths.push(foundPath);
+      } else {
+        console.warn(`Failed to find generated image for page ${pageNum}`);
+        // List all files in temp directory for debugging
+        const allFiles = fs.readdirSync(tempDir);
+        console.log(`Files in temp directory:`, allFiles);
+      }
+    } catch (error) {
+      console.warn(`Failed to convert page ${pageNum}:`, error);
     }
-    return imagePaths;
   }
 
-  return pngFiles;
+  console.log(`Successfully extracted ${imagePaths.length} page images from PDF`);
+  return imagePaths;
 };
 
-const encodeImageToBase64 = (p: string): string =>
-  fs.readFileSync(p).toString('base64');
+const encodeImageToBase64 = (imagePath: string): { base64: string; mimeType: string } => {
+  const imageBuffer = fs.readFileSync(imagePath);
+  const base64 = imageBuffer.toString('base64');
+  
+  // Determine MIME type based on file extension
+  const ext = path.extname(imagePath).toLowerCase();
+  let mimeType = 'image/png'; // default
+  
+  switch (ext) {
+    case '.jpg':
+    case '.jpeg':
+      mimeType = 'image/jpeg';
+      break;
+    case '.png':
+      mimeType = 'image/png';
+      break;
+    case '.gif':
+      mimeType = 'image/gif';
+      break;
+    case '.webp':
+      mimeType = 'image/webp';
+      break;
+  }
+  
+  return { base64, mimeType };
+};
 
 const cleanupTempFiles = (paths: string[]) => {
   const dir = path.dirname(paths[0] ?? '');
@@ -136,9 +144,10 @@ export async function POST(req: NextRequest) {
       ...imagePaths.map(
         (p, index): ChatCompletionContentPart => {
           console.log(`Processing page ${index + 1}: ${path.basename(p)}`);
+          const { base64, mimeType } = encodeImageToBase64(p);
           return {
             type: 'image_url',
-            image_url: { url: `data:image/png;base64,${encodeImageToBase64(p)}` },
+            image_url: { url: `data:${mimeType};base64,${base64}` },
           };
         }
       ),
@@ -152,15 +161,27 @@ export async function POST(req: NextRequest) {
     });
 
     const responseText = choices[0].message?.content ?? '';
-    const jsonStart = responseText.indexOf('{');
-    const jsonEnd = responseText.lastIndexOf('}') + 1;
-    if (jsonStart === -1 || jsonEnd <= jsonStart) {
-      console.error('Invalid JSON format in OpenAI response:', responseText);
+    console.log('Raw OpenAI response:', responseText);
+    
+    // Clean up the response like the Python version
+    let cleanedResponse = responseText;
+    
+    // Remove markdown code blocks if present
+    if (cleanedResponse.startsWith('```json') && cleanedResponse.endsWith('```')) {
+      cleanedResponse = cleanedResponse.slice(7, -3).trim();
+    } else if (cleanedResponse.startsWith('```') && cleanedResponse.endsWith('```')) {
+      cleanedResponse = cleanedResponse.slice(3, -3).trim();
+    }
+    
+    // Extract the first JSON object with regex (like Python version)
+    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No valid JSON found in OpenAI response:', responseText);
       throw new Error('No valid JSON found in OpenAI response');
     }
 
     try {
-      const jsonStr = responseText.slice(jsonStart, jsonEnd);
+      const jsonStr = jsonMatch[0];
       const parsed = JSON.parse(jsonStr);
       
       if (!parsed.seller || !parsed.buyer || !Array.isArray(parsed.invoice_data)) {
@@ -173,6 +194,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(output);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
+      console.error('Attempted to parse:', jsonMatch[0]);
       throw new Error(`Failed to parse JSON from OpenAI response: ${(parseError as Error).message}`);
     }
   } catch (err: unknown) {
