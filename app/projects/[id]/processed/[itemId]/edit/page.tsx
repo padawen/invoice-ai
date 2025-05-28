@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
@@ -26,6 +26,15 @@ export default function EditProcessedItemPage() {
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const saveRef = useRef<HTMLDivElement>(null);
+
+const handleFieldChange = useCallback((updated: EditableInvoice) => {
+  setFields(prev => {
+    if (!prev) return updated;
+    if (JSON.stringify(prev) === JSON.stringify(updated)) return prev;
+    return updated;
+  });
+}, []);
 
   useEffect(() => {
     if (!supabaseRef.current) {
@@ -48,6 +57,7 @@ export default function EditProcessedItemPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [projectChanging, setProjectChanging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [initialFields, setInitialFields] = useState<EditableInvoice | null>(null);
 
   // Auto-scroll to error when it appears
   useEffect(() => {
@@ -65,6 +75,49 @@ export default function EditProcessedItemPage() {
       }, 100);
     }
   }, [error]);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!initialFields || !fields) return false;
+    
+    // Deep comparison of fields
+    return JSON.stringify(fields) !== JSON.stringify(initialFields);
+  }, [initialFields, fields]);
+
+  // Navigation guard - prevent leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+
+    const handleRouteChange = () => {
+      if (hasUnsavedChanges) {
+        return window.confirm('You have unsaved changes. Are you sure you want to leave?');
+      }
+      return true;
+    };
+
+    // Add beforeunload listener for browser navigation
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Override router push for internal navigation
+    const originalPush = router.push;
+    router.push = (...args) => {
+      if (handleRouteChange()) {
+        return originalPush.apply(router, args);
+      }
+      return Promise.resolve(false);
+    };
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      router.push = originalPush;
+    };
+  }, [hasUnsavedChanges, router]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -126,6 +179,31 @@ export default function EditProcessedItemPage() {
             currency: data.currency || 'HUF',
             invoice_data: data.raw_data || [],
           });
+          
+          // Store initial fields for unsaved changes detection
+          setInitialFields({
+            id: data.id,
+            seller: {
+              name: data.seller_name,
+              address: data.seller_address,
+              tax_id: data.seller_tax_id,
+              email: data.seller_email,
+              phone: data.seller_phone,
+            },
+            buyer: {
+              name: data.buyer_name,
+              address: data.buyer_address,
+              tax_id: data.buyer_tax_id,
+            },
+            invoice_number: data.invoice_number,
+            issue_date: data.issue_date,
+            fulfillment_date: data.fulfillment_date,
+            due_date: data.due_date,
+            payment_method: data.payment_method,
+            currency: data.currency || 'HUF',
+            invoice_data: data.raw_data || [],
+          });
+          
           setLoading(false);
         } else if (!user) {
           try {
@@ -144,6 +222,7 @@ export default function EditProcessedItemPage() {
             if (!item) throw new Error('Item not found');
             
             setFields({ ...item.fields, id: item.id });
+            setInitialFields({ ...item.fields, id: item.id });
             setLoading(false);
           } catch (fakeErr) {
             console.error('Error with demo data:', fakeErr);
@@ -267,6 +346,11 @@ export default function EditProcessedItemPage() {
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      
+      // Reset initial fields to current fields after successful save
+      if (fields) {
+        setInitialFields(JSON.parse(JSON.stringify(fields)));
+      }
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Failed to save changes.');
@@ -291,10 +375,10 @@ export default function EditProcessedItemPage() {
           </h1>
         </div>
 
-        <EditableFields fields={fields} onChange={setFields} />
+        <EditableFields fields={fields} onChange={handleFieldChange} />
 
         {/* Project assignment and save section at the bottom */}
-        <div className="mt-10 bg-zinc-800/60 rounded-xl p-6 border border-zinc-700/60">
+        <div ref={saveRef} className="mt-10 bg-zinc-800/60 rounded-xl p-6 border border-zinc-700/60">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-green-400 mb-4">Project Assignment</h3>
@@ -321,7 +405,20 @@ export default function EditProcessedItemPage() {
               </div>
             </div>
             
-            <div className="flex items-center justify-center lg:justify-end">
+            <div className="flex flex-col items-center justify-center lg:justify-end gap-4">
+              {/* Unsaved Changes Indicator */}
+              {hasUnsavedChanges && (
+                <div className="bg-amber-900/30 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3 w-full lg:w-auto">
+                  <div className="flex items-center justify-center w-8 h-8 bg-amber-500/20 rounded-full">
+                    <AlertTriangle size={18} className="text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-amber-400 font-medium">Unsaved changes</h3>
+                    <p className="text-amber-300/80 text-sm">Press Save to persist</p>
+                  </div>
+                </div>
+              )}
+              
               <SaveButton 
                 isSaving={saving || projectChanging} 
                 onSave={handleSave} 
