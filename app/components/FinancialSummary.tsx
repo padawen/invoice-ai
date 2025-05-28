@@ -33,8 +33,24 @@ interface FinancialSummaryProps {
   data: ProcessedItem[];
 }
 
+// Currency normalization function to map common abbreviations to ISO codes
+const normalizeCurrency = (currency: string): string => {
+  const currencyMap: Record<string, string> = {
+    'ft': 'HUF',
+    'Ft': 'HUF',
+    'FT': 'HUF',
+    'huf': 'HUF',
+    'eur': 'EUR',
+    'usd': 'USD',
+    'gbp': 'GBP',
+    '': 'HUF' // Default to HUF for empty currency
+  };
+  
+  return currencyMap[currency] || currency.toUpperCase();
+};
+
 export default function FinancialSummary({ data }: FinancialSummaryProps) {
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
   
   const { summaryData, currencies } = useMemo(() => {
     const summary: SummaryData = {
@@ -67,11 +83,12 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       const quarterNum = Math.floor(date.getMonth() / 3) + 1;
       const quarterKey = `Q${quarterNum}`;
       
-      const buyer = item.buyer_name || item.fields?.buyer?.name || 'Unknown';
-      const seller = item.seller_name || item.fields?.seller?.name || 'Unknown';
+      const buyer = item.buyer_name || item.fields?.buyer?.name || 'Unknown Buyer';
+      const seller = item.seller_name || item.fields?.seller?.name || 'Unknown Seller';
       
       invoiceItems.forEach(invItem => {
-        const currency = invoiceCurrency || invItem.currency || 'USD';
+        const rawCurrency = invItem.currency || item.currency || item.fields?.currency || 'HUF';
+        const currency = normalizeCurrency(rawCurrency);
         availableCurrencies.add(currency);
         
         if (!summary.totalAmountByCurrency[currency]) {
@@ -187,11 +204,19 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
   }, [summaryData.monthlyTotalsByCurrency, displayCurrency]);
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2
-    }).format(amount);
+    const normalizedCurrency = normalizeCurrency(currency);
+    
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: normalizedCurrency,
+        minimumFractionDigits: 2
+      }).format(amount);
+    } catch (error) {
+      // Fallback for invalid currency codes
+      console.warn(`Invalid currency code: ${currency}, falling back to number format`);
+      return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
+    }
   };
 
   const totalForCurrency = summaryData.totalAmountByCurrency[displayCurrency] || 0;
