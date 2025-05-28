@@ -1,7 +1,6 @@
-FROM node:20-alpine AS base
+FROM mcr.microsoft.com/playwright:v1.52.0-jammy AS base
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat poppler-utils
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
@@ -47,12 +46,10 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npx playwright install
 RUN npm run build
 
 FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache poppler-utils
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -74,15 +71,12 @@ ENV POSTGRES_DATABASE=$POSTGRES_DATABASE
 ENV POSTGRES_HOST=$POSTGRES_HOST
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
-USER nextjs
+USER pwuser
 EXPOSE 3000
 
 CMD ["npm", "start"]
