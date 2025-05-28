@@ -22,6 +22,7 @@ const EditPage = () => {
   const [expandedView, setExpandedView] = useState(false);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
   const stickyContainerRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!clientSideSupabase) {
@@ -97,6 +98,23 @@ const EditPage = () => {
       loadData();
     }
   }, [supabase]);
+
+  // Auto-scroll to error when it appears
+  useEffect(() => {
+    if (error && errorRef.current) {
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        // Add a brief highlight effect
+        errorRef.current?.classList.add('animate-pulse');
+        setTimeout(() => {
+          errorRef.current?.classList.remove('animate-pulse');
+        }, 2000);
+      }, 100);
+    }
+  }, [error]);
 
   const handleSave = async () => {
     if (!project || !fields) {
@@ -290,7 +308,7 @@ const EditPage = () => {
           {/* Editable Fields */}
           <div className={`w-full ${expandedView ? 'xl:w-full' : 'xl:w-2/3'} space-y-8`}>
             {error && (
-              <div className="flex items-center gap-2 text-red-400 bg-red-400/10 px-6 py-4 rounded-xl text-lg">
+              <div ref={errorRef} className="flex items-center gap-2 text-red-400 bg-red-400/10 px-6 py-4 rounded-xl text-lg">
                 <AlertCircle size={24} />
                 <span>{error}</span>
               </div>

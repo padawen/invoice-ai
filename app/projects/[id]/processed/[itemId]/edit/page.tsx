@@ -25,6 +25,7 @@ export default function EditProcessedItemPage() {
   
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!supabaseRef.current) {
@@ -34,7 +35,7 @@ export default function EditProcessedItemPage() {
         setSupabase(client);
       }
     }
-  }, []);  
+  }, []);
 
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,23 @@ export default function EditProcessedItemPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [projectChanging, setProjectChanging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
+
+  // Auto-scroll to error when it appears
+  useEffect(() => {
+    if (error && errorRef.current) {
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        // Add a brief highlight effect
+        errorRef.current?.classList.add('animate-pulse');
+        setTimeout(() => {
+          errorRef.current?.classList.remove('animate-pulse');
+        }, 2000);
+      }, 100);
+    }
+  }, [error]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -321,7 +339,7 @@ export default function EditProcessedItemPage() {
         )}
 
         {error && (
-          <div className="mt-6 py-3 px-4 bg-red-900/30 border border-red-500/30 rounded-lg text-red-400 text-center">
+          <div ref={errorRef} className="mt-6 py-3 px-4 bg-red-900/30 border border-red-500/30 rounded-lg text-red-400 text-center">
             {error}
           </div>
         )}

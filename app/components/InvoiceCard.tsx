@@ -1,6 +1,22 @@
 'use client';
 
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText, Trash2, DollarSign } from 'lucide-react';
+
+// Currency normalization function to map common abbreviations to ISO codes
+const normalizeCurrency = (currency: string): string => {
+  const currencyMap: Record<string, string> = {
+    'ft': 'HUF',
+    'Ft': 'HUF',
+    'FT': 'HUF',
+    'huf': 'HUF',
+    'eur': 'EUR',
+    'usd': 'USD',
+    'gbp': 'GBP',
+    '': 'HUF' // Default to HUF for empty currency
+  };
+  
+  return currencyMap[currency] || currency.toUpperCase();
+};
 
 interface InvoiceCardProps {
   id: string;
@@ -9,6 +25,8 @@ interface InvoiceCardProps {
   seller: string;
   date: string;
   itemsCount: number;
+  totalPrice?: number;
+  currency?: string;
   onClick: () => void;
   onDelete: (id: string) => void;
 }
@@ -20,12 +38,29 @@ const InvoiceCard = ({
   seller,
   date,
   itemsCount,
+  totalPrice,
+  currency = 'HUF',
   onClick,
   onDelete
 }: InvoiceCardProps) => {
+  const formatPrice = (price: number, curr: string) => {
+    const normalizedCurrency = normalizeCurrency(curr);
+    
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: normalizedCurrency,
+        minimumFractionDigits: 2
+      }).format(price);
+    } catch {
+      // Fallback for invalid currency codes
+      return `${price.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
+    }
+  };
+
   return (
     <div
-      className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl shadow-lg p-6 flex flex-col gap-3 border border-zinc-700 transition-all duration-300 group relative cursor-pointer overflow-hidden"
+      className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl shadow-lg p-6 flex flex-col gap-3 border border-zinc-700 transition-all duration-300 group relative cursor-pointer overflow-hidden hover:border-green-500/50"
       onClick={onClick}
       tabIndex={0}
       role="button"
@@ -69,6 +104,21 @@ const InvoiceCard = ({
           <span className="text-white">{date}</span>
         </div>
       </div>
+
+      {/* Total Price Section */}
+      {totalPrice !== undefined && (
+        <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50 mt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="text-green-400" size={16} />
+              <span className="text-sm text-zinc-400 font-medium">Total</span>
+            </div>
+            <div className="text-lg font-bold text-white">
+              {formatPrice(totalPrice, currency)}
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center">

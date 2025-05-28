@@ -1,8 +1,8 @@
 'use client';
 
 /* eslint-disable react/no-unescaped-entities */
-import React, { useRef, useState, useEffect } from 'react';
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { AlertCircle, Plus, Trash2, Calculator } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './modals/DeleteModal';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
@@ -19,6 +19,20 @@ const EditableFields = ({ fields, onChange }: Props) => {
   const itemsEndRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Calculate total price from all gross amounts
+  const totalPrice = useMemo(() => {
+    return fields.invoice_data.reduce((sum, item) => {
+      const grossValue = parseFloat(item.gross.replace(/[^\d.-]/g, '')) || 0;
+      return sum + grossValue;
+    }, 0);
+  }, [fields.invoice_data]);
+
+  // Format total price with currency
+  const formattedTotal = useMemo(() => {
+    const currency = fields.currency || 'USD';
+    return `${currency} ${totalPrice.toFixed(2)}`;
+  }, [totalPrice, fields.currency]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -357,6 +371,33 @@ const EditableFields = ({ fields, onChange }: Props) => {
             title="Delete Item"
             description={'Are you sure you want to delete this item? This action cannot be undone.'}
           />
+        )}
+      </div>
+
+      {/* Total Price Section */}
+      <div className="bg-zinc-800/60 rounded-2xl shadow-lg p-6 border border-zinc-700/60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 bg-green-500/20 rounded-full">
+              <Calculator className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-green-400">Total Invoice Amount</h3>
+              <p className="text-sm text-zinc-400">Automatically calculated from all gross amounts</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-white">{formattedTotal}</div>
+            <div className="text-sm text-zinc-400">{fields.invoice_data.length} item{fields.invoice_data.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        
+        {fields.invoice_data.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-zinc-700/60">
+            <div className="text-xs text-zinc-500">
+              💡 This total updates automatically when you modify gross amounts in the items above
+            </div>
+          </div>
         )}
       </div>
     </div>
