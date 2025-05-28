@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { EditableInvoice, InvoiceData } from '@/app/types';
 
+// Function to convert various date formats to ISO format (YYYY-MM-DD)
+const convertToISODate = (dateString: string): string | null => {
+  if (!dateString || dateString.trim() === '') return null;
+  
+  try {
+    // Handle Hungarian format: "2025. 03. 31."
+    if (dateString.includes('.')) {
+      const cleaned = dateString.replace(/\./g, '').trim();
+      const parts = cleaned.split(' ').filter(part => part.length > 0);
+      
+      if (parts.length === 3) {
+        const [year, month, day] = parts;
+        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        
+        // Validate the date
+        const testDate = new Date(isoDate);
+        if (!isNaN(testDate.getTime())) {
+          return isoDate;
+        }
+      }
+    }
+    
+    // Handle other formats by trying to parse directly
+    const testDate = new Date(dateString);
+    if (!isNaN(testDate.getTime())) {
+      return testDate.toISOString().split('T')[0]; // Get YYYY-MM-DD part
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('Date conversion failed for:', dateString, error);
+    return null;
+  }
+};
+
 export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   
@@ -88,9 +123,9 @@ export async function POST(req: NextRequest) {
     if (buyer?.tax_id) insertData.buyer_tax_id = buyer.tax_id;
     
     if (invoice_number) insertData.invoice_number = invoice_number;
-    if (issue_date) insertData.issue_date = issue_date;
-    if (fulfillment_date) insertData.fulfillment_date = fulfillment_date;
-    if (due_date) insertData.due_date = due_date;
+    if (issue_date) insertData.issue_date = convertToISODate(issue_date);
+    if (fulfillment_date) insertData.fulfillment_date = convertToISODate(fulfillment_date);
+    if (due_date) insertData.due_date = convertToISODate(due_date);
     if (payment_method) insertData.payment_method = payment_method;
     if (currency) insertData.currency = currency;
 

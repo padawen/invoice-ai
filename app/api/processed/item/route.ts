@@ -61,4 +61,4 @@ export async function DELETE(req: NextRequest) {
     console.error('Delete error:', err);
     return NextResponse.json({ error: 'Failed to process the request' }, { status: 500 });
   }
-}
+} 

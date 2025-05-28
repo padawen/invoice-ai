@@ -26,16 +26,33 @@ interface ProcessedItem {
   issue_date?: string;
   buyer_name?: string;
   seller_name?: string;
+  currency?: string;
   raw_data?: InvoiceData[];
   fields?: {
     buyer?: { name: string };
     seller?: { name: string };
     issue_date?: string;
     invoice_number?: string;
+    currency?: string;
     invoice_data?: InvoiceData[];
   };
 }
 
+// Currency normalization function to map common abbreviations to ISO codes
+const normalizeCurrency = (currency: string): string => {
+  const currencyMap: Record<string, string> = {
+    'ft': 'HUF',
+    'Ft': 'HUF',
+    'FT': 'HUF',
+    'huf': 'HUF',
+    'eur': 'EUR',
+    'usd': 'USD',
+    'gbp': 'GBP',
+    '': 'HUF' // Default to HUF for empty currency
+  };
+  
+  return currencyMap[currency] || currency.toUpperCase();
+};
 
 export default function ProjectDetailsPage() {
   const user = useUser();
@@ -318,6 +335,29 @@ export default function ProjectDetailsPage() {
               const itemsCount =
                 item.raw_data?.length ?? item.fields?.invoice_data?.length ?? 0;
 
+              // Calculate total price from invoice items
+              const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
+              const totalPrice = invoiceItems.reduce((sum, invItem) => {
+                const grossValue = parseFloat(invItem.gross?.replace(/[^\d.-]/g, '') || '0') || 0;
+                return sum + grossValue;
+              }, 0);
+
+              // Get currency from invoice data - check individual items first, then fallback to invoice level
+              let detectedCurrency = 'HUF'; // Default fallback
+              if (invoiceItems.length > 0) {
+                // Try to get currency from the first invoice item
+                const firstItemCurrency = invoiceItems[0].currency;
+                if (firstItemCurrency) {
+                  detectedCurrency = firstItemCurrency;
+                }
+              }
+              // Fallback to invoice-level currency if no item currency found
+              if (!detectedCurrency || detectedCurrency === 'HUF') {
+                detectedCurrency = item.fields?.currency || item.currency || 'HUF';
+              }
+              
+              const currency = normalizeCurrency(detectedCurrency);
+
               return (
                 <InvoiceCard 
                   key={item.id}
@@ -327,6 +367,8 @@ export default function ProjectDetailsPage() {
                   seller={seller}
                   date={date}
                   itemsCount={itemsCount}
+                  totalPrice={totalPrice}
+                  currency={currency}
                   onClick={() => router.push(`/projects/${slug}/processed/${item.id}/edit`)}
                   onDelete={(id) => setShowDeleteModal(id)}
                 />
