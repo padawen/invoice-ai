@@ -165,7 +165,11 @@ export async function POST(req: NextRequest) {
       throw new Error('Parsed result is not a valid object');
     }
 
-    const result_obj = parsed as any;
+    const result_obj = parsed as {
+      seller?: unknown;
+      buyer?: unknown;
+      invoice_data?: unknown;
+    };
     if (!result_obj.seller || !result_obj.buyer || !Array.isArray(result_obj.invoice_data)) {
       console.warn('Missing required fields in parsed result:', {
         hasSeller: !!result_obj.seller,

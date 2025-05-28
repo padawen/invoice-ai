@@ -212,7 +212,7 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         currency: normalizedCurrency,
         minimumFractionDigits: 2
       }).format(amount);
-    } catch (error) {
+    } catch {
       // Fallback for invalid currency codes
       console.warn(`Invalid currency code: ${currency}, falling back to number format`);
       return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
