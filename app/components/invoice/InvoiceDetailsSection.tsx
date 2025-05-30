@@ -78,20 +78,22 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
         </div>
       </div>
 
-      <div className="lg:hidden space-y-4">
+      <div className="lg:hidden space-y-3">
         <FormInput
           value={fields.invoice_number || ''}
           onChange={(value) => onUpdate('invoice_number', value)}
           placeholder="Invoice Number"
+          label="Invoice Number"
           className="w-full"
           isDirty={dirtyFields.has('field_invoice_number')}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           <FormInput
             value={fields.issue_date || ''}
             onChange={(value) => onUpdate('issue_date', value)}
             type="date"
             placeholder="Issue Date"
+            label="Issue Date"
             className="w-full"
             isDirty={dirtyFields.has('field_issue_date')}
           />
@@ -100,6 +102,7 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
             onChange={(value) => onUpdate('due_date', value)}
             type="date"
             placeholder="Due Date"
+            label="Due Date"
             className="w-full"
             isDirty={dirtyFields.has('field_due_date')}
           />
@@ -109,14 +112,16 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
           onChange={(value) => onUpdate('fulfillment_date', value)}
           type="date"
           placeholder="Fulfillment Date"
+          label="Fulfillment Date"
           className="w-full"
           isDirty={dirtyFields.has('field_fulfillment_date')}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           <FormInput
             value={fields.payment_method || ''}
             onChange={(value) => onUpdate('payment_method', value)}
             placeholder="Payment Method"
+            label="Payment Method"
             className="w-full"
             isDirty={dirtyFields.has('field_payment_method')}
           />
@@ -124,6 +129,7 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
             value={fields.currency || ''}
             onChange={(value) => onUpdate('currency', value)}
             placeholder="Currency"
+            label="Currency"
             maxLength={3}
             className="w-full uppercase"
             isDirty={dirtyFields.has('field_currency')}

@@ -68,11 +68,12 @@ const SellerSection: React.FC<SellerSectionProps> = ({
         </div>
       </div>
 
-      <div className="lg:hidden space-y-4">
+      <div className="lg:hidden space-y-3">
         <FormInput
           value={seller?.name || ''}
           onChange={(value) => onUpdate('name', value)}
           placeholder="Company Name"
+          label="Company Name"
           className="w-full"
           isDirty={dirtyFields.has('seller_name')}
         />
@@ -80,6 +81,7 @@ const SellerSection: React.FC<SellerSectionProps> = ({
           value={seller?.address || ''}
           onChange={(value) => onUpdate('address', value)}
           placeholder="Address"
+          label="Address"
           className="w-full"
           isDirty={dirtyFields.has('seller_address')}
         />
@@ -87,6 +89,7 @@ const SellerSection: React.FC<SellerSectionProps> = ({
           value={seller?.tax_id || ''}
           onChange={(value) => onUpdate('tax_id', value)}
           placeholder="Tax ID"
+          label="Tax ID"
           className="w-full"
           isDirty={dirtyFields.has('seller_tax_id')}
         />
@@ -94,6 +97,7 @@ const SellerSection: React.FC<SellerSectionProps> = ({
           value={seller?.email || ''}
           onChange={(value) => onUpdate('email', value)}
           placeholder="Email"
+          label="Email"
           type="email"
           className="w-full"
           isDirty={dirtyFields.has('seller_email')}
@@ -102,6 +106,7 @@ const SellerSection: React.FC<SellerSectionProps> = ({
           value={seller?.phone || ''}
           onChange={(value) => onUpdate('phone', value)}
           placeholder="Phone"
+          label="Phone"
           type="tel"
           className="w-full"
           isDirty={dirtyFields.has('seller_phone')}

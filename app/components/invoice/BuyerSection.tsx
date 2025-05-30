@@ -50,11 +50,12 @@ const BuyerSection: React.FC<BuyerSectionProps> = ({
         </div>
       </div>
       
-      <div className="lg:hidden space-y-4">
+      <div className="lg:hidden space-y-3">
         <FormInput
           value={buyer?.name || ''}
           onChange={(value) => onUpdate('name', value)}
           placeholder="Buyer Name"
+          label="Buyer Name"
           className="w-full"
           isDirty={dirtyFields.has('buyer_name')}
         />
@@ -62,6 +63,7 @@ const BuyerSection: React.FC<BuyerSectionProps> = ({
           value={buyer?.tax_id || ''}
           onChange={(value) => onUpdate('tax_id', value)}
           placeholder="Buyer Tax ID"
+          label="Buyer Tax ID"
           className="w-full"
           isDirty={dirtyFields.has('buyer_tax_id')}
         />
@@ -69,6 +71,7 @@ const BuyerSection: React.FC<BuyerSectionProps> = ({
           value={buyer?.address || ''}
           onChange={(value) => onUpdate('address', value)}
           placeholder="Buyer Address"
+          label="Buyer Address"
           className="w-full"
           isDirty={dirtyFields.has('buyer_address')}
         />

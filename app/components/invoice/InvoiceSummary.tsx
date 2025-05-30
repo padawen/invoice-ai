@@ -24,10 +24,10 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
   const totalGross = calculateTotalGross();
 
   return (
-    <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl border border-green-600/30 p-6">
-      <div className="flex items-center justify-between">
+    <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl border border-green-600/30 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
-          <h3 className="text-xl font-bold text-green-400 mb-2">Invoice Summary</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-green-400 mb-2">Invoice Summary</h3>
           <p className="text-sm text-zinc-400">
             {items?.length || 0} items
             {hasDirtyChanges && (
@@ -38,11 +38,11 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
           </p>
         </div>
         
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <div className="text-sm text-zinc-400 mb-1">Total Gross Amount</div>
-          <div className="text-3xl font-bold text-green-400">
+          <div className="text-2xl sm:text-3xl font-bold text-green-400">
             {totalGross.toFixed(2)}
-            <span className="text-lg text-zinc-400 ml-2">
+            <span className="text-base sm:text-lg text-zinc-400 ml-2">
               {currency || 'USD'}
             </span>
           </div>

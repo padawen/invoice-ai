@@ -322,8 +322,8 @@ export default function EditProcessedItemPage() {
   if (!fields) return <div className="p-8 text-center text-red-400">Processed item not found.</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-10 px-4">
-      <div className="w-full max-w-7xl mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-8 border border-zinc-800 backdrop-blur-md">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-10 px-2 sm:px-4">
+      <div className="w-full max-w-7xl mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-4 sm:p-8 border border-zinc-800 backdrop-blur-md">
         <div className="mb-8 flex flex-col sm:flex-row items-center">
           <BackButton fallbackUrl={fallbackUrl} />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-green-400 flex-1 mt-4 sm:mt-0">
@@ -337,11 +337,11 @@ export default function EditProcessedItemPage() {
           onChange={handleFieldChange} 
         />
 
-        <div ref={saveRef} className="mt-10 bg-zinc-800/60 rounded-xl p-6 border border-zinc-700/60">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <div className="flex-1">
+        <div ref={saveRef} className="mt-6 sm:mt-10 bg-zinc-800/60 rounded-xl p-4 sm:p-6 border border-zinc-700/60">
+          <div className="flex flex-col gap-6">
+            <div>
               <h3 className="text-lg font-bold text-green-400 mb-4">Project Assignment</h3>
-              <div className="max-w-md">
+              <div className="w-full sm:max-w-md">
                 <ProjectSelector 
                   onSelect={handleProjectSelect}
                   initialProject={currentProjectName}
@@ -349,26 +349,27 @@ export default function EditProcessedItemPage() {
                 />
                 
                 {hasProjectChanged && (
-                  <div className="mt-4 py-3 px-4 bg-amber-900/30 border border-amber-500/30 rounded-lg flex items-center gap-2">
-                    <AlertTriangle size={18} className="text-amber-400" />
-                    <div className="text-amber-400 text-sm">
-                      <p>Project change will be applied when you save.</p>
-                      <p className="mt-1">
-                        <span className="font-medium">From:</span> {currentProjectName}
-                        <span className="mx-2">→</span>
-                        <span className="font-medium">To:</span> {selectedProjectName}
-                      </p>
+                  <div className="mt-4 py-3 px-4 bg-amber-900/30 border border-amber-500/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle size={18} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-amber-400 text-sm">
+                        <p className="font-medium">Project change will be applied when you save.</p>
+                        <div className="mt-2 text-xs">
+                          <div><span className="font-medium">From:</span> {currentProjectName}</div>
+                          <div><span className="font-medium">To:</span> {selectedProjectName}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="flex flex-col items-center justify-center lg:justify-end gap-4">
+            <div className="w-full">
               <SaveButton 
                 isSaving={saving || projectChanging} 
                 onSave={handleSave} 
-                className="w-full lg:w-auto"
+                className="w-full"
                 isDemo={!user || !supabase}
               />
             </div>

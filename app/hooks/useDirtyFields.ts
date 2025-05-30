@@ -90,7 +90,13 @@ export const useDirtyFields = (fields: EditableInvoice) => {
     });
 
     if (fields.invoice_data && Array.isArray(fields.invoice_data)) {
-      fields.invoice_data.forEach((item, index) => {
+      const originalItemsCount = originalValues.invoice_data?.length || 0;
+      const currentItemsCount = fields.invoice_data.length;
+      
+      const compareCount = Math.min(originalItemsCount, currentItemsCount);
+      
+      for (let index = 0; index < compareCount; index++) {
+        const item = fields.invoice_data[index];
         Object.keys(item).forEach(key => {
           const fieldPath = `item_${index}_${key}`;
           const currentValue = (item as unknown as Record<string, unknown>)[key];
@@ -98,7 +104,7 @@ export const useDirtyFields = (fields: EditableInvoice) => {
             newDirtyFields.add(fieldPath);
           }
         });
-      });
+      }
     }
 
     setDirtyFields(newDirtyFields);
@@ -135,6 +141,24 @@ export const useDirtyFields = (fields: EditableInvoice) => {
     setGlobalDirtyOperations(prev => new Set([...prev, operation]));
   };
 
+  const clearItemDirtyFields = (fromIndex: number) => {
+    setDirtyFields(prev => {
+      const newSet = new Set(prev);
+      for (const fieldPath of prev) {
+        if (fieldPath.startsWith('item_')) {
+          const indexMatch = fieldPath.match(/^item_(\d+)_/);
+          if (indexMatch) {
+            const itemIndex = parseInt(indexMatch[1]);
+            if (itemIndex >= fromIndex) {
+              newSet.delete(fieldPath);
+            }
+          }
+        }
+      }
+      return newSet;
+    });
+  };
+
   return {
     dirtyFields,
     globalDirtyOperations,
@@ -142,6 +166,7 @@ export const useDirtyFields = (fields: EditableInvoice) => {
     clearDirtyField,
     clearAllDirty,
     markGlobalOperation,
+    clearItemDirtyFields,
     isFieldDirty,
     hasDirtyChanges: dirtyFields.size > 0 || globalDirtyOperations.size > 0,
     totalChanges: dirtyFields.size + globalDirtyOperations.size
