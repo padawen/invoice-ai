@@ -141,20 +141,40 @@ export const useDirtyFields = (fields: EditableInvoice) => {
     setGlobalDirtyOperations(prev => new Set([...prev, operation]));
   };
 
-  const clearItemDirtyFields = (fromIndex: number) => {
+  const clearItemDirtyFields = (deletedIndex: number) => {
+    setOriginalValues(prev => {
+      if (!prev || !prev.invoice_data) return prev;
+      
+      const newOriginalValues = { ...prev };
+      const newInvoiceData = [...prev.invoice_data];
+      newInvoiceData.splice(deletedIndex, 1);
+      newOriginalValues.invoice_data = newInvoiceData;
+      
+      return newOriginalValues;
+    });
+
     setDirtyFields(prev => {
-      const newSet = new Set(prev);
+      const newSet = new Set<string>();
+      
       for (const fieldPath of prev) {
         if (fieldPath.startsWith('item_')) {
-          const indexMatch = fieldPath.match(/^item_(\d+)_/);
+          const indexMatch = fieldPath.match(/^item_(\d+)_(.+)$/);
           if (indexMatch) {
             const itemIndex = parseInt(indexMatch[1]);
-            if (itemIndex >= fromIndex) {
-              newSet.delete(fieldPath);
+            const fieldName = indexMatch[2];
+            
+            if (itemIndex < deletedIndex) {
+              newSet.add(fieldPath);
+            } else if (itemIndex > deletedIndex) {
+              const newFieldPath = `item_${itemIndex - 1}_${fieldName}`;
+              newSet.add(newFieldPath);
             }
           }
+        } else {
+          newSet.add(fieldPath);
         }
       }
+      
       return newSet;
     });
   };
