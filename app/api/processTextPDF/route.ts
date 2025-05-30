@@ -165,7 +165,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Clean up dates right when we get them from OpenAI
     if (result_obj.issue_date) {
       result_obj.issue_date = formatDateForInput(result_obj.issue_date);
     }
