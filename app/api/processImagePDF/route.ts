@@ -103,7 +103,7 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
     
     for (let i = 0; i < canvasElements.length; i++) {
       try {
-        const screenshot = await canvasElements[i].screenshot({ 
+        await canvasElements[i].screenshot({ 
           type: 'png',
           path: path.join(tempDir, `page-${i + 1}.png`)
         });

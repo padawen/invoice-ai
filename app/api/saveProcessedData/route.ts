@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
-import { EditableInvoice, InvoiceData } from '@/app/types';
+import { InvoiceData } from '@/app/types';
 
 // Function to convert various date formats to ISO format (YYYY-MM-DD)
 const convertToISODate = (dateString: string): string | null => {

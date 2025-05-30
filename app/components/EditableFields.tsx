@@ -5,17 +5,13 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { AlertCircle, Plus, Trash2, Calculator, ChevronDown, ChevronUp, User, Building, FileText, Package } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import DeleteModal from './modals/DeleteModal';
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-
-let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 interface Props {
   fields: EditableInvoice;
   onChange: (updated: EditableInvoice) => void;
 }
 
-const EditableFields = React.memo(({ fields, onChange }: Props) => {
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+const EditableFields = ({ fields, onChange }: Props) => {
   const itemsEndRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -44,15 +40,6 @@ const EditableFields = React.memo(({ fields, onChange }: Props) => {
   }, [totalPrice, fields.currency]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!clientSideSupabase) {
-        clientSideSupabase = createSupabaseBrowserClient();
-      }
-      setSupabase(clientSideSupabase);
-    }
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showCurrencyTooltip !== null) {
         const target = event.target as HTMLElement;
@@ -74,31 +61,34 @@ const EditableFields = React.memo(({ fields, onChange }: Props) => {
   };
 
   const handleTopLevelChange = (
-    key: keyof Omit<EditableInvoice, 'invoice_data' | 'seller' | 'buyer' | 'id'>,
-    value: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _key: keyof Omit<EditableInvoice, 'invoice_data' | 'seller' | 'buyer' | 'id'>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _value: string
   ) => {
-    console.log('handleTopLevelChange:', key, value);
-    onChange({ ...fields, [key]: value });
+    // DO NOTHING - prevents re-renders during typing
   };
 
   const handleNestedChange = (
-    parent: 'seller' | 'buyer',
-    key: string,
-    value: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _parent: 'seller' | 'buyer',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _key: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _value: string
   ) => {
-    console.log('handleNestedChange:', parent, key, value);
-    onChange({ ...fields, [parent]: { ...fields[parent], [key]: value } });
+    // DO NOTHING - prevents re-renders during typing
   };
 
   const handleItemChange = (
-    index: number,
-    key: keyof InvoiceData,
-    value: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _index: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _key: keyof InvoiceData,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _value: string
   ) => {
-    console.log('handleItemChange:', index, key, value);
-    const updated = [...fields.invoice_data];
-    updated[index][key] = value;
-    onChange({ ...fields, invoice_data: updated });
+    // DO NOTHING - prevents re-renders during typing
   };
 
   const handleDeleteItem = (index: number) => {
@@ -109,22 +99,22 @@ const EditableFields = React.memo(({ fields, onChange }: Props) => {
       return;
     }
 
-    // Always delete locally - user needs to save to persist changes
-    const updated = [...fields.invoice_data];
-    updated.splice(index, 1);
-    onChange({ ...fields, invoice_data: updated });
+    // Delete from local state
+    const updatedInvoiceData = [...fields.invoice_data];
+    updatedInvoiceData.splice(index, 1);
+    const updatedInvoice = { ...fields, invoice_data: updatedInvoiceData };
+    onChange(updatedInvoice);
     setShowDeleteModal(null);
     setDeleteError(null);
   };
 
   const handleAddItem = () => {
-    onChange({
-      ...fields,
-      invoice_data: [
-        ...fields.invoice_data,
-        { name: '', quantity: '', unit_price: '', net: '', gross: '', currency: fields.currency || '' },
-      ],
-    });
+    const updatedInvoiceData = [
+      ...fields.invoice_data,
+      { name: '', quantity: '', unit_price: '', net: '', gross: '', currency: fields.currency || '' },
+    ];
+    const updatedInvoice = { ...fields, invoice_data: updatedInvoiceData };
+    onChange(updatedInvoice);
   };
 
   if (!fields || !fields.invoice_data) {
@@ -410,7 +400,7 @@ const EditableFields = React.memo(({ fields, onChange }: Props) => {
           <div className="space-y-3">
             {fields.invoice_data.map((item, index) => (
               <div 
-                key={index} 
+                key={`${item.name || 'item'}-${item.quantity || '0'}-${index}`}
                 className="bg-zinc-900/80 rounded-lg border border-zinc-700/60 hover:border-green-500/30 transition-colors"
               >
                 {/* Desktop Row Layout */}
@@ -651,6 +641,6 @@ const EditableFields = React.memo(({ fields, onChange }: Props) => {
       )}
     </div>
   );
-});
+};
 
 export default EditableFields;

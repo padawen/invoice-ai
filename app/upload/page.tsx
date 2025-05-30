@@ -87,7 +87,7 @@ const UploadPage = () => {
     setIsDetecting(true);
     setError(null);
 
-    const attemptDetection = async (retryCount = 0): Promise<{ type: 'text' | 'image' | 'unknown' }> => {
+    const attemptDetection = async (): Promise<{ type: 'text' | 'image' | 'unknown' }> => {
       try {
         const token = await getToken();
         if (!token) {
@@ -121,7 +121,7 @@ const UploadPage = () => {
       let lastError: Error | null = null;
       for (let i = 0; i < 3; i++) {
         try {
-          const data = await attemptDetection(i);
+          const data = await attemptDetection();
           setTypeResult(data.type || 'unknown');
           return; 
         } catch (err) {
