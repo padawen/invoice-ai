@@ -3,6 +3,7 @@ import { OpenAI } from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
 import { getGuidelinesImage } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
+import { formatDateForInput } from '@/app/utils/dateFormatter';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -284,6 +285,16 @@ export async function POST(req: NextRequest) {
       
       if (!parsed.seller || !parsed.buyer || !Array.isArray(parsed.invoice_data)) {
         throw new Error('OpenAI response missing required fields (seller, buyer, or invoice_data)');
+      }
+      
+      if (parsed.issue_date) {
+        parsed.issue_date = formatDateForInput(parsed.issue_date);
+      }
+      if (parsed.due_date) {
+        parsed.due_date = formatDateForInput(parsed.due_date);
+      }
+      if (parsed.fulfillment_date) {
+        parsed.fulfillment_date = formatDateForInput(parsed.fulfillment_date);
       }
       
       const output = { id: crypto.randomUUID(), ...parsed };
