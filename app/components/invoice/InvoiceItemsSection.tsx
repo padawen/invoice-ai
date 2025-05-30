@@ -114,39 +114,41 @@ const InvoiceItem = React.memo<{
       </div>
     </div>
 
-    <div className="lg:hidden p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-500/20 rounded-full text-green-400 font-medium text-sm">
+    <div className="lg:hidden p-3">
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-7 h-7 bg-green-500/20 rounded-full text-green-400 font-medium text-sm">
             {index + 1}
           </span>
-          <h4 className="text-base font-medium text-green-400">
+          <h4 className="text-sm font-medium text-green-400">
             {item.name || `Item #${index + 1}`}
           </h4>
         </div>
         <button
           onClick={() => onDeleteItem(index)}
-          className="flex items-center justify-center w-8 h-8 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center w-7 h-7 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
           title="Delete item"
         >
-          <Trash2 size={16} />
+          <Trash2 size={14} />
         </button>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         <FormInput
           value={item.name || ''}
           onChange={(value) => onUpdateItem(index, 'name', value)}
           placeholder="Product/Service Name"
+          label="Product/Service Name"
           className="w-full"
           isDirty={dirtyFields.has(`item_${index}_name`)}
         />
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <FormInput
             value={item.quantity || ''}
             onChange={(value) => onUpdateItem(index, 'quantity', value)}
             placeholder="Quantity"
+            label="Quantity"
             maxLength={2}
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_quantity`)}
@@ -155,16 +157,18 @@ const InvoiceItem = React.memo<{
             value={item.unit_price || ''}
             onChange={(value) => onUpdateItem(index, 'unit_price', value)}
             placeholder="Unit Price"
+            label="Unit Price"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_unit_price`)}
           />
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <FormInput
             value={item.net || ''}
             onChange={(value) => onUpdateItem(index, 'net', value)}
             placeholder="Net Amount"
+            label="Net Amount"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_net`)}
           />
@@ -172,6 +176,7 @@ const InvoiceItem = React.memo<{
             value={item.gross || ''}
             onChange={(value) => onUpdateItem(index, 'gross', value)}
             placeholder="Gross Total"
+            label="Gross Total"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_gross`)}
           />
@@ -181,6 +186,7 @@ const InvoiceItem = React.memo<{
           value={item.currency || ''}
           onChange={(value) => onUpdateItem(index, 'currency', value)}
           placeholder="Currency (e.g. EUR)"
+          label="Currency"
           maxLength={3}
           className="w-full uppercase"
           isDirty={dirtyFields.has(`item_${index}_currency`)}
@@ -207,10 +213,10 @@ const InvoiceItemsSection: React.FC<InvoiceItemsSectionProps> = ({
   return (
     <div className="bg-zinc-800/60 rounded-xl border border-zinc-700/60">
       <div 
-        className="flex items-center justify-between p-6 cursor-pointer hover:bg-zinc-700/30 transition-colors"
+        className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-zinc-700/30 transition-colors"
         onClick={onToggleCollapse}
       >
-        <h3 className={`text-xl font-bold transition-colors ${
+        <h3 className={`text-lg sm:text-xl font-bold transition-colors ${
           globalDirtyOperations.size > 0 ? 'text-orange-400' : 'text-green-400'
         }`}>
           Invoice Items
@@ -223,13 +229,13 @@ const InvoiceItemsSection: React.FC<InvoiceItemsSectionProps> = ({
             <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
           )}
           <button className="text-green-400 hover:text-green-300 transition-colors">
-            {isCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
+            {isCollapsed ? <ChevronDown size={20} className="sm:w-6 sm:h-6" /> : <ChevronUp size={20} className="sm:w-6 sm:h-6" />}
           </button>
         </div>
       </div>
       
       {!isCollapsed && (
-        <div className="px-6 pb-6 border-t border-zinc-700/30">
+        <div className="px-4 pb-4 sm:px-6 sm:pb-6 border-t border-zinc-700/30">
           <div className="hidden lg:grid lg:grid-cols-10 gap-2 px-3 py-2 bg-zinc-700/30 rounded-lg mb-4 mt-4 text-xs font-medium text-zinc-300">
             <div className="col-span-1 text-center">#</div>
             <div className="col-span-3">Product/Service</div>

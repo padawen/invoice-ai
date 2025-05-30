@@ -40,7 +40,7 @@ const FormInput: React.FC<FormInputProps> = ({
         ? "bg-orange-900/70 border-orange-500/60 focus:ring-orange-400/50"
         : "bg-zinc-900/70 border-zinc-700/60 focus:ring-green-400/50");
 
-  const paddingClasses = className.includes('px-') ? '' : 'px-4 py-3';
+  const paddingClasses = className.includes('px-') ? '' : 'px-3 py-2 sm:px-4 sm:py-3';
   
   const inputElement = (
     <input
@@ -58,7 +58,7 @@ const FormInput: React.FC<FormInputProps> = ({
 
   if (label) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-1.5 sm:space-y-2">
         <label className="block text-sm font-medium text-zinc-300">
           {label} {required && <span className="text-red-400">*</span>}
         </label>

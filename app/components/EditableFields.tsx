@@ -27,6 +27,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
     globalDirtyOperations,
     markFieldDirty,
     markGlobalOperation,
+    clearItemDirtyFields,
     hasDirtyChanges,
     totalChanges
   } = useDirtyFields(fields);
@@ -77,6 +78,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
 
   const deleteItem = (index: number) => {
     markGlobalOperation(`item_deleted_${index}_${Date.now()}`);
+    clearItemDirtyFields(index);
     const updated = [...fields.invoice_data];
     updated.splice(index, 1);
     onChange({ ...fields, invoice_data: updated });
@@ -92,7 +94,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <CollapsibleSection
         title="Seller Information"
         isCollapsed={sellerCollapsed}
