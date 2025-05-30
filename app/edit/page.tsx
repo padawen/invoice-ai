@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
@@ -337,7 +337,10 @@ const EditPage = () => {
 
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
               {fields ? (
-                <EditableFields fields={fields} onChange={setFields} />
+                <EditableFields 
+                  fields={fields} 
+                  onChange={setFields}
+                />
               ) : (
                 <div className="text-center py-12 text-zinc-400">Loading invoice data...</div>
               )}
