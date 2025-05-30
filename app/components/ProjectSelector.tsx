@@ -67,7 +67,6 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
 
   return (
     <div className="w-full">
-      {/* Project Selector Trigger Button */}
       <div 
         onClick={() => setIsModalOpen(true)} 
         className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${
@@ -92,7 +91,6 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
         </div>
       </div>
 
-      {/* Modal */}
       <ProjectModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
@@ -102,7 +100,6 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
         isDemo={isDemo}
       />
 
-      {/* Display error message */}
       {error && (
         <div className="mt-4 flex items-center gap-2 text-red-400 bg-red-400/10 px-4 py-3 rounded-lg">
           <AlertCircle size={18} />
@@ -110,7 +107,6 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
         </div>
       )}
       
-      {/* Demo indicator */}
       {isDemo && (
         <div className="mt-2 text-xs text-amber-400 text-center">
           Demo mode - project selection is for demonstration only

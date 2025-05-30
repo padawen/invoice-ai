@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { InvoiceData } from '@/app/types';
 
-// Function to convert various date formats to ISO format (YYYY-MM-DD)
 const convertToISODate = (dateString: string): string | null => {
   if (!dateString || dateString.trim() === '') return null;
   
   try {
-    // Handle Hungarian format: "2025. 03. 31."
     if (dateString.includes('.')) {
       const cleaned = dateString.replace(/\./g, '').trim();
       const parts = cleaned.split(' ').filter(part => part.length > 0);
@@ -16,7 +14,6 @@ const convertToISODate = (dateString: string): string | null => {
         const [year, month, day] = parts;
         const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         
-        // Validate the date
         const testDate = new Date(isoDate);
         if (!isNaN(testDate.getTime())) {
           return isoDate;
@@ -24,10 +21,9 @@ const convertToISODate = (dateString: string): string | null => {
       }
     }
     
-    // Handle other formats by trying to parse directly
     const testDate = new Date(dateString);
     if (!isNaN(testDate.getTime())) {
-      return testDate.toISOString().split('T')[0]; // Get YYYY-MM-DD part
+      return testDate.toISOString().split('T')[0];
     }
     
     return null;

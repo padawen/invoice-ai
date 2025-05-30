@@ -27,13 +27,13 @@ interface SummaryData {
   quarterlyTotalsByCurrency: Record<string, Record<string, number>>;
   topBuyers: Array<{ name: string; amount: number; currency: string }>;
   topSellers: Array<{ name: string; amount: number; currency: string }>;
+  hasValidDates: boolean;
 }
 
 interface FinancialSummaryProps {
   data: ProcessedItem[];
 }
 
-// Currency normalization function to map common abbreviations to ISO codes
 const normalizeCurrency = (currency: string): string => {
   const currencyMap: Record<string, string> = {
     'ft': 'HUF',
@@ -43,7 +43,7 @@ const normalizeCurrency = (currency: string): string => {
     'eur': 'EUR',
     'usd': 'USD',
     'gbp': 'GBP',
-    '': 'HUF' // Default to HUF for empty currency
+    '': 'HUF'
   };
   
   return currencyMap[currency] || currency.toUpperCase();
@@ -59,6 +59,7 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       quarterlyTotalsByCurrency: {},
       topBuyers: [],
       topSellers: [],
+      hasValidDates: false,
     };
 
     const buyerTotals: Record<string, Record<string, number>> = {};
@@ -75,13 +76,20 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
       
       const dateString = item.issue_date || item.fields?.issue_date || '';
       const date = new Date(dateString);
+      const hasValidDate = !isNaN(date.getTime());
       
-      if (isNaN(date.getTime())) return;
+      if (hasValidDate) {
+        summary.hasValidDates = true;
+      }
       
-      const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      let month = '';
+      let quarterKey = '';
       
-      const quarterNum = Math.floor(date.getMonth() / 3) + 1;
-      const quarterKey = `Q${quarterNum}`;
+      if (hasValidDate) {
+        month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const quarterNum = Math.floor(date.getMonth() / 3) + 1;
+        quarterKey = `Q${quarterNum}`;
+      }
       
       const buyer = item.buyer_name || item.fields?.buyer?.name || 'Unknown Buyer';
       const seller = item.seller_name || item.fields?.seller?.name || 'Unknown Seller';
@@ -95,18 +103,20 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
           summary.totalAmountByCurrency[currency] = 0;
         }
         
-        if (!summary.monthlyTotalsByCurrency[currency]) {
-          summary.monthlyTotalsByCurrency[currency] = {};
-        }
-        
-        if (!summary.quarterlyTotalsByCurrency[currency]) {
-          summary.quarterlyTotalsByCurrency[currency] = {
-            Q1: 0, Q2: 0, Q3: 0, Q4: 0,
-          };
-        }
-        
-        if (!summary.monthlyTotalsByCurrency[currency][month]) {
-          summary.monthlyTotalsByCurrency[currency][month] = 0;
+        if (hasValidDate) {
+          if (!summary.monthlyTotalsByCurrency[currency]) {
+            summary.monthlyTotalsByCurrency[currency] = {};
+          }
+          
+          if (!summary.quarterlyTotalsByCurrency[currency]) {
+            summary.quarterlyTotalsByCurrency[currency] = {
+              Q1: 0, Q2: 0, Q3: 0, Q4: 0,
+            };
+          }
+          
+          if (!summary.monthlyTotalsByCurrency[currency][month]) {
+            summary.monthlyTotalsByCurrency[currency][month] = 0;
+          }
         }
         
         if (!buyerTotals[buyer]) {
@@ -128,10 +138,13 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         const amount = parseFloat(invItem.gross) || 0;
         
         summary.totalAmountByCurrency[currency] += amount;
-        summary.monthlyTotalsByCurrency[currency][month] += amount;
-        summary.quarterlyTotalsByCurrency[currency][quarterKey] += amount;
         buyerTotals[buyer][currency] += amount;
         sellerTotals[seller][currency] += amount;
+        
+        if (hasValidDate) {
+          summary.monthlyTotalsByCurrency[currency][month] += amount;
+          summary.quarterlyTotalsByCurrency[currency][quarterKey] += amount;
+        }
       });
     });
     
@@ -213,7 +226,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         minimumFractionDigits: 2
       }).format(amount);
     } catch {
-      // Fallback for invalid currency codes
       console.warn(`Invalid currency code: ${currency}, falling back to number format`);
       return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
     }
@@ -253,15 +265,33 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         )}
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Monthly Summary */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-green-400 mb-3">Monthly Totals</h3>
-          {recentMonths.length > 0 ? (
+      {summaryData.hasValidDates && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-green-400 mb-3">Monthly Totals</h3>
+            {recentMonths.length > 0 ? (
+              <div className="space-y-2">
+                {recentMonths.map(([month, amount]) => (
+                  <div key={month} className="flex justify-between items-center">
+                    <span className="text-zinc-300">{month}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 bg-green-500/20 rounded-full" style={{ width: `${Math.min(100, (amount / totalForCurrency) * 300)}px` }} />
+                      <span className="text-white font-medium">{formatCurrency(amount, displayCurrency)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No monthly data available</p>
+            )}
+          </div>
+          
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-green-400 mb-3">Quarterly Totals</h3>
             <div className="space-y-2">
-              {recentMonths.map(([month, amount]) => (
-                <div key={month} className="flex justify-between items-center">
-                  <span className="text-zinc-300">{month}</span>
+              {Object.entries(quarterlyTotals).map(([quarter, amount]) => (
+                <div key={quarter} className="flex justify-between items-center">
+                  <span className="text-zinc-300">{quarter}</span>
                   <div className="flex items-center gap-2">
                     <div className="h-2 bg-green-500/20 rounded-full" style={{ width: `${Math.min(100, (amount / totalForCurrency) * 300)}px` }} />
                     <span className="text-white font-medium">{formatCurrency(amount, displayCurrency)}</span>
@@ -269,36 +299,16 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-zinc-400">No monthly data available</p>
-          )}
-        </div>
-        
-        {/* Quarterly Summary */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-green-400 mb-3">Quarterly Totals</h3>
-          <div className="space-y-2">
-            {Object.entries(quarterlyTotals).map(([quarter, amount]) => (
-              <div key={quarter} className="flex justify-between items-center">
-                <span className="text-zinc-300">{quarter}</span>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 bg-green-500/20 rounded-full" style={{ width: `${Math.min(100, (amount / totalForCurrency) * 300)}px` }} />
-                  <span className="text-white font-medium">{formatCurrency(amount, displayCurrency)}</span>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
-      </div>
+      )}
       
-      <div className="mt-8 pt-6 border-t border-zinc-700/30 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total */}
+      <div className={`pt-6 border-t border-zinc-700/30 grid grid-cols-1 md:grid-cols-3 gap-6 ${summaryData.hasValidDates ? '' : 'mt-0'}`}>
         <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-700/50">
           <h4 className="text-zinc-400 text-sm mb-1">Total Invoice Amount</h4>
           <p className="text-2xl font-bold text-white">{formatCurrency(totalForCurrency, displayCurrency)}</p>
         </div>
         
-        {/* Top Buyer */}
         <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-700/50">
           <h4 className="text-zinc-400 text-sm mb-1">Top Buyer</h4>
           {topBuyersForCurrency.length > 0 ? (
@@ -311,7 +321,6 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
           )}
         </div>
         
-        {/* Top Seller */}
         <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-700/50">
           <h4 className="text-zinc-400 text-sm mb-1">Top Seller</h4>
           {topSellersForCurrency.length > 0 ? (

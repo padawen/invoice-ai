@@ -8,7 +8,6 @@ import path from 'path';
 import os from 'os';
 import { chromium } from 'playwright';
 
-// Extend Window interface for PDF.js properties
 declare global {
   interface Window {
     pdfRendered?: boolean;
@@ -183,7 +182,6 @@ const cleanupTempFiles = (paths: string[]) => {
       }
     }
   } catch {
-    // Silent cleanup failure
   }
 };
 
