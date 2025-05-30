@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, X, Calendar, DollarSign, Users } from 'lucide-react';
 
 export interface FilterOptions {
@@ -31,36 +31,30 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
     searchTerm: '',
   });
 
+  const memoizedOnFilterChange = useCallback(onFilterChange, [onFilterChange]);
+
+  useEffect(() => {
+    memoizedOnFilterChange(filters);
+  }, [filters, memoizedOnFilterChange]);
+
   const handleFilterChange = (
     key: keyof FilterOptions, 
     value: string | { start?: string; end?: string } | { min?: string; max?: string }
   ) => {
     if (key === 'buyer' || key === 'seller' || key === 'searchTerm') {
-    if (typeof value === 'string') {
-        setFilters(prev => {
-          const newFilters = { ...prev, [key]: value };
-          onFilterChange(newFilters);
-          return newFilters;
-        });
+      if (typeof value === 'string') {
+        setFilters(prev => ({ ...prev, [key]: value }));
       }
     } else if (key === 'dateRange' && typeof value === 'object') {
-      setFilters(prev => {
-        const newFilters = { 
-          ...prev, 
-          dateRange: { ...prev.dateRange, ...value as { start?: string; end?: string } }
-        };
-        onFilterChange(newFilters);
-        return newFilters;
-      });
+      setFilters(prev => ({ 
+        ...prev, 
+        dateRange: { ...prev.dateRange, ...value as { start?: string; end?: string } }
+      }));
     } else if (key === 'amountRange' && typeof value === 'object') {
-      setFilters(prev => {
-        const newFilters = {
-          ...prev,
-          amountRange: { ...prev.amountRange, ...value as { min?: string; max?: string } }
-        };
-    onFilterChange(newFilters);
-        return newFilters;
-      });
+      setFilters(prev => ({
+        ...prev,
+        amountRange: { ...prev.amountRange, ...value as { min?: string; max?: string } }
+      }));
     }
   };
 
@@ -73,7 +67,6 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
       searchTerm: '',
     };
     setFilters(emptyFilters);
-    onFilterChange(emptyFilters);
   };
 
   const hasActiveFilters = () => {
@@ -89,7 +82,6 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
 
   return (
     <div className="w-full bg-zinc-800/50 backdrop-blur-sm rounded-xl p-4 border border-zinc-700/50 mb-6">
-      {/* Search Bar */}
       <div className="flex items-center gap-2 relative">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 text-zinc-400" size={18} />
@@ -122,10 +114,8 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
         )}
       </div>
 
-      {/* Expanded Filters */}
       {showFilters && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-zinc-700/30">
-          {/* Date Range */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-zinc-300 font-medium">
               <Calendar size={16} />
@@ -149,7 +139,6 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
             </div>
           </div>
 
-          {/* Amount Range */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-zinc-300 font-medium">
               <DollarSign size={16} />
@@ -173,7 +162,6 @@ export default function InvoiceFilters({ onFilterChange }: InvoiceFiltersProps) 
             </div>
           </div>
 
-          {/* Buyer/Seller */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-zinc-300 font-medium">
               <Users size={16} />

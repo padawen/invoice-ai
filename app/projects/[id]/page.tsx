@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
@@ -38,7 +38,6 @@ interface ProcessedItem {
   };
 }
 
-// Currency normalization function to map common abbreviations to ISO codes
 const normalizeCurrency = (currency: string): string => {
   const currencyMap: Record<string, string> = {
     'ft': 'HUF',
@@ -48,7 +47,7 @@ const normalizeCurrency = (currency: string): string => {
     'eur': 'EUR',
     'usd': 'USD',
     'gbp': 'GBP',
-    '': 'HUF' // Default to HUF for empty currency
+    '': 'HUF'
   };
   
   return currencyMap[currency] || currency.toUpperCase();
@@ -252,9 +251,9 @@ export default function ProjectDetailsPage() {
     setEditing(false);
   };
 
-  const handleFilterChange = (newFilters: FilterOptions) => {
+  const handleFilterChange = useCallback((newFilters: FilterOptions) => {
     setFilterOptions(newFilters);
-  };
+  }, []);
 
   if (loading) return <div className="p-8 text-center text-zinc-400">Loading...</div>;
   if (!project) return <div className="p-8 text-center text-red-400">Project not found.</div>;
@@ -335,23 +334,19 @@ export default function ProjectDetailsPage() {
               const itemsCount =
                 item.raw_data?.length ?? item.fields?.invoice_data?.length ?? 0;
 
-              // Calculate total price from invoice items
               const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
               const totalPrice = invoiceItems.reduce((sum, invItem) => {
                 const grossValue = parseFloat(invItem.gross?.replace(/[^\d.-]/g, '') || '0') || 0;
                 return sum + grossValue;
               }, 0);
 
-              // Get currency from invoice data - check individual items first, then fallback to invoice level
-              let detectedCurrency = 'HUF'; // Default fallback
+              let detectedCurrency = 'HUF';
               if (invoiceItems.length > 0) {
-                // Try to get currency from the first invoice item
                 const firstItemCurrency = invoiceItems[0].currency;
                 if (firstItemCurrency) {
                   detectedCurrency = firstItemCurrency;
                 }
               }
-              // Fallback to invoice-level currency if no item currency found
               if (!detectedCurrency || detectedCurrency === 'HUF') {
                 detectedCurrency = item.fields?.currency || item.currency || 'HUF';
               }

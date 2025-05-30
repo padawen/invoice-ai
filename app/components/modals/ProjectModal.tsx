@@ -151,7 +151,6 @@ const ProjectModal = ({
         )}
       </div>
       
-      {/* Display error message */}
       {error && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[101] flex items-center gap-2 text-red-400 bg-zinc-900 border border-red-500/30 px-4 py-3 rounded-lg">
           <AlertCircle size={18} />
@@ -159,7 +158,6 @@ const ProjectModal = ({
         </div>
       )}
 
-      {/* Show success message as a flash notification */}
       {success && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[101] flex items-center gap-2 text-green-400 bg-zinc-900 border border-green-500/30 px-4 py-3 rounded-lg">
           <CheckCircle size={18} />

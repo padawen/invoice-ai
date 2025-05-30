@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import EditableFields from '../components/EditableFields';
 import ProjectSelector from '../components/ProjectSelector';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import SaveButton from '../components/SaveButton';
+import ProgressModal from '../components/ProgressModal';
 import { AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
@@ -99,7 +100,6 @@ const EditPage = () => {
     }
   }, [supabase]);
 
-  // Auto-scroll to error when it appears
   useEffect(() => {
     if (error && errorRef.current) {
       setTimeout(() => {
@@ -107,7 +107,6 @@ const EditPage = () => {
           behavior: 'smooth', 
           block: 'center' 
         });
-        // Add a brief highlight effect
         errorRef.current?.classList.add('animate-pulse');
         setTimeout(() => {
           errorRef.current?.classList.remove('animate-pulse');
@@ -122,7 +121,6 @@ const EditPage = () => {
       return;
     }
 
-    // Validate required fields
     if (!fields.seller || !fields.seller.name) {
       setError('Seller name is required.');
       return;
@@ -289,7 +287,6 @@ const EditPage = () => {
         </div>
         
         <div className="flex flex-col xl:flex-row gap-8 items-start">
-          {/* PDF Preview - Sticky */}
           {!expandedView && (
             <div 
               ref={stickyContainerRef}
@@ -305,7 +302,6 @@ const EditPage = () => {
             </div>
           )}
 
-          {/* Editable Fields */}
           <div className={`w-full ${expandedView ? 'xl:w-full' : 'xl:w-2/3'} space-y-8`}>
             {error && (
               <div ref={errorRef} className="flex items-center gap-2 text-red-400 bg-red-400/10 px-6 py-4 rounded-xl text-lg">
@@ -346,7 +342,6 @@ const EditPage = () => {
               )}
             </div>
             
-            {/* Project Assignment and Save Section */}
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="flex-1">
@@ -371,6 +366,12 @@ const EditPage = () => {
           </div>
         </div>
       </div>
+      
+      <ProgressModal
+        isOpen={isReprocessing}
+        onClose={() => {}}
+        processingType="image"
+      />
     </div>
   );
 };

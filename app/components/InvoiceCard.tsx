@@ -2,7 +2,6 @@
 
 import { FileText, Trash2, DollarSign } from 'lucide-react';
 
-// Currency normalization function to map common abbreviations to ISO codes
 const normalizeCurrency = (currency: string): string => {
   const currencyMap: Record<string, string> = {
     'ft': 'HUF',
@@ -12,7 +11,7 @@ const normalizeCurrency = (currency: string): string => {
     'eur': 'EUR',
     'usd': 'USD',
     'gbp': 'GBP',
-    '': 'HUF' // Default to HUF for empty currency
+    '': 'HUF'
   };
   
   return currencyMap[currency] || currency.toUpperCase();
@@ -53,7 +52,6 @@ const InvoiceCard = ({
         minimumFractionDigits: 2
       }).format(price);
     } catch {
-      // Fallback for invalid currency codes
       return `${price.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
     }
   };
@@ -105,7 +103,6 @@ const InvoiceCard = ({
         </div>
       </div>
 
-      {/* Total Price Section */}
       {totalPrice !== undefined && (
         <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50 mt-2">
           <div className="flex items-center justify-between">

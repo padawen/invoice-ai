@@ -153,7 +153,6 @@ const UploadPage = () => {
     setLocalProcessing(true);
     setError(null);
 
-    // Determine processing type for progress modal
     const isImageProcessing = typeResult === 'image' || type === 'doctr';
     setProgressProcessingType(isImageProcessing ? 'image' : 'text');
     setShowProgressModal(true);
@@ -212,7 +211,6 @@ const UploadPage = () => {
       sessionStorage.setItem('pdf_base64', await fileToBase64(file));
       sessionStorage.setItem('processing_method', processingMethod);
 
-      // Small delay to show completion state
       setTimeout(() => {
         setShowProgressModal(false);
         window.location.href = '/edit';

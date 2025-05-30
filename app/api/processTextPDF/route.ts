@@ -144,7 +144,6 @@ export async function POST(req: NextRequest) {
 
     const parsed = tryExtractJson(raw);
 
-    // Validate the parsed result has required structure
     if (!parsed || typeof parsed !== 'object') {
       throw new Error('Parsed result is not a valid object');
     }

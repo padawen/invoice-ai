@@ -89,7 +89,6 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
               <LinkItem key={link.href} {...link} />
             ))}
 
-            {/* Authentication */}
             {user ? (
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-zinc-300">
@@ -135,7 +134,6 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
               <LinkItem key={link.href} {...link} />
             ))}
 
-            {/* Mobile Authentication */}
             {user ? (
               <div className="flex flex-col gap-4 pt-4 mt-2 border-t border-zinc-800">
                 <div className="flex items-center gap-2 text-zinc-300">

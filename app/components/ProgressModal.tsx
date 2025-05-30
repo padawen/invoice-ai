@@ -11,7 +11,7 @@ interface ProcessingStage {
   id: string;
   name: string;
   icon: React.ReactNode;
-  duration: number; // in seconds
+  duration: number;
   description: string;
 }
 
@@ -100,7 +100,6 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
       const now = Date.now();
       const elapsed = startTimeRef.current ? (now - startTimeRef.current) / 1000 : 0;
       
-      // Calculate which stage we should be in based on elapsed time
       let cumulativeTime = 0;
       let newStageIndex = 0;
       
@@ -117,11 +116,9 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
       
       setCurrentStageIndex(newStageIndex);
       
-      // Calculate overall progress
       const overallProgress = Math.min((elapsed / totalDuration) * 100, 100);
       setProgress(overallProgress);
       
-      // Calculate time remaining
       const remaining = Math.max(totalDuration - elapsed, 0);
       setTimeRemaining(remaining);
       
@@ -151,7 +148,6 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
           </p>
         </div>
 
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-zinc-400">Overall Progress</span>
@@ -175,7 +171,6 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
           </div>
         </div>
 
-        {/* Current Stage */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center justify-center w-10 h-10 bg-green-500/20 rounded-full">
@@ -196,7 +191,6 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
           </div>
         </div>
 
-        {/* Stage List */}
         <div className="space-y-3">
           {stages.map((stage, index) => (
             <div 
@@ -237,7 +231,6 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
           ))}
         </div>
 
-        {/* Tips */}
         <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
           <p className="text-xs text-zinc-400 text-center">
             💡 {processingType === 'image' 

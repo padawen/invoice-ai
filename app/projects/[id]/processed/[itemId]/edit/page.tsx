@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@/app/providers';
 import slugify from 'slugify';
@@ -8,6 +8,7 @@ import EditableFields from '@/app/components/EditableFields';
 import SaveButton from '@/app/components/SaveButton';
 import BackButton from '@/app/components/BackButton';
 import ProjectSelector from '@/app/components/ProjectSelector';
+import { useDirtyFields } from '@/app/hooks/useDirtyFields';
 import { AlertTriangle } from 'lucide-react';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice, InvoiceData } from '@/app/types';
@@ -53,8 +54,20 @@ export default function EditProcessedItemPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [projectChanging, setProjectChanging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [isNavigatingAfterSave, setIsNavigatingAfterSave] = useState(false);
 
-  // Auto-scroll to error when it appears
+  const { hasDirtyChanges } = useDirtyFields(fields || {} as EditableInvoice);
+
+  const handleProjectSelect = (newProjectName: string) => {
+    const selectedProject = allProjects.find(p => p.name === newProjectName);
+    if (!selectedProject) return;
+    
+    setSelectedProjectName(newProjectName);
+    setSelectedProjectId(selectedProject.id);
+  };
+
+  const hasProjectChanged = currentProjectId !== selectedProjectId;
+
   useEffect(() => {
     if (error && errorRef.current) {
       setTimeout(() => {
@@ -62,7 +75,6 @@ export default function EditProcessedItemPage() {
           behavior: 'smooth', 
           block: 'center' 
         });
-        // Add a brief highlight effect
         errorRef.current?.classList.add('animate-pulse');
         setTimeout(() => {
           errorRef.current?.classList.remove('animate-pulse');
@@ -71,22 +83,29 @@ export default function EditProcessedItemPage() {
     }
   }, [error]);
 
-  // Navigation guard - prevent leaving with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isNavigatingAfterSave) return;
+      
+      const hasUnsavedChanges = hasDirtyChanges || hasProjectChanged;
+      if (!hasUnsavedChanges) return;
+      
       e.preventDefault();
       e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
       return 'You have unsaved changes. Are you sure you want to leave?';
     };
 
     const handleRouteChange = () => {
+      if (isNavigatingAfterSave) return true;
+      
+      const hasUnsavedChanges = hasDirtyChanges || hasProjectChanged;
+      if (!hasUnsavedChanges) return true;
+      
       return window.confirm('You have unsaved changes. Are you sure you want to leave?');
     };
 
-    // Add beforeunload listener for browser navigation
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Override router push for internal navigation
     const originalPush = router.push;
     router.push = (...args) => {
       if (handleRouteChange()) {
@@ -99,7 +118,7 @@ export default function EditProcessedItemPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       router.push = originalPush;
     };
-  }, [router]);
+  }, [router, isNavigatingAfterSave, hasDirtyChanges, hasProjectChanged]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -196,16 +215,6 @@ export default function EditProcessedItemPage() {
     loadData();
   }, [user, supabase, slug, itemId, router]);
 
-  const handleProjectSelect = (newProjectName: string) => {
-    const selectedProject = allProjects.find(p => p.name === newProjectName);
-    if (!selectedProject) return;
-    
-    setSelectedProjectName(newProjectName);
-    setSelectedProjectId(selectedProject.id);
-  };
-
-  const hasProjectChanged = currentProjectId !== selectedProjectId;
-
   const handleSave = async () => {
     if (!fields) return;
     setSaving(true);
@@ -214,22 +223,18 @@ export default function EditProcessedItemPage() {
 
     try {
       if (user && supabase) {
-        // Create update object with only fields that are present
         const updateData: Record<string, string | string[] | number | null | InvoiceData[]> = {};
         
-        // Add seller fields if they exist
         if (fields.seller.name) updateData.seller_name = fields.seller.name;
         if (fields.seller.address) updateData.seller_address = fields.seller.address;
         if (fields.seller.tax_id) updateData.seller_tax_id = fields.seller.tax_id;
         if (fields.seller.email) updateData.seller_email = fields.seller.email;
         if (fields.seller.phone) updateData.seller_phone = fields.seller.phone;
         
-        // Add buyer fields if they exist
         if (fields.buyer.name) updateData.buyer_name = fields.buyer.name;
         if (fields.buyer.address) updateData.buyer_address = fields.buyer.address;
         if (fields.buyer.tax_id) updateData.buyer_tax_id = fields.buyer.tax_id;
         
-        // Add invoice details if they exist
         if (fields.invoice_number) updateData.invoice_number = fields.invoice_number;
         if (fields.issue_date) updateData.issue_date = fields.issue_date;
         if (fields.fulfillment_date) updateData.fulfillment_date = fields.fulfillment_date;
@@ -237,7 +242,6 @@ export default function EditProcessedItemPage() {
         if (fields.payment_method) updateData.payment_method = fields.payment_method;
         if (fields.currency) updateData.currency = fields.currency;
         
-        // Always include invoice_data
         updateData.raw_data = fields.invoice_data;
 
         const { error } = await supabase
@@ -276,11 +280,6 @@ export default function EditProcessedItemPage() {
           
           setCurrentProjectName(selectedProjectName);
           setCurrentProjectId(selectedProjectId);
-          
-          setTimeout(() => {
-            const newSlug = slugify(selectedProjectName, { lower: true, strict: true });
-            router.push(`/projects/${newSlug}/processed/${itemId}/edit`);
-          }, 1500);
         }
       } else {
         const fake = fakeProjects.find(
@@ -293,16 +292,21 @@ export default function EditProcessedItemPage() {
           setProjectChanging(true);
           setCurrentProjectName(selectedProjectName);
           setCurrentProjectId(selectedProjectId);
-          
-          setTimeout(() => {
-            const newSlug = slugify(selectedProjectName, { lower: true, strict: true });
-            router.push(`/projects/${newSlug}/processed/${itemId}/edit`);
-          }, 1500);
         }
       }
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      
+      setIsNavigatingAfterSave(true);
+      
+      setTimeout(() => {
+        const targetProjectSlug = hasProjectChanged 
+          ? slugify(selectedProjectName, { lower: true, strict: true })
+          : slugify(currentProjectName, { lower: true, strict: true });
+        router.push(`/projects/${targetProjectSlug}`);
+      }, hasProjectChanged ? 1500 : 1000);
+      
+      setTimeout(() => setSuccess(false), hasProjectChanged ? 4000 : 3000);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Failed to save changes.');
@@ -333,7 +337,6 @@ export default function EditProcessedItemPage() {
           onChange={handleFieldChange} 
         />
 
-        {/* Project assignment and save section at the bottom */}
         <div ref={saveRef} className="mt-10 bg-zinc-800/60 rounded-xl p-6 border border-zinc-700/60">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1">
