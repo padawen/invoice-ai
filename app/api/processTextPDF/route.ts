@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
+import { formatDateForInput } from '@/app/utils/dateFormatter';
 
 const fileFromBuffer = (
   buffer: Buffer,
@@ -152,6 +153,9 @@ export async function POST(req: NextRequest) {
       seller?: unknown;
       buyer?: unknown;
       invoice_data?: unknown;
+      issue_date?: string;
+      due_date?: string;
+      fulfillment_date?: string;
     };
     if (!result_obj.seller || !result_obj.buyer || !Array.isArray(result_obj.invoice_data)) {
       console.warn('Missing required fields in parsed result:', {
@@ -161,7 +165,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json(parsed);
+    // Clean up dates right when we get them from OpenAI
+    if (result_obj.issue_date) {
+      result_obj.issue_date = formatDateForInput(result_obj.issue_date);
+    }
+    if (result_obj.due_date) {
+      result_obj.due_date = formatDateForInput(result_obj.due_date);
+    }
+    if (result_obj.fulfillment_date) {
+      result_obj.fulfillment_date = formatDateForInput(result_obj.fulfillment_date);
+    }
+
+    return NextResponse.json(result_obj);
   } catch (err) {
     console.error('Processing error:', err);
     return NextResponse.json(
