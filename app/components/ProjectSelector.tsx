@@ -69,8 +69,6 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
     setSelectedProject(project);
     onSelect(project);
     
-    // If the selected project is not in the current list, refresh the list
-    // This handles the case when a new project was just created
     if (!projects.includes(project)) {
       await fetchProjects();
     }
