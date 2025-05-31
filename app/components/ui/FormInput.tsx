@@ -10,6 +10,7 @@ interface FormInputProps {
   label?: string;
   onFocus?: () => void;
   onBlur?: () => void;
+  isNumeric?: boolean;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -23,8 +24,37 @@ const FormInput: React.FC<FormInputProps> = ({
   required = false,
   label,
   onFocus,
-  onBlur
+  onBlur,
+  isNumeric = false
 }) => {
+  const handleChange = (inputValue: string) => {
+    if (isNumeric) {
+      // Replace comma with dot and allow only numbers, dots, and minus sign
+      let cleanValue = inputValue.replace(/,/g, '.');
+      
+      // Allow only numbers, one dot, and minus sign at the beginning
+      cleanValue = cleanValue.replace(/[^0-9.-]/g, '');
+      
+      // Ensure only one dot
+      const dotCount = (cleanValue.match(/\./g) || []).length;
+      if (dotCount > 1) {
+        const firstDotIndex = cleanValue.indexOf('.');
+        cleanValue = cleanValue.substring(0, firstDotIndex + 1) + 
+                    cleanValue.substring(firstDotIndex + 1).replace(/\./g, '');
+      }
+      
+      // Ensure minus only at the beginning
+      if (cleanValue.includes('-')) {
+        const withoutMinus = cleanValue.replace(/-/g, '');
+        cleanValue = inputValue.startsWith('-') ? '-' + withoutMinus : withoutMinus;
+      }
+      
+      onChange(cleanValue);
+    } else {
+      onChange(inputValue);
+    }
+  };
+
   const isSmallInput = className.includes('text-xs') || className.includes('px-1') || className.includes('px-2');
   
   const baseClasses = "border rounded-lg text-white focus:outline-none transition-colors";
@@ -46,7 +76,7 @@ const FormInput: React.FC<FormInputProps> = ({
     <input
       type={type}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => handleChange(e.target.value)}
       placeholder={placeholder}
       className={`${baseClasses} ${focusClasses} ${backgroundClasses} ${paddingClasses} ${className}`}
       maxLength={maxLength}

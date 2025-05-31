@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { AlertCircle, Folder, ChevronDown, Info } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import ProjectModal from './modals/ProjectModal';
@@ -11,46 +11,51 @@ interface Props {
   isDemo?: boolean;
 }
 
-const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Props) => {
+export interface ProjectSelectorRef {
+  openProjectModal: () => void;
+}
+
+const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initialProject = '', isDemo = false }, ref) => {
   const [projects, setProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState(initialProject);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const supabase = createSupabaseBrowserClient();
-        
-        if (!supabase) {
-          setError('Failed to initialize Supabase client');
-          return;
-        }
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        
-        if (!token) return;
-
-        const res = await fetch('/api/project', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await res.json();
-
-        if (Array.isArray(data.projects)) {
-          setProjects(data.projects);
-          if (data.projects.length === 0) {
-            setIsModalOpen(true);
-          }
-        } else {
-          throw new Error();
-        }
-      } catch {
-        setError('Failed to load projects.');
+  useImperativeHandle(ref, () => ({
+    openProjectModal: () => setIsModalOpen(true)
+  }));
+  
+  const fetchProjects = async () => {
+    try {
+      const supabase = createSupabaseBrowserClient();
+      
+      if (!supabase) {
+        setError('Failed to initialize Supabase client');
+        return;
       }
-    };
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) return;
 
+      const res = await fetch('/api/project', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (Array.isArray(data.projects)) {
+        setProjects(data.projects);
+      } else {
+        throw new Error();
+      }
+    } catch {
+      setError('Failed to load projects.');
+    }
+  };
+  
+  useEffect(() => {
     fetchProjects();
   }, []);
 
@@ -60,9 +65,15 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
     }
   }, [initialProject]);
 
-  const handleSelectProject = (project: string) => {
+  const handleSelectProject = async (project: string) => {
     setSelectedProject(project);
     onSelect(project);
+    
+    // If the selected project is not in the current list, refresh the list
+    // This handles the case when a new project was just created
+    if (!projects.includes(project)) {
+      await fetchProjects();
+    }
   };
 
   return (
@@ -114,7 +125,9 @@ const ProjectSelector = ({ onSelect, initialProject = '', isDemo = false }: Prop
       )}
     </div>
   );
-};
+});
+
+ProjectSelector.displayName = 'ProjectSelector';
 
 export default ProjectSelector;
 

@@ -5,12 +5,14 @@ export const useDirtyFields = (fields: EditableInvoice) => {
   const [originalValues, setOriginalValues] = useState<EditableInvoice | null>(null);
   const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
   const [globalDirtyOperations, setGlobalDirtyOperations] = useState<Set<string>>(new Set());
+  const [newlyAddedItems, setNewlyAddedItems] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!originalValues && fields && Object.keys(fields).length > 0) {
       setOriginalValues(JSON.parse(JSON.stringify(fields)));
       setDirtyFields(new Set());
       setGlobalDirtyOperations(new Set());
+      setNewlyAddedItems(new Set());
     }
   }, [fields, originalValues]);
 
@@ -135,10 +137,49 @@ export const useDirtyFields = (fields: EditableInvoice) => {
   const clearAllDirty = () => {
     setDirtyFields(new Set());
     setGlobalDirtyOperations(new Set());
+    setNewlyAddedItems(new Set());
   };
 
   const markGlobalOperation = (operation: string) => {
     setGlobalDirtyOperations(prev => new Set([...prev, operation]));
+  };
+
+  const markItemAdded = (index: number) => {
+    setNewlyAddedItems(prev => new Set([...prev, index]));
+    markGlobalOperation(`item_added_${index}_${Date.now()}`);
+  };
+
+  const markItemDeleted = (index: number) => {
+    const isNewlyAdded = newlyAddedItems.has(index);
+    
+    if (isNewlyAdded) {
+      setGlobalDirtyOperations(prev => {
+        const newSet = new Set(prev);
+        for (const op of prev) {
+          if (op.startsWith(`item_added_${index}_`)) {
+            newSet.delete(op);
+            break;
+          }
+        }
+        return newSet;
+      });
+      
+      setNewlyAddedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        const updatedItems = new Set<number>();
+        for (const itemIndex of newSet) {
+          if (itemIndex > index) {
+            updatedItems.add(itemIndex - 1);
+          } else {
+            updatedItems.add(itemIndex);
+          }
+        }
+        return updatedItems;
+      });
+    } else {
+      markGlobalOperation(`item_deleted_${index}_${Date.now()}`);
+    }
   };
 
   const clearItemDirtyFields = (deletedIndex: number) => {
@@ -186,6 +227,8 @@ export const useDirtyFields = (fields: EditableInvoice) => {
     clearDirtyField,
     clearAllDirty,
     markGlobalOperation,
+    markItemAdded,
+    markItemDeleted,
     clearItemDirtyFields,
     isFieldDirty,
     hasDirtyChanges: dirtyFields.size > 0 || globalDirtyOperations.size > 0,
