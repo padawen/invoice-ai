@@ -26,7 +26,6 @@ const EditableFields = ({ fields, onChange }: Props) => {
     dirtyFields,
     globalDirtyOperations,
     markFieldDirty,
-    markGlobalOperation,
     markItemAdded,
     markItemDeleted,
     clearItemDirtyFields,
