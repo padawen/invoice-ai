@@ -27,6 +27,8 @@ const EditableFields = ({ fields, onChange }: Props) => {
     globalDirtyOperations,
     markFieldDirty,
     markGlobalOperation,
+    markItemAdded,
+    markItemDeleted,
     clearItemDirtyFields,
     hasDirtyChanges,
     totalChanges
@@ -69,7 +71,8 @@ const EditableFields = ({ fields, onChange }: Props) => {
       gross: '', 
       currency: '' 
     };
-    markGlobalOperation(`item_added_${Date.now()}`);
+    const newIndex = fields.invoice_data.length;
+    markItemAdded(newIndex);
     onChange({ 
       ...fields, 
       invoice_data: [...fields.invoice_data, newItem] 
@@ -77,7 +80,7 @@ const EditableFields = ({ fields, onChange }: Props) => {
   };
 
   const deleteItem = (index: number) => {
-    markGlobalOperation(`item_deleted_${index}_${Date.now()}`);
+    markItemDeleted(index);
     clearItemDirtyFields(index);
     const updated = [...fields.invoice_data];
     updated.splice(index, 1);

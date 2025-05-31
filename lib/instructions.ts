@@ -25,6 +25,7 @@ Data Extraction Instructions:
    - Remove all spaces and currency symbols (e.g., "Ft", "HUF", "EUR")
    - If a comma is used as a decimal separator, replace it with a period (e.g., "4 565,12" becomes "4565.12")
    - For example: "5 991 Ft" becomes "5991", "1,200 EUR" becomes "1200", "4 565,12" becomes "4565.12"
+   - Negative values are allowed for discounts, refunds, or credits (e.g., "-500" for a discount)
    - Return as string
 6. Currency normalization:
    - If you see "Ft", "ft", or "FT", convert to "HUF"
@@ -139,6 +140,7 @@ Data Extraction Instructions:
    - Remove all spaces and currency symbols (e.g., "Ft", "HUF", "EUR")
    - If a comma is used as a decimal separator, replace it with a period (e.g., "4 565,12" becomes "4565.12")
    - For example: "5 991 Ft" becomes "5991", "1,200 EUR" becomes "1200", "4 565,12" becomes "4565.12"
+   - Negative values are allowed for discounts, refunds, or credits (e.g., "-500" for a discount)
    - Return as string
 6. Currency normalization:
    - If you see "Ft", "ft", or "FT", convert to "HUF"

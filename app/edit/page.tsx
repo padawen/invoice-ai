@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import EditableFields from '../components/EditableFields';
-import ProjectSelector from '../components/ProjectSelector';
+import ProjectSelector, { ProjectSelectorRef } from '../components/ProjectSelector';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import SaveButton from '../components/SaveButton';
 import ProgressModal from '../components/ProgressModal';
@@ -18,6 +18,7 @@ let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = 
 const EditPage = () => {
   const router = useRouter();
   const { setIsProcessing } = useProcessing();
+  const projectSelectorRef = useRef<ProjectSelectorRef>(null);
   
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [expandedView, setExpandedView] = useState(false);
@@ -116,8 +117,8 @@ const EditPage = () => {
   }, [error]);
 
   const handleSave = async () => {
-    if (!project || !fields) {
-      setError('Please select a project and provide at least the seller name.');
+    if (!fields) {
+      setError('Please provide at least the seller name.');
       return;
     }
 
@@ -125,7 +126,13 @@ const EditPage = () => {
       setError('Seller name is required.');
       return;
     }
-  
+
+    if (!project) {
+      projectSelectorRef.current?.openProjectModal();
+      setError('Please select a project to save the invoice.');
+      return;
+    }
+
     setIsSaving(true);
     setLocalProcessing(true);
     setError(null);
@@ -348,7 +355,7 @@ const EditPage = () => {
                   <h3 className="text-xl font-bold text-green-400 mb-4">Project Assignment</h3>
                   <p className="text-zinc-400 mb-6">Assign this invoice to an existing project or create a new one</p>
                   <div className="max-w-md">
-                    <ProjectSelector onSelect={setProject} isDemo={!supabase} />
+                    <ProjectSelector onSelect={setProject} isDemo={!supabase} ref={projectSelectorRef} />
                   </div>
                 </div>
                 

@@ -49,6 +49,7 @@ const InvoiceItem = React.memo<{
           maxLength={2}
           className="w-full px-1 py-1.5 text-xs text-center"
           isDirty={dirtyFields.has(`item_${index}_quantity`)}
+          isNumeric={true}
         />
       </div>
       
@@ -59,6 +60,7 @@ const InvoiceItem = React.memo<{
           placeholder="Price"
           className="w-full px-1 py-1.5 text-xs text-center"
           isDirty={dirtyFields.has(`item_${index}_unit_price`)}
+          isNumeric={true}
         />
       </div>
       
@@ -69,6 +71,7 @@ const InvoiceItem = React.memo<{
           placeholder="Net"
           className="w-full px-1 py-1.5 text-xs text-center"
           isDirty={dirtyFields.has(`item_${index}_net`)}
+          isNumeric={true}
         />
       </div>
       
@@ -79,6 +82,7 @@ const InvoiceItem = React.memo<{
           placeholder="Gross"
           className="w-full px-1 py-1.5 text-xs text-center"
           isDirty={dirtyFields.has(`item_${index}_gross`)}
+          isNumeric={true}
         />
       </div>
       
@@ -152,6 +156,7 @@ const InvoiceItem = React.memo<{
             maxLength={2}
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_quantity`)}
+            isNumeric={true}
           />
           <FormInput
             value={item.unit_price || ''}
@@ -160,6 +165,7 @@ const InvoiceItem = React.memo<{
             label="Unit Price"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_unit_price`)}
+            isNumeric={true}
           />
         </div>
         
@@ -171,6 +177,7 @@ const InvoiceItem = React.memo<{
             label="Net Amount"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_net`)}
+            isNumeric={true}
           />
           <FormInput
             value={item.gross || ''}
@@ -179,6 +186,7 @@ const InvoiceItem = React.memo<{
             label="Gross Total"
             className="w-full"
             isDirty={dirtyFields.has(`item_${index}_gross`)}
+            isNumeric={true}
           />
         </div>
         
