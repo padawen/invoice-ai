@@ -1,109 +1,265 @@
-# 🤖 Invoice AI: The Accountant's Worst Nightmare
+# 🤖 Invoice AI: Because Reading PDFs is for Peasants
 
-> *"Finally, an AI that understands my pain" - Every freelancer ever*
+> *"Built with 🥂, 💧, 🌿 & Next.js"* - Ancient Hungarian Proverb
 
-## 🎭 What Fresh Hell Is This?
+**Welcome to Invoice AI**, the most sophisticated invoice processing system known to mankind! We've taught artificial intelligence to read invoices faster than your accountant can say "receipt"! 🧾✨
 
-Welcome to Invoice AI, the only app that makes processing invoices less painful than stepping on a LEGO barefoot. This AI-powered financial torture device extracts data from your invoices faster than you can say "tax deduction," organizes them by project (because chaos is not a filing system), and provides analytics so beautiful you'll almost forget you're broke.
+## 🎭 What This Magnificent Beast Does
 
-## 🚀 Installation: A Journey of Self-Discovery
+This isn't just another boring invoice processor. Oh no, no, no. This is a **FULL-STACK ENGINEERING MASTERPIECE** that turns your crappy PDF invoices into beautiful, structured data faster than you can pour a proper fröccs!
 
-### Step 1: Accept Your Fate
+### 🚀 Core Features (AKA "The Good Stuff")
+
+**📄 PDF Upload & Processing**
+- Drag & drop PDFs like you're DJ-ing at a Gödöllő club
+- Automatic PDF type detection (text vs image) because we're fancy like that
+- Support for multiple processing engines:
+  - **OpenAI GPT-4** (when you want the good stuff)
+  - **Local LLM** (when you're feeling rebellious)
+  - **DocTR OCR** (for those sketchy scanned invoices)
+
+**🧠 AI-Powered Data Extraction**
+- Extracts seller info (name, address, tax ID, email, phone)
+- Grabs buyer details (because we need to know who owes what)
+- Invoice metadata (numbers, dates, payment methods)
+- Line items with quantities, prices, and currencies
+- Automatically calculates net/gross amounts
+
+**🎨 Beautiful Editing Interface**
+- Collapsible sections for seller, buyer, and invoice details
+- Real-time dirty field tracking (we see your edits 👀)
+- Add/remove invoice items with ease
+- Live financial summaries
+- Export to CSV because Excel is still king
+
+**📊 Project Management & Analytics**
+- Dashboard with all your projects
+- Financial summaries by currency (supports HUF, EUR, USD, GBP)
+- Monthly and quarterly breakdowns
+- Top buyers/sellers analysis
+- Beautiful charts that would make your CFO weep with joy
+
+**🔐 Authentication & Data Storage**
+- Supabase integration for user management
+- Secure project storage
+- Demo mode for commitment-phobic users
+
+## 🛠 Tech Stack (The Magnificent Seven... Plus Some)
+
+- **Next.js 15** - Because we live in the future
+- **React 19** - Hooks everywhere!
+- **TypeScript** - Type safety is not optional
+- **Tailwind CSS** - Making things pretty since forever
+- **Supabase** - Database + Auth + Everything
+- **OpenAI API** - The brain of the operation
+- **Playwright** - For those fancy PDF operations
+- **Lucide React** - Icons that don't suck
+
+## 🏗️ Environment Setup (Don't Skip This!)
+
+### Prerequisites (Install These or Cry Later)
+
+1. **Node.js 18+** - [Download here](https://nodejs.org/)
+2. **npm/yarn** - Should come with Node.js
+3. **Git** - You know what this is
+4. **A sense of humor** - Essential for debugging
+
+### 🚦 Step-by-Step Setup Guide
+
+#### 1. Clone This Magnificent Repository
 ```bash
-git clone https://github.com/padawen/invoice-ai.git
+git clone https://github.com/your-username/invoice-ai.git
 cd invoice-ai
 ```
-*Congratulations, you've committed to yet another side project you'll abandon in 3 months.*
 
-### Step 2: Feed the Dependency Monster
+#### 2. Install Dependencies (The Fun Part)
 ```bash
 npm install
+# or if you're a yarn person
+yarn install
 ```
-*Watch as your node_modules folder grows larger than your actual codebase.*
 
-### Step 3: Summon the Development Demons
+This will also automatically install Playwright browsers (thanks to our postinstall script).
+
+#### 3. Environment Variables Setup 🔑
+
+Create a `.env.local` file in the root directory and add these secrets:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key
+
+# Optional: Local LLM endpoint (if you're running your own)
+LOCAL_LLM_ENDPOINT=http://localhost:8000
+
+# Optional: Custom API endpoints
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+**Where to get these magical keys:**
+
+**Supabase Setup:**
+1. Go to [supabase.com](https://supabase.com)
+2. Create a new project (it's free!)
+3. Go to Project Settings → API
+4. Copy your Project URL and anon key
+5. Go to Project Settings → API → Service Role Keys
+6. Copy the service role key (keep this secret!)
+
+**OpenAI Setup:**
+1. Visit [platform.openai.com](https://platform.openai.com)
+2. Create an account and get API credits
+3. Go to API Keys section
+4. Create a new secret key
+5. Add some credits to your account (you'll need them)
+
+#### 4. Database Setup (Supabase Magic) 🗃️
+
+You'll need to create these tables in your Supabase database:
+
+```sql
+-- Projects table
+CREATE TABLE projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Processed invoices table
+CREATE TABLE processed_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  fields JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE processed_items ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Users can view their own projects" ON projects
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own projects" ON projects
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own projects" ON projects
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Similar policies for processed_items...
+```
+
+#### 5. Run the Development Server 🏃‍♂️
+
 ```bash
 npm run dev
+# or
+yarn dev
 ```
-*The app will start on localhost:3000, which is coincidentally the same number of invoices you've been avoiding.*
 
-### Step 4: Question Your Life Choices
-Open your browser and navigate to `http://localhost:3000`. Marvel at the interface that will make you actually want to organize your finances.
+Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
 
-## ✨ Features That Will Change Your Life (Probably Not)
+### 🚀 Production Deployment
 
-- **🔍 Invoice Scanning**: Upload PDFs and watch AI do in 3 seconds what would take you 30 minutes and several existential crises
-- **📁 Project Organization**: Sort invoices by project because "miscellaneous expenses" is not a business strategy
-- **📊 Financial Analytics**: Beautiful charts that make your spending look almost intentional
-- **🔎 Advanced Filtering**: Find that one receipt from 2019 faster than you can find your will to live
-- **💾 Supabase Storage**: Your invoices live in the cloud, safer than your local hard drive
-- **🔐 Authentication**: Login system that actually works (shocking, we know)
-- **🤖 AI Magic**: Powered by OpenAI's GPT-4, which is smarter than your accountant but costs less per hour
+- **Render**: Used for OpenAI processing backend services
+- **Main App**: Can be deployed to your platform of choice
+- **Docker**: Full Docker support available for containerized deployment
 
-## 🛠️ Tech Stack (AKA Our Weapons of Choice)
+## 🎯 How to Use This Beast
 
-- **Next.js 15**: Because we like living dangerously with bleeding-edge frameworks
-- **React 19**: So new it still has that new framework smell
-- **Supabase**: PostgreSQL with a fancy mustache and authentication superpowers
-- **Tailwind CSS**: Making developers feel productive while writing `className="flex items-center justify-center h-screen"`
-- **OpenAI API**: The real MVP that does all the heavy lifting while we take credit
-- **Playwright**: For when you need to convince a PDF it's actually an image
-- **TypeScript**: Because we enjoy arguing with our compiler about types at 2 AM
+### 1. **Upload Your First Invoice**
+- Hit the "Upload" button
+- Drag & drop a PDF invoice
+- Watch the AI magic happen ✨
 
-## 🎯 How It Works (The Magic Explained)
+### 2. **Edit Like a Pro**
+- Review extracted data
+- Edit any fields that look wonky
+- Add/remove invoice items
+- Save your masterpiece
 
-1. **Upload**: Drag and drop your invoice like you're feeding a very expensive digital pet
-2. **AI Processing**: Our AI reads your invoice faster than you read terms and conditions
-3. **Data Extraction**: Watch as vendor names, amounts, and dates appear like magic (it's actually just regex and tears)
-4. **Organization**: Invoices get sorted into projects because adulting requires structure
-5. **Analytics**: Stare at pretty charts while contemplating your financial decisions
+### 3. **Analyze Your Data**
+- Check out the financial summary
+- Filter by currency and date ranges
+- Export to CSV for your spreadsheet addiction
 
-## 🚨 Warning Labels
+### 4. **Organize with Projects**
+- Group related invoices together
+- Track different clients or time periods
+- Delete projects when you're done
 
-- May cause sudden urges to organize your entire financial life
-- Side effects include: increased productivity, reduced stress, and mild addiction to automation
-- Not recommended for people who enjoy manual data entry (we don't understand you)
-- May result in your accountant feeling threatened
+## 🐛 Troubleshooting (When Things Go Wrong)
 
-## 🤝 Contributing (Please Help Us)
+### "OpenAI API Error"
+- Check your API key is correct
+- Make sure you have credits
+- Verify your rate limits
 
-We welcome contributions from:
-- People who know what they're doing (unlike us)
-- Anyone who can make our code less embarrassing
-- Developers who understand CSS better than "make it look good"
-- People with actual design skills
+### "Supabase Connection Failed"
+- Double-check your environment variables
+- Ensure your Supabase project is active
+- Check if your database tables exist
 
-### How to Contribute:
-1. Fork this repo (it's free real estate)
-2. Fix our bugs (there are many)
-3. Add features we were too lazy to implement
-4. Submit a PR with a description longer than our attention span
-5. Wait for us to review it while we pretend we understand your code
+### "PDF Processing Failed"
+- Make sure the PDF isn't password-protected
+- Check if it's under 10 pages (current limit)
+- Try a different processing method
+
+### "It's Not Working!"
+- Turn it off and on again
+- Check the browser console for errors
+- Make sure you followed ALL the setup steps
+- Drink some water, it helps
+
+## 🤝 Contributing (Join the Party!)
+
+Want to make this even more awesome? Here's how:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Style
+- Use TypeScript (please!)
+- Follow the existing code style
+- Add comments for complex logic
+- Test your changes
 
 ## 📜 License
 
-This project is licensed under the "Do Whatever You Want But Don't Blame Us When It Breaks" License (MIT). 
+This project is licensed under the "Do Whatever You Want But Don't Sue Me" License. See the LICENSE file for details.
 
-We're not responsible for:
-- Lost invoices
-- Gained sanity
-- Sudden urges to start more side projects
-- Your accountant's existential crisis
+## 🍺 Special Thanks
 
-## 🆘 Support
+- **ChatGPT** - For helping debug those weird TypeScript errors
+- **Hungarian Wine Industry** - For providing the inspiration (🥂)
+- **Sparkling Water Companies** - Essential for staying hydrated (💧)
+- **Mother Nature** - For the herbs (🌿)
+- **Next.js Team** - For the incredible framework
 
-If you need help:
-1. Read the code (good luck)
-2. Google the error message
-3. Ask ChatGPT (it probably knows better than we do)
-4. Open an issue and we'll pretend we know how to fix it
+## 📞 Support
+
+If you need help, you can:
+- Open an issue on GitHub
+- Send smoke signals
+- Pray to the JavaScript gods
+- Actually read the documentation (revolutionary!)
 
 ## 🎉 Final Words
 
-Remember: This app won't solve all your problems, but it will solve the very specific problem of manually processing invoices. And honestly, in this economy, that's a win.
+Remember: This tool is designed to make your life easier, not to replace your brain. Always double-check the extracted data, especially for important financial documents.
 
-*Built with ❤️, ☕, and an unhealthy amount of Stack Overflow*
+Now go forth and process those invoices like the data wizard you were meant to be! 🧙‍♂️✨
 
 ---
 
-**P.S.** If this app saves you time, consider buying us a coffee. If it breaks your computer, consider it a learning experience.
+**Built with Hungarian wine, sparkling water, mysterious herbs, and an unhealthy amount of Next.js** 🇭🇺❤️

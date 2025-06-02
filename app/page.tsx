@@ -68,7 +68,7 @@ export default function Home() {
 
       <footer className="w-full py-4 px-6 mt-auto flex justify-center text-center z-10 bg-zinc-900/70 backdrop-blur-sm border-t border-zinc-800">
         <div className="text-zinc-400 font-medium">
-          © {new Date().getFullYear()} Invoice AI · Built with <span className="text-amber-500">☕</span>, <span className="text-yellow-400">💡</span> & <span className="text-blue-400">Next.js</span>
+          © {new Date().getFullYear()} Invoice AI · Built with <span className="text-yellow-200">🥂</span>, <span className="text-blue-300">💧</span>, <span className="text-green-400">🌿</span> & <span className="text-blue-400">Next.js</span>
         </div>
       </footer>
     </main>
