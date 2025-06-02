@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ projects: data.map(p => p.name) });
+  return NextResponse.json({ projects: data.map((p: { name: string }) => p.name) });
 }
 
 export async function POST(req: NextRequest) {
