@@ -1,7 +1,7 @@
 Flask==3.0.3
 gunicorn==21.2.0
 python-doctr[torch]==0.7.1
-torch==2.2.2
+torch==2.8.0
 torchvision==0.17.2
 opencv-python-headless==4.9.0.80
 PyMuPDF==1.24.1
