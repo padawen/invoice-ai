@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+import {
+  INTERNAL_OR_OPENAI_API_KEY,
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+} from '@/lib/config';
+
 export const runtime = 'nodejs';
 
-const API_KEY = process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
+const API_KEY = INTERNAL_OR_OPENAI_API_KEY;
 
 const createSupabaseClient = (token: string) =>
   createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

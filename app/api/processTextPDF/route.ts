@@ -3,6 +3,7 @@ import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
+import { INTERNAL_OR_OPENAI_API_KEY, OPENAI_API_KEY } from '@/lib/config';
 
 const fileFromBuffer = (
   buffer: Buffer,
@@ -13,11 +14,10 @@ const fileFromBuffer = (
 export async function POST(req: NextRequest) {
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!,
+    apiKey: OPENAI_API_KEY,
   });
 
-  const API_KEY =
-    process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
+  const API_KEY = INTERNAL_OR_OPENAI_API_KEY;
 
   let isAuthenticated = false;
 

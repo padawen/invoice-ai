@@ -4,6 +4,7 @@ import type { ChatCompletionContentPart } from 'openai/resources/chat/completion
 import { getGuidelinesImage } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
+import { OPENAI_API_KEY } from '@/lib/config';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -245,11 +246,7 @@ export async function POST(req: NextRequest) {
       ),
     ];
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key is not configured');
-    }
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
     
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
