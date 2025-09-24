@@ -147,13 +147,17 @@ const UploadPage = () => {
     await processInvoice('openai');
   };
 
-  const processInvoice = async (type: 'openai' | 'localllm' | 'doctr') => {
+  const handleProcessWithPrivacy = async () => {
+    await processInvoice('privacy');
+  };
+
+  const processInvoice = async (type: 'openai' | 'privacy') => {
     if (!file || !typeResult) return setError('No file or type detected');
 
     setLocalProcessing(true);
     setError(null);
 
-    const isImageProcessing = typeResult === 'image' || type === 'doctr';
+    const isImageProcessing = typeResult === 'image';
     setProgressProcessingType(isImageProcessing ? 'image' : 'text');
     setShowProgressModal(true);
 
@@ -179,12 +183,10 @@ const UploadPage = () => {
           endpoint = '/api/processImagePDF';
           processingMethod = 'image';
         }
-      } else if (type === 'localllm') {
-        endpoint = '/api/processLocalLLM'; 
-        processingMethod = 'text';
-      } else if (type === 'doctr') {
-        endpoint = '/api/processDoctr';
-        processingMethod = 'image';
+      } else if (type === 'privacy') {
+        // Privacy-focused processing using OCR + Ollama
+        endpoint = process.env.NEXT_PUBLIC_PRIVACY_API_URL || 'http://localhost:5000/process-invoice';
+        processingMethod = 'privacy';
       }
 
       const res = await fetch(endpoint, {
@@ -194,11 +196,20 @@ const UploadPage = () => {
       });
 
       const rawText = await res.text();
+
+      if (!res.ok) {
+        throw new Error(`Processing failed with status ${res.status}: ${rawText}`);
+      }
+
       const parsed = JSON.parse(rawText);
 
       if ('error' in parsed && parsed.error === 'PAGE_LIMIT_EXCEEDED') {
         setError('PDF exceeds the 10-page limit. Please upload a smaller document.');
         return;
+      }
+
+      if ('error' in parsed) {
+        throw new Error(parsed.error || 'Processing failed');
       }
 
       const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
@@ -207,6 +218,7 @@ const UploadPage = () => {
         throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
       }
 
+      // Store result with method info
       sessionStorage.setItem('openai_json', JSON.stringify(result));
       sessionStorage.setItem('pdf_base64', await fileToBase64(file));
       sessionStorage.setItem('processing_method', processingMethod);
@@ -339,6 +351,20 @@ const UploadPage = () => {
                   {typeResult}
                 </span>
               </div>
+
+              <div className="text-center text-sm text-zinc-500 max-w-2xl">
+                <p className="mb-2">Choose your processing method:</p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center text-xs">
+                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+                    <div className="text-green-400 font-medium mb-1">OpenAI (Cloud)</div>
+                    <div>Fast • High accuracy • External API</div>
+                  </div>
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                    <div className="text-blue-400 font-medium mb-1">Privacy AI (Local)</div>
+                    <div>Private • On-premise • No data sharing</div>
+                  </div>
+                </div>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
                 <button
@@ -349,22 +375,18 @@ const UploadPage = () => {
                   }`}
                 >
                   Extract with OpenAI
+                  <span className="text-xs px-2 py-0.5 bg-green-700 rounded ml-1">Cloud</span>
                 </button>
-                
+
                 <button
-                  disabled={true}
-                  className="px-6 py-3 bg-blue-600/40 text-white/70 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
+                  onClick={handleProcessWithPrivacy}
+                  disabled={isOperationInProgress}
+                  className={`px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                    isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Extract with Local LLM - Ollama
-                  <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
-                </button>
-                
-                <button
-                  disabled={true}
-                  className="px-6 py-3 bg-purple-600/40 text-white/70 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
-                >
-                  Extract with Simple Doctr
-                  <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
+                  Extract with Privacy AI
+                  <span className="text-xs px-2 py-0.5 bg-blue-700 rounded ml-1">Local</span>
                 </button>
               </div>
             </div>
