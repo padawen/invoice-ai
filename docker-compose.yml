@@ -6,11 +6,22 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
+    depends_on:
+      - ocr
     ports:
       - "3000:3000"
     env_file:
       - .env.local
     environment:
       NODE_ENV: production
+      OCR_SERVICE_URL: http://ocr:8000
+      NEXT_PUBLIC_OCR_SERVICE_URL: http://ocr:8000
     volumes:
       - ./tmp:/app/tmp
+
+  ocr:
+    build:
+      context: ./services/ocr
+    restart: always
+    ports:
+      - "8000:8000"

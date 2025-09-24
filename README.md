@@ -171,11 +171,13 @@ Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
 
 ### 🧾 OCR Microservice (DocTR + Flask)
 
+> 💡 **Compose shortcut:** `docker-compose up --build` now launches the Next.js app *and* the DocTR OCR microservice together. The stack runs on ports `3000` (web) and `8000` (OCR), and the proxy is preconfigured with `OCR_SERVICE_URL=http://ocr:8000` so no extra setup is required when using the compose workflow.
+
 1. Build the containerized service:
    ```bash
    docker build -t invoice-ocr:cpu ./services/ocr
    ```
-2. Run the service locally:
+2. Run the service locally (skip if you're using `docker-compose`):
    ```bash
    docker run -p 8000:8000 --name ocr invoice-ocr:cpu
    ```
