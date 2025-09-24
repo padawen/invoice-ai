@@ -100,7 +100,7 @@ LOCAL_LLM_ENDPOINT=http://localhost:8000
 # Optional: Custom API endpoints
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 
-# OCR microservice proxy
+# OCR microservice proxy (see "DocTR OCR configuration" below for details)
 OCR_SERVICE_URL=http://localhost:8000
 ```
 
@@ -179,7 +179,7 @@ Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
    ```bash
    docker run -p 8000:8000 --name ocr invoice-ocr:cpu
    ```
-3. Ensure the Next.js app has `OCR_SERVICE_URL=http://localhost:8000` in `.env.local` so `/api/ocrProcess` can proxy requests.
+3. Ensure the Next.js app has `OCR_SERVICE_URL=http://localhost:8000` in `.env.local` so `/api/ocrProcess` can proxy requests. If you also want to expose the service URL to client-side code, mirror the value in `NEXT_PUBLIC_OCR_SERVICE_URL`.
 4. Health check the service:
    ```bash
    curl http://localhost:8000/health
@@ -210,9 +210,17 @@ Sample response snippet:
 
 The `/api/ocrProcess` route forwards files to the Flask service with a 180s timeout and bubbles up detailed error states (`ocr_timeout`, `ocr_failed`, `file_too_large`).
 
+### ⚙️ DocTR OCR configuration (local vs. production)
+
+| Scenario | What to set | Notes |
+| --- | --- | --- |
+| **Local development** | Nothing *if* you keep the default `http://127.0.0.1:8000` DocTR container running. The proxy automatically falls back to this URL when `NODE_ENV!=='production'`. | Start the OCR Docker container from step 2 so the fallback endpoint is reachable. |
+| **Local development with a custom URL** | Add `OCR_SERVICE_URL=<your local URL>` to `.env.local`. Optionally expose it to the browser with `NEXT_PUBLIC_OCR_SERVICE_URL`. | Useful if you bind the DocTR container to a different port/host. |
+| **Production deployments (Render, Vercel, Docker, etc.)** | **Always** define `OCR_SERVICE_URL=<https://your-doctr-service>` in the hosting provider's environment variables. Add `NEXT_PUBLIC_OCR_SERVICE_URL` only if the client needs to call DocTR directly. | Production builds run with `NODE_ENV=production`, so there is no automatic fallback—without this variable the upload page will show the `ocr_service_unconfigured` error. |
+
 ### 🚀 Production Deployment
 
-- **Render**: Used for OpenAI processing backend services
+- **Render**: Used for OpenAI processing backend services. In addition to the general environment variables, add `OCR_SERVICE_URL` (and optional `NEXT_PUBLIC_OCR_SERVICE_URL`) under **Environment → Environment Variables** so the `/api/ocrProcess` proxy knows where to forward requests after deployment.
 - **Main App**: Can be deployed to your platform of choice
 - **Docker**: Full Docker support available for containerized deployment
 

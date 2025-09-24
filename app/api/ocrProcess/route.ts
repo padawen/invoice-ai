@@ -5,8 +5,13 @@ export const runtime = 'nodejs';
 const DEFAULT_MAX_FILE_MB = 20;
 const REQUEST_TIMEOUT_MS = 180_000;
 
+const DEFAULT_LOCAL_SERVICE_URL = 'http://127.0.0.1:8000';
+
 export async function POST(request: NextRequest) {
-  const serviceUrl = process.env.OCR_SERVICE_URL;
+  const serviceUrl =
+    process.env.OCR_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_OCR_SERVICE_URL ||
+    (process.env.NODE_ENV !== 'production' ? DEFAULT_LOCAL_SERVICE_URL : undefined);
   if (!serviceUrl) {
     return NextResponse.json({ ok: false, error: 'ocr_service_unconfigured' }, { status: 500 });
   }
