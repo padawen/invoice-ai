@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
-import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
+import { authenticateRequest } from '../_utils/auth';
+import { extractJsonFromText } from '../_utils/json';
 
 const fileFromBuffer = (
   buffer: Buffer,
@@ -11,40 +12,14 @@ const fileFromBuffer = (
 ): File => new File([buffer], filename, { type: contentType });
 
 export async function POST(req: NextRequest) {
+  const isAuthenticated = await authenticateRequest(req);
+  if (!isAuthenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
   });
-
-  const API_KEY =
-    process.env.INTERNAL_API_KEY || process.env.OPENAI_API_KEY;
-
-  let isAuthenticated = false;
-
-  const apiKey = req.headers.get('x-api-key');
-  if (apiKey && apiKey === API_KEY) {
-    isAuthenticated = true;
-  }
-
-  if (!isAuthenticated) {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (token) {
-      try {
-        const supabase = createSupabaseClient(token);
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-        if (user && !error) isAuthenticated = true;
-      } catch (err) {
-        console.error('Supabase auth error:', err);
-      }
-    }
-  }
-
-  if (!isAuthenticated) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const formData = await req.formData();
   const blob = formData.get('file') as Blob | null;
@@ -82,9 +57,7 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: assistant.id,
-    });
+    const run = await openai.beta.threads.runs.create(thread.id, { assistant_id: assistant.id });
 
     let result;
     let attempts = 0;
@@ -123,27 +96,7 @@ export async function POST(req: NextRequest) {
       throw new Error('No valid message returned from assistant');
     }
 
-    const raw = msg.text.value;
-
-    const tryExtractJson = (text: string): unknown => {
-      const match = text.match(/{[\s\S]*}/);
-      if (!match) {
-        console.error('No JSON object found in response:', text);
-        throw new Error('No JSON object found in assistant response');
-      }
-      try {
-        const parsed = JSON.parse(match[0]);
-        return parsed;
-      } catch (err) {
-        console.error('JSON parsing failed:', err);
-        console.error('Attempted to parse:', match[0]);
-        throw new Error(
-          `Failed to parse JSON: ${(err as Error).message}`
-        );
-      }
-    };
-
-    const parsed = tryExtractJson(raw);
+    const parsed = extractJsonFromText(msg.text.value);
 
     if (!parsed || typeof parsed !== 'object') {
       throw new Error('Parsed result is not a valid object');

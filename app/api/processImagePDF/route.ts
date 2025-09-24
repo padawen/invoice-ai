@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
 import { getGuidelinesImage } from '@/lib/instructions';
-import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { chromium } from 'playwright';
+import { authenticateRequest } from '../_utils/auth';
+import { extractJsonFromText } from '../_utils/json';
 
 declare global {
   interface Window {
@@ -187,13 +188,8 @@ const cleanupTempFiles = (paths: string[]) => {
 };
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
-  const supabase = createSupabaseClient(token);
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
+  const isAuthenticated = await authenticateRequest(req);
+  if (!isAuthenticated) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -204,20 +200,20 @@ export async function POST(req: NextRequest) {
   }
 
   let imagePaths: string[] = [];
-  
+
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    
+
     if (buffer.length === 0) {
       throw new Error('Uploaded file is empty');
     }
-    
+
     if (buffer.length > 50 * 1024 * 1024) {
       throw new Error('File too large (max 50MB)');
     }
-    
+
     imagePaths = await convertPdfToImages(buffer);
-    
+
     if (!imagePaths.length) {
       throw new Error('No images extracted from PDF - the PDF might be corrupted or contain no convertible pages');
     }
@@ -246,11 +242,11 @@ export async function POST(req: NextRequest) {
     ];
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    
+
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OpenAI API key is not configured');
     }
-    
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content }],
@@ -265,28 +261,21 @@ export async function POST(req: NextRequest) {
     if (!responseText || responseText.trim().length === 0) {
       throw new Error('Empty response received from OpenAI API');
     }
-    
-    let cleanedResponse = responseText;
-    
-    if (cleanedResponse.startsWith('```json') && cleanedResponse.endsWith('```')) {
-      cleanedResponse = cleanedResponse.slice(7, -3).trim();
-    } else if (cleanedResponse.startsWith('```') && cleanedResponse.endsWith('```')) {
-      cleanedResponse = cleanedResponse.slice(3, -3).trim();
-    }
-    
-    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in OpenAI response');
-    }
 
     try {
-      const jsonStr = jsonMatch[0];
-      const parsed = JSON.parse(jsonStr);
-      
+      const parsed = extractJsonFromText(responseText) as {
+        seller?: unknown;
+        buyer?: unknown;
+        invoice_data?: unknown[];
+        issue_date?: string;
+        due_date?: string;
+        fulfillment_date?: string;
+      };
+
       if (!parsed.seller || !parsed.buyer || !Array.isArray(parsed.invoice_data)) {
         throw new Error('OpenAI response missing required fields (seller, buyer, or invoice_data)');
       }
-      
+
       if (parsed.issue_date) {
         parsed.issue_date = formatDateForInput(parsed.issue_date);
       }
