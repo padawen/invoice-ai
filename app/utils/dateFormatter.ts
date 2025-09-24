@@ -1,3 +1,5 @@
+import logger from '@/lib/logger';
+
 export const formatDateForInput = (dateString: string | undefined | null): string => {
   if (!dateString || dateString.trim() === '') return '';
   
@@ -95,10 +97,10 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
       return testDate.toISOString().split('T')[0];
     }
     
-    console.warn('Could not parse date:', dateString);
+    logger.warn({ dateString }, 'Could not parse date');
     return '';
   } catch (error) {
-    console.warn('Date formatting failed for:', dateString, error);
+    logger.warn({ dateString, error }, 'Date formatting failed');
     return '';
   }
 };
@@ -117,7 +119,7 @@ export const formatDateForDisplay = (dateString: string | undefined | null): str
     }
     return dateString;
   } catch (error) {
-    console.warn('Date display formatting failed for:', dateString, error);
+    logger.warn({ dateString, error }, 'Date display formatting failed');
     return dateString;
   }
-}; 
+};

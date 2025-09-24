@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
+import logger from '@/lib/logger';
 
 export async function DELETE(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -30,7 +31,7 @@ export async function DELETE(req: NextRequest) {
       .single();
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
+      logger.error({ fetchError }, 'Fetch error during processed item deletion');
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
@@ -52,13 +53,13 @@ export async function DELETE(req: NextRequest) {
       .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Update error:', updateError);
+      logger.error({ updateError }, 'Update error during processed item deletion');
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Delete error:', err);
+    logger.error({ err }, 'Delete error in processed item route');
     return NextResponse.json({ error: 'Failed to process the request' }, { status: 500 });
   }
-} 
+}

@@ -9,6 +9,7 @@ import slugify from "slugify";
 import BackButton from "../components/BackButton";
 import DeleteModal from "../components/modals/DeleteModal";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import logger from "@/lib/logger";
 
 interface Project {
   id: string;
@@ -51,14 +52,14 @@ export default function DashboardPage() {
         try {
           const { data, error } = await supabase.from("projects").select("id, name");
           if (error) {
-            console.error("Error fetching projects:", error);
+            logger.error({ error }, "Error fetching projects");
             return;
           }
           if (data) {
             setProjects(data);
           }
         } catch (err) {
-          console.error("Failed to fetch projects:", err);
+          logger.error({ err }, "Failed to fetch projects");
         }
       } else if (authInitialized && !user) {
         setProjects(fakeProjects);
@@ -88,7 +89,7 @@ export default function DashboardPage() {
       });
 
       if (!res.ok) {
-        console.error("Failed to delete project:", await res.text());
+        logger.error({ response: await res.text() }, "Failed to delete project");
         alert("Failed to delete project.");
         setShowDeleteModal(null);
         return;

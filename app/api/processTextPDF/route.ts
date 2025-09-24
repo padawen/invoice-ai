@@ -3,6 +3,7 @@ import { OpenAI } from 'openai';
 import { getGuidelinesText } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
+import logger from '@/lib/logger';
 
 const fileFromBuffer = (
   buffer: Buffer,
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
         } = await supabase.auth.getUser();
         if (user && !error) isAuthenticated = true;
       } catch (err) {
-        console.error('Supabase auth error:', err);
+        logger.error({ err }, 'Supabase auth error');
       }
     }
   }
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (status.status === 'failed') {
-        console.error('OpenAI run failed:', status.last_error);
+        logger.error({ lastError: status.last_error }, 'OpenAI run failed');
         throw new Error(`OpenAI processing failed: ${status.last_error?.message || 'Unknown error'}`);
       }
 
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
     ) as { type: 'text'; text: { value: string } } | undefined;
 
     if (!msg?.text?.value) {
-      console.error('No valid message returned from assistant');
+      logger.error('No valid message returned from assistant');
       throw new Error('No valid message returned from assistant');
     }
 
@@ -128,15 +129,15 @@ export async function POST(req: NextRequest) {
     const tryExtractJson = (text: string): unknown => {
       const match = text.match(/{[\s\S]*}/);
       if (!match) {
-        console.error('No JSON object found in response:', text);
+        logger.error({ response: text }, 'No JSON object found in assistant response');
         throw new Error('No JSON object found in assistant response');
       }
       try {
         const parsed = JSON.parse(match[0]);
         return parsed;
       } catch (err) {
-        console.error('JSON parsing failed:', err);
-        console.error('Attempted to parse:', match[0]);
+        logger.error({ err }, 'JSON parsing failed');
+        logger.error({ attempted: match[0] }, 'Attempted to parse invalid JSON');
         throw new Error(
           `Failed to parse JSON: ${(err as Error).message}`
         );
@@ -158,11 +159,14 @@ export async function POST(req: NextRequest) {
       fulfillment_date?: string;
     };
     if (!result_obj.seller || !result_obj.buyer || !Array.isArray(result_obj.invoice_data)) {
-      console.warn('Missing required fields in parsed result:', {
-        hasSeller: !!result_obj.seller,
-        hasBuyer: !!result_obj.buyer,
-        hasInvoiceData: Array.isArray(result_obj.invoice_data)
-      });
+      logger.warn(
+        {
+          hasSeller: !!result_obj.seller,
+          hasBuyer: !!result_obj.buyer,
+          hasInvoiceData: Array.isArray(result_obj.invoice_data),
+        },
+        'Missing required fields in parsed result',
+      );
     }
 
     if (result_obj.issue_date) {
@@ -177,7 +181,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result_obj);
   } catch (err) {
-    console.error('Processing error:', err);
+    logger.error({ err }, 'Processing error');
     return NextResponse.json(
       { error: 'Failed to process PDF with OpenAI' },
       { status: 500 }

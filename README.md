@@ -94,6 +94,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
+# Logging (optional)
+LOG_LEVEL=debug
+NEXT_PUBLIC_LOG_LEVEL=debug
+
 # Optional: Local LLM endpoint (if you're running your own)
 LOCAL_LLM_ENDPOINT=http://localhost:8000
 
@@ -165,6 +169,20 @@ yarn dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
+
+### 📜 Logging
+
+We ship a lightweight [Pino](https://getpino.io/)-style logger that emits **structured JSON** events from both the API routes and client utilities.
+
+- **Development**: keep the default `debug` level (set via `LOG_LEVEL` or `NEXT_PUBLIC_LOG_LEVEL`) and pretty-print the output with your favourite tool:
+  ```bash
+  npm run dev | npx pino-pretty
+  # or
+  npm run dev | jq
+  ```
+- **Production**: the logger automatically falls back to the `info` level. Forward the JSON lines straight to your log shipper (e.g. Loki, Datadog, ELK) for structured querying. Adjust verbosity with `LOG_LEVEL=warn` or `LOG_LEVEL=error` as needed.
+
+Sensitive fields such as tokens and passwords are redacted automatically. Import `logger` from `@/lib/logger` anywhere in the codebase and call `logger.info`, `logger.warn`, or `logger.error` instead of `console.*`.
 
 ### 🚀 Production Deployment
 

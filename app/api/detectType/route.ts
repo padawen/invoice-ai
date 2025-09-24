@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       textPreview: `Estimated ${estimatedPages} pages (${isLikelyImage ? 'image-based' : 'text-based'})`,
     });
   } catch (err) {
-    console.error('PDF analysis error:', err);
+    logger.error({ err }, 'PDF analysis error');
     return NextResponse.json({ error: 'Failed to analyze PDF' }, { status: 500 });
   }
 }

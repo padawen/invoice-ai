@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { chromium } from 'playwright';
+import logger from '@/lib/logger';
 
 declare global {
   interface Window {
@@ -80,7 +81,6 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
                 
                 window.pdfRendered = true;
               } catch (error) {
-                console.error('PDF rendering error:', error);
                 window.pdfError = error;
               }
             }
@@ -109,7 +109,7 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
         });
         imagePaths.push(path.join(tempDir, `page-${i + 1}.png`));
       } catch (error) {
-        console.warn('Failed to screenshot canvas, skipping:', error);
+        logger.warn({ error }, 'Failed to screenshot canvas, skipping page screenshot');
         continue;
       }
     }
@@ -123,7 +123,7 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
     return imagePaths;
 
   } catch (error) {
-    console.error('PDF processing error:', error);
+    logger.error({ error }, 'PDF processing error');
     throw error;
   }
 };
@@ -304,21 +304,25 @@ export async function POST(req: NextRequest) {
     } catch (parseError) {
       throw new Error(`Failed to parse JSON from OpenAI response: ${(parseError as Error).message}`);
     }
-  } catch (_) {
+  } catch (error) {
     if (imagePaths && imagePaths.length > 0) {
       cleanupTempFiles(imagePaths);
     }
-    
-    const errorMessage = (_ as Error).message || 'Unexpected server error';
-    console.error('ProcessImagePDF Error:', {
-      message: errorMessage,
-      stack: (_ as Error).stack,
-      name: (_ as Error).name,
-      timestamp: new Date().toISOString()
-    });
-    
+
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const errorMessage = normalizedError.message || 'Unexpected server error';
+    logger.error(
+      {
+        message: errorMessage,
+        stack: normalizedError.stack,
+        name: normalizedError.name,
+        timestamp: new Date().toISOString(),
+      },
+      'ProcessImagePDF error',
+    );
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         fallbackData: {
           id: crypto.randomUUID(),

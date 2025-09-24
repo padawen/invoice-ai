@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { InvoiceData } from '@/app/types';
+import logger from '@/lib/logger';
 
 interface ProcessedItem {
   id: string;
@@ -226,7 +227,7 @@ export default function FinancialSummary({ data }: FinancialSummaryProps) {
         minimumFractionDigits: 2
       }).format(amount);
     } catch {
-      console.warn(`Invalid currency code: ${currency}, falling back to number format`);
+      logger.warn({ currency }, 'Invalid currency code, falling back to number format');
       return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${normalizedCurrency}`;
     }
   };

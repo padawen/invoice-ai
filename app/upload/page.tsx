@@ -5,6 +5,7 @@ import { Upload, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useUser } from '../providers';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { useProcessing } from '../client-provider';
+import logger from '@/lib/logger';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import ProgressModal from '../components/ProgressModal';
@@ -105,14 +106,14 @@ const UploadPage = () => {
 
         if (!res.ok) {
           const errorText = await res.text();
-          console.error('Detection request failed:', res.status, errorText);
+          logger.error({ status: res.status, error: errorText }, 'Detection request failed');
           throw new Error(`Detection request failed with status ${res.status}: ${errorText}`);
         }
         
         const data = await res.json();
         return data;
       } catch (err) {
-        console.error('Detection error:', err);
+        logger.error({ err }, 'Detection error');
         throw err;
       }
     };
@@ -133,10 +134,10 @@ const UploadPage = () => {
         }
       }
       
-      console.error('All detection attempts failed:', lastError);
+      logger.error({ error: lastError }, 'All detection attempts failed after retries');
       throw lastError || new Error('Failed after multiple attempts');
     } catch (err) {
-      console.error('All detection attempts failed:', err);
+      logger.error({ err }, 'All detection attempts failed');
       setError(`Detection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsDetecting(false);

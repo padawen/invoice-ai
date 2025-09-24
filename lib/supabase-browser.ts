@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import logger from './logger';
 
 let supabaseClientCache: SupabaseClient | null = null;
 
@@ -13,7 +14,7 @@ export const createSupabaseBrowserClient = (): SupabaseClient | null => {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !anonKey) {
-      console.error('Missing required environment variables for authentication');
+      logger.error('Missing required environment variables for authentication');
       return null;
     }
 

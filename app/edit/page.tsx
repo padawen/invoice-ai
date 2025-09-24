@@ -12,6 +12,7 @@ import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import slugify from 'slugify';
 import { useProcessing } from '../client-provider';
+import logger from '@/lib/logger';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
@@ -241,7 +242,7 @@ const EditPage = () => {
         const rawText = await response.text();
         result = JSON.parse(rawText);
       } catch (parseError) {
-        console.error('Error parsing response:', parseError);
+        logger.error({ error: parseError }, 'Error parsing response');
         throw new Error('Failed to parse API response. The server may be experiencing issues.');
       }
       
@@ -265,7 +266,7 @@ const EditPage = () => {
       setProcessingMethod('image');
       
     } catch (err) {
-      console.error('Reprocessing error:', err);
+      logger.error({ err }, 'Reprocessing error');
       setError((err as Error)?.message || 'Failed to reprocess PDF.');
     } finally {
       setIsReprocessing(false);

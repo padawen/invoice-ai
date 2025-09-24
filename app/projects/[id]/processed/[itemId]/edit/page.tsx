@@ -13,6 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice, InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import logger from '@/lib/logger';
 
 interface Project {
   id: string;
@@ -201,12 +202,12 @@ export default function EditProcessedItemPage() {
             setFields({ ...item.fields, id: item.id });
             setLoading(false);
           } catch (fakeErr) {
-            console.error('Error with demo data:', fakeErr);
+            logger.error({ error: fakeErr }, 'Error with demo data');
             throw new Error('Failed to load invoice data. Please log in to view real data.');
           }
         }
       } catch (err) {
-        console.error(err);
+        logger.error({ err }, 'Failed to load processed item data');
         setError('Failed to load data.');
         setLoading(false);
       }
@@ -308,7 +309,7 @@ export default function EditProcessedItemPage() {
       
       setTimeout(() => setSuccess(false), hasProjectChanged ? 4000 : 3000);
     } catch (err) {
-      console.error(err);
+      logger.error({ err }, 'Failed to save processed item');
       setError(err instanceof Error ? err.message : 'Failed to save changes.');
       setProjectChanging(false);
     } finally {
