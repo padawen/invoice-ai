@@ -29,3 +29,25 @@ export interface EditableInvoice {
   currency?: string;
   invoice_data: InvoiceData[];
 }
+
+export interface OcrLine {
+  text: string;
+  confidence: number | null;
+}
+
+export interface NormalizedPage {
+  page_index: number;
+  text: string;
+  lines: OcrLine[];
+}
+
+export interface OcrResponse {
+  ok: boolean;
+  file_name: string;
+  pages: number;
+  duration_ms: number;
+  doctr_raw: unknown;
+  normalized: NormalizedPage[];
+  error?: string;
+  details?: Record<string, unknown>;
+}

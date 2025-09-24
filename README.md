@@ -99,6 +99,9 @@ LOCAL_LLM_ENDPOINT=http://localhost:8000
 
 # Optional: Custom API endpoints
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+
+# OCR microservice proxy
+OCR_SERVICE_URL=http://localhost:8000
 ```
 
 **Where to get these magical keys:**
@@ -165,6 +168,47 @@ yarn dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
+
+### 🧾 OCR Microservice (DocTR + Flask)
+
+1. Build the containerized service:
+   ```bash
+   docker build -t invoice-ocr:cpu ./services/ocr
+   ```
+2. Run the service locally:
+   ```bash
+   docker run -p 8000:8000 --name ocr invoice-ocr:cpu
+   ```
+3. Ensure the Next.js app has `OCR_SERVICE_URL=http://localhost:8000` in `.env.local` so `/api/ocrProcess` can proxy requests.
+4. Health check the service:
+   ```bash
+   curl http://localhost:8000/health
+   ```
+5. Execute a PDF OCR call (replace `sample.pdf` with your file):
+   ```bash
+   curl -F "file=@sample.pdf" http://localhost:8000/ocr/pdf
+   ```
+
+Sample response snippet:
+```json
+{
+  "ok": true,
+  "file_name": "sample.pdf",
+  "pages": 2,
+  "duration_ms": 8421,
+  "normalized": [
+    {
+      "page_index": 0,
+      "text": "Invoice Number 12345",
+      "lines": [
+        { "text": "Invoice Number 12345", "confidence": 0.94 }
+      ]
+    }
+  ]
+}
+```
+
+The `/api/ocrProcess` route forwards files to the Flask service with a 180s timeout and bubbles up detailed error states (`ocr_timeout`, `ocr_failed`, `file_too_large`).
 
 ### 🚀 Production Deployment
 

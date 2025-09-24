@@ -183,6 +183,7 @@ const UploadPage = () => {
         endpoint = '/api/processLocalLLM'; 
         processingMethod = 'text';
       } else if (type === 'doctr') {
+        // TODO(invoice-ocr): invoke runOcr(file) from '@/app/lib/ocr' here to fetch the Doctr payload before falling back to legacy handlers.
         endpoint = '/api/processDoctr';
         processingMethod = 'image';
       }
