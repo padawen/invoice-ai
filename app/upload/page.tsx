@@ -4,11 +4,20 @@ import { useEffect, useState } from 'react';
 import { Upload, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useUser } from '../providers';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { runOcr } from '@/app/lib/ocr';
 import { useProcessing } from '../client-provider';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import ProgressModal from '../components/ProgressModal';
-import type { EditableInvoice } from '@/app/types';
+import type { EditableInvoice, NormalizedPage, NormalizedResult } from '@/app/types';
+
+type OcrPanelState = {
+  pages: NormalizedPage[];
+  fullText: string;
+  durationMs: number;
+  pagesCount: number;
+  fileName: string;
+};
 
 const UploadPage = () => {
   const user = useUser();
@@ -25,12 +34,14 @@ const UploadPage = () => {
   const [typeResult, setTypeResult] = useState<'text' | 'image' | 'unknown' | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [localProcessing, setLocalProcessing] = useState(false);
+  const [isRunningOcr, setIsRunningOcr] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
+  const [ocrResult, setOcrResult] = useState<OcrPanelState | null>(null);
 
-  const isOperationInProgress = isDetecting || localProcessing;
+  const isOperationInProgress = isDetecting || localProcessing || isRunningOcr;
   
   useEffect(() => {
     setIsProcessing(isOperationInProgress);
@@ -57,7 +68,8 @@ const UploadPage = () => {
       setFile(selectedFile);
       setFileUrl(URL.createObjectURL(selectedFile));
       setTypeResult(null);
-      
+      setOcrResult(null);
+
       handleDetectType(selectedFile);
     } else {
       setError('Please upload a valid PDF file!');
@@ -145,6 +157,38 @@ const UploadPage = () => {
 
   const handleProcessWithOpenAI = async () => {
     await processInvoice('openai');
+  };
+
+  const handleRunOcr = async () => {
+    if (!file) return setError('No file selected');
+
+    setIsRunningOcr(true);
+    setError(null);
+    setOcrResult(null);
+
+    try {
+      const response = await runOcr(file);
+      const { pages, fullText } = extractNormalizedPages(response.normalized);
+      setOcrResult({
+        pages,
+        fullText,
+        durationMs: response.duration_ms,
+        pagesCount: response.pages,
+        fileName: response.file_name,
+      });
+    } catch (err) {
+      console.error('OCR error:', err);
+      const message = err instanceof Error ? err.message : 'Failed to run OCR';
+      if (message === 'ocr_timeout') {
+        setError('OCR request timed out. Please try again.');
+      } else if (message === 'ocr_failed') {
+        setError('OCR service failed to process the document.');
+      } else {
+        setError(message);
+      }
+    } finally {
+      setIsRunningOcr(false);
+    }
   };
 
   const processInvoice = async (type: 'openai' | 'localllm' | 'doctr') => {
@@ -316,8 +360,52 @@ const UploadPage = () => {
                   <FileText size={20} className="text-green-400" />
                   <span className="text-zinc-300">{file?.name}</span>
                 </div>
-                <div className="h-[600px]">
-                  <PdfPreviewFrame src={fileUrl} />
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="lg:flex-1">
+                    <div className="h-[600px]">
+                      <PdfPreviewFrame src={fileUrl} />
+                    </div>
+                  </div>
+
+                  {ocrResult && (
+                    <div className="lg:w-5/12 xl:w-1/3 bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 overflow-hidden">
+                      <p className="text-sm text-zinc-400 mb-3 truncate">{ocrResult.fileName}</p>
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-zinc-500">Pages</p>
+                          <p className="text-lg font-semibold text-green-400">{ocrResult.pagesCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-zinc-500">Duration</p>
+                          <p className="text-lg font-semibold text-green-400">
+                            {(ocrResult.durationMs / 1000).toFixed(1)}s
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="h-[520px] overflow-y-auto space-y-4 pr-1">
+                        {ocrResult.pages.length > 0 ? (
+                          ocrResult.pages.map((page, index) => (
+                            <div
+                              key={page.page_index ?? index}
+                              className="bg-black/20 border border-zinc-800 rounded-xl p-3"
+                            >
+                              <h3 className="text-sm font-semibold text-green-300 mb-2">
+                                Page {page.page_index + 1}
+                              </h3>
+                              <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                {page.text || 'No text extracted for this page.'}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            No OCR text available for this document.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -359,13 +447,22 @@ const UploadPage = () => {
                   Extract with Local LLM - Ollama
                   <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
                 </button>
-                
+
                 <button
-                  disabled={true}
-                  className="px-6 py-3 bg-purple-600/40 text-white/70 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-70"
+                  onClick={handleRunOcr}
+                  disabled={isOperationInProgress || !file}
+                  className={`px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                    isOperationInProgress || !file ? 'opacity-50 cursor-not-allowed hover:bg-purple-600' : ''
+                  }`}
                 >
-                  Extract with Simple Doctr
-                  <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded ml-1">Coming soon</span>
+                  {isRunningOcr ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Running OCR...
+                    </>
+                  ) : (
+                    'Run OCR (no AI)'
+                  )}
                 </button>
               </div>
             </div>
@@ -383,6 +480,25 @@ const UploadPage = () => {
 };
 
 export default UploadPage;
+
+const extractNormalizedPages = (
+  normalized: NormalizedResult,
+): { pages: NormalizedPage[]; fullText: string } => {
+  if (Array.isArray(normalized)) {
+    return {
+      pages: normalized,
+      fullText: normalized.map(page => page.text).join('\n\n'),
+    };
+  }
+
+  const pages = normalized?.pages ?? [];
+  const fullText =
+    typeof normalized?.full_text === 'string'
+      ? normalized.full_text
+      : pages.map(page => page.text).join('\n\n');
+
+  return { pages, fullText };
+};
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {

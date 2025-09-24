@@ -41,13 +41,20 @@ export interface NormalizedPage {
   lines: OcrLine[];
 }
 
+export type NormalizedResult =
+  | NormalizedPage[]
+  | {
+      pages: NormalizedPage[];
+      full_text: string;
+    };
+
 export interface OcrResponse {
   ok: boolean;
   file_name: string;
   pages: number;
   duration_ms: number;
   doctr_raw: unknown;
-  normalized: NormalizedPage[];
+  normalized: NormalizedResult;
   error?: string;
   details?: Record<string, unknown>;
 }
