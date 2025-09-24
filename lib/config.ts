@@ -1,6 +1,11 @@
-import { z } from 'next/dist/compiled/zod';
+'use server';
 
-const envSchema = z.object({
+import { z } from 'next/dist/compiled/zod';
+import type { ZodIssue } from 'next/dist/compiled/zod';
+
+import { publicEnv } from '@/lib/public-env';
+
+const serverEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
   OPENAI_API_KEY: z
     .string({ required_error: 'OPENAI_API_KEY is required.' })
@@ -15,32 +20,34 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z
     .string({ required_error: 'SUPABASE_ANON_KEY is required.' })
     .min(1, 'SUPABASE_ANON_KEY cannot be empty.'),
-  NEXT_PUBLIC_SUPABASE_URL: z
-    .string({ required_error: 'NEXT_PUBLIC_SUPABASE_URL is required.' })
-    .url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL.'),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
-    .string({ required_error: 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required.' })
-    .min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY cannot be empty.'),
-  NEXT_PUBLIC_SITE_URL: z
-    .string()
-    .url('NEXT_PUBLIC_SITE_URL must be a valid URL.')
-    .optional(),
 });
 
-const envResult = envSchema.safeParse(process.env);
-
-if (!envResult.success) {
-  const message = envResult.error.issues
-    .map((issue: { path: (string | number)[]; message: string }) => {
+const formatZodIssues = (issues: ZodIssue[]): string =>
+  issues
+    .map((issue) => {
       const path = issue.path.join('.') || 'environment';
       return `${path}: ${issue.message}`;
     })
     .join('\n');
 
-  throw new Error(`Invalid environment variables:\n${message}`);
+const serverEnvResult = serverEnvSchema.safeParse({
+  NODE_ENV: process.env.NODE_ENV,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+});
+
+if (!serverEnvResult.success) {
+  throw new Error(
+    `Invalid server environment variables:\n${formatZodIssues(serverEnvResult.error.issues)}`
+  );
 }
 
-const env = envResult.data;
+const env = {
+  ...publicEnv,
+  ...serverEnvResult.data,
+};
 
 export const {
   OPENAI_API_KEY,
@@ -54,4 +61,4 @@ export const {
 
 export const INTERNAL_OR_OPENAI_API_KEY = INTERNAL_API_KEY ?? OPENAI_API_KEY;
 
-export { env };
+export { env, publicEnv };

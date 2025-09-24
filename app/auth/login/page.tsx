@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
+import { NEXT_PUBLIC_SITE_URL } from '@/lib/public-env';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
@@ -41,8 +42,8 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     if (!supabase) return;
 
-    const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/upload`
+    const redirectUrl = NEXT_PUBLIC_SITE_URL
+      ? `${NEXT_PUBLIC_SITE_URL}/upload`
       : `${window.location.origin}/upload`;
 
     await supabase.auth.signInWithOAuth({
