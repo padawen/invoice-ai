@@ -183,6 +183,10 @@ const UploadPage = () => {
         setError('OCR request timed out. Please try again.');
       } else if (message === 'ocr_failed') {
         setError('OCR service failed to process the document.');
+      } else if (message === 'ocr_service_unconfigured') {
+        setError(
+          'OCR service is not configured. Start the DocTR service or set OCR_SERVICE_URL/NEXT_PUBLIC_OCR_SERVICE_URL.',
+        );
       } else {
         setError(message);
       }
@@ -458,10 +462,10 @@ const UploadPage = () => {
                   {isRunningOcr ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Running OCR...
+                      Running dOCTR...
                     </>
                   ) : (
-                    'Run OCR (no AI)'
+                    'Run dOCTR'
                   )}
                 </button>
               </div>
