@@ -184,8 +184,8 @@ const UploadPage = () => {
           processingMethod = 'image';
         }
       } else if (type === 'privacy') {
-        // Privacy-focused processing using OCR + Ollama
-        endpoint = process.env.NEXT_PUBLIC_PRIVACY_API_URL || 'http://localhost:5000/process-invoice';
+        // Privacy-focused processing using OCR + Ollama via proxy
+        endpoint = '/api/proxy/process-invoice';
         processingMethod = 'privacy';
       }
 
