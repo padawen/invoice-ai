@@ -286,7 +286,7 @@ export default function ProjectDetailsPage() {
                 <button
                   onClick={saveProjectName}
                   disabled={saving}
-                  className="bg-green-500 hover:bg-green-400 text-white p-2 rounded-md transition"
+                  className="bg-green-500 hover:bg-green-400 text-white p-2 rounded-md transition cursor-pointer"
                 >
                   <Check size={20} />
                 </button>
@@ -299,7 +299,7 @@ export default function ProjectDetailsPage() {
                   </h1>
                   <button
                     onClick={() => setEditing(true)}
-                    className="ml-2 bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition hover:shadow-lg hover:shadow-green-900/20"
+                    className="ml-2 bg-zinc-700 hover:bg-zinc-600 text-white p-1.5 rounded-full transition hover:shadow-lg hover:shadow-green-900/20 cursor-pointer"
                     title="Edit project name"
                   >
                     <Pencil size={16} />
