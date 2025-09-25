@@ -30,6 +30,11 @@ const UploadPage = () => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
 
+  // Real-time progress modal state
+  const [showRealTimeProgress, setShowRealTimeProgress] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [realTimeProcessingType, setRealTimeProcessingType] = useState<'privacy' | 'openai'>('privacy');
+
   const isOperationInProgress = isDetecting || localProcessing;
   
   useEffect(() => {
@@ -144,11 +149,86 @@ const UploadPage = () => {
   };
 
   const handleProcessWithOpenAI = async () => {
-    await processInvoice('openai');
+    if (!file || !typeResult) return setError('No file or type detected');
+
+    setLocalProcessing(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        return alert('You must be logged in to use this feature.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('processingType', typeResult);
+
+      // Start OpenAI processing with SSE
+      const response = await fetch('/api/processing/openai', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to start processing: ${errorText}`);
+      }
+
+      const { jobId } = await response.json();
+
+      // Show real-time progress modal
+      setCurrentJobId(jobId);
+      setRealTimeProcessingType('openai');
+      setShowRealTimeProgress(true);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start processing');
+    } finally {
+      setLocalProcessing(false);
+    }
   };
 
   const handleProcessWithPrivacy = async () => {
-    await processInvoice('privacy');
+    if (!file || !typeResult) return setError('No file or type detected');
+
+    setLocalProcessing(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        return alert('You must be logged in to use this feature.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Start privacy processing with SSE
+      const response = await fetch('/api/processing/privacy', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to start processing: ${errorText}`);
+      }
+
+      const { jobId } = await response.json();
+
+      // Show real-time progress modal
+      setCurrentJobId(jobId);
+      setRealTimeProcessingType('privacy');
+      setShowRealTimeProgress(true);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start processing');
+    } finally {
+      setLocalProcessing(false);
+    }
   };
 
   const processInvoice = async (type: 'openai' | 'privacy') => {
@@ -394,10 +474,42 @@ const UploadPage = () => {
         </div>
       </main>
 
-      <ProgressModal 
+      <ProgressModal
         isOpen={showProgressModal}
         processingType={progressProcessingType}
         onClose={() => setShowProgressModal(false)}
+      />
+
+      <ProgressModal
+        isOpen={showRealTimeProgress}
+        processingType={typeResult || 'text'}
+        useRealTime={true}
+        jobId={currentJobId}
+        serviceType={realTimeProcessingType}
+        onComplete={async (result) => {
+          setShowRealTimeProgress(false);
+          setCurrentJobId(null);
+
+          // Store result and redirect
+          sessionStorage.setItem('openai_json', JSON.stringify(result));
+          if (file) {
+            sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+          }
+          sessionStorage.setItem('processing_method', realTimeProcessingType);
+
+          setTimeout(() => {
+            window.location.href = '/edit';
+          }, 1000);
+        }}
+        onError={(error) => {
+          setShowRealTimeProgress(false);
+          setCurrentJobId(null);
+          setError(error);
+        }}
+        onClose={() => {
+          setShowRealTimeProgress(false);
+          setCurrentJobId(null);
+        }}
       />
     </>
   );
