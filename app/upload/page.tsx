@@ -370,7 +370,7 @@ const UploadPage = () => {
                 <button
                   onClick={handleProcessWithOpenAI}
                   disabled={isOperationInProgress}
-                  className={`px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                  className={`px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition cursor-pointer ${
                     isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -381,7 +381,7 @@ const UploadPage = () => {
                 <button
                   onClick={handleProcessWithPrivacy}
                   disabled={isOperationInProgress}
-                  className={`px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                  className={`px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition cursor-pointer ${
                     isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
