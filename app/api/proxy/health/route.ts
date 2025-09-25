@@ -6,11 +6,16 @@ export async function GET() {
     const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000';
     const healthUrl = `${privacyApiUrl}/health`;
 
-    // Check if the privacy API is healthy
+    // Check if the privacy API is healthy with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(healthUrl, {
       method: 'GET',
-      timeout: 5000,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return NextResponse.json(
