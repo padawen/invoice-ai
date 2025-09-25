@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Forward the request to the privacy API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout for CPU inference
 
     const response = await fetch(privacyApiUrl, {
       method: 'POST',
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         return NextResponse.json(
-          { error: 'Privacy API request timed out (30s). The service might be overloaded or down.' },
+          { error: 'Privacy API request timed out (2min). The service might be overloaded or down.' },
           { status: 504 }
         );
       }
