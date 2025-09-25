@@ -4,7 +4,12 @@ export async function GET() {
   try {
     // Get the privacy API URL from environment
     const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000';
-    const healthUrl = `${privacyApiUrl}/health`;
+
+    // Remove /process-invoice if it's in the URL for health check
+    const baseUrl = privacyApiUrl.replace('/process-invoice', '');
+    const healthUrl = `${baseUrl}/health`;
+
+    console.log('Health check URL:', healthUrl);
 
     // Check if the privacy API is healthy with timeout
     const controller = new AbortController();
@@ -18,8 +23,14 @@ export async function GET() {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.log('Privacy API health check failed:', response.status);
       return NextResponse.json(
-        { status: 'unhealthy', message: 'Privacy API is down' },
+        {
+          status: 'unhealthy',
+          message: 'Privacy API is down',
+          url: healthUrl,
+          httpStatus: response.status
+        },
         { status: 503 }
       );
     }
@@ -28,13 +39,25 @@ export async function GET() {
     return NextResponse.json({
       status: 'healthy',
       privacyApi: result,
+      url: healthUrl,
       timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
     console.error('Health check error:', error);
+
+    const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000';
+    const baseUrl = privacyApiUrl.replace('/process-invoice', '');
+    const healthUrl = `${baseUrl}/health`;
+
     return NextResponse.json(
-      { status: 'unhealthy', message: 'Privacy API is unreachable' },
+      {
+        status: 'unhealthy',
+        message: 'Privacy API is unreachable',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        url: healthUrl,
+        envVar: process.env.PRIVACY_API_URL ? 'set' : 'not set'
+      },
       { status: 503 }
     );
   }
