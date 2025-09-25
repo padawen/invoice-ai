@@ -14,15 +14,24 @@ export async function POST(request: NextRequest) {
     // Get the privacy API URL from environment
     const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000/process-invoice';
 
-    // Forward the request to the privacy API
+    console.log('Privacy API URL:', privacyApiUrl);
+    console.log('Attempting to connect to privacy service...');
+
+    // Forward the request to the privacy API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const response = await fetch(privacyApiUrl, {
       method: 'POST',
       body: formData,
-      // Don't include authorization header as the privacy API doesn't need it
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Privacy API responded with error:', response.status, errorText);
       return NextResponse.json(
         { error: `Privacy API error: ${errorText}` },
         { status: response.status }
@@ -30,12 +39,37 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
+    console.log('Privacy API responded successfully');
     return NextResponse.json(result);
 
   } catch (error) {
     console.error('Proxy error:', error);
+
+    // More specific error messages
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Privacy API request timed out (30s). The service might be overloaded or down.' },
+          { status: 504 }
+        );
+      }
+      if (error.message.includes('ECONNREFUSED')) {
+        return NextResponse.json(
+          {
+            error: 'Cannot connect to privacy API. Please check if the service is running.',
+            details: 'ECONNREFUSED - Connection refused by target server',
+            url: process.env.PRIVACY_API_URL || 'Environment variable not set'
+          },
+          { status: 503 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      {
+        error: 'Failed to process request',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
