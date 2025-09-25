@@ -168,9 +168,48 @@ Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
 
 ### 🚀 Production Deployment
 
-- **Render**: Used for OpenAI processing backend services
-- **Main App**: Can be deployed to your platform of choice
-- **Docker**: Full Docker support available for containerized deployment
+#### Render Environment Configuration
+
+**Build-time Environment Variables** (required during build):
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL (client-side)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key (client-side)
+- `NEXT_PUBLIC_SITE_URL` - Your production site URL (client-side)
+
+**Runtime Environment Variables** (injected at runtime by Render):
+- `SUPABASE_URL` - Supabase URL for server-side operations
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (server-only, sensitive)
+- `SUPABASE_JWT_SECRET` - JWT secret for auth (server-only, sensitive)
+- `OPENAI_API_KEY` - OpenAI API key (server-only, sensitive)
+- `POSTGRES_URL` - Database connection string (server-only, sensitive)
+- `POSTGRES_PRISMA_URL` - Prisma database URL (server-only, sensitive)
+- `POSTGRES_URL_NON_POOLING` - Non-pooling database URL (server-only, sensitive)
+- `POSTGRES_USER` - Database user (server-only, sensitive)
+- `POSTGRES_PASSWORD` - Database password (server-only, sensitive)
+- `POSTGRES_DATABASE` - Database name (server-only, sensitive)
+- `POSTGRES_HOST` - Database host (server-only, sensitive)
+- `PRIVACY_API_URL` - Optional privacy API endpoint (server-only)
+
+#### Docker Deployment
+
+Build locally and test:
+```bash
+docker build -t invoice-ai:standalone .
+docker run --rm -p 3000:3000 \
+  -e NEXT_PUBLIC_SITE_URL=RENDER_ENV_AT_RUNTIME \
+  -e NEXT_PUBLIC_SUPABASE_URL=RENDER_ENV_AT_RUNTIME \
+  -e NEXT_PUBLIC_SUPABASE_ANON_KEY=RENDER_ENV_AT_RUNTIME \
+  -e SUPABASE_URL=RENDER_ENV_AT_RUNTIME \
+  -e SUPABASE_SERVICE_ROLE_KEY=RENDER_ENV_AT_RUNTIME \
+  -e SUPABASE_JWT_SECRET=RENDER_ENV_AT_RUNTIME \
+  -e OPENAI_API_KEY=RENDER_ENV_AT_RUNTIME \
+  -e POSTGRES_URL=RENDER_ENV_AT_RUNTIME \
+  invoice-ai:standalone
+```
+
+**Security Notes:**
+- Server secrets are NOT baked into the Docker image
+- All sensitive env vars are injected at runtime by Render
+- Client-side env vars (`NEXT_PUBLIC_*`) are compiled into the build
 
 ## 🎯 How to Use This Beast
 
