@@ -9,7 +9,7 @@ interface ProgressModalProps {
   useRealTime?: boolean;
   jobId?: string | null;
   serviceType?: 'openai' | 'privacy';
-  onComplete?: (result: any) => void;
+  onComplete?: (result: unknown) => void;
   onError?: (error: string) => void;
 }
 
@@ -217,7 +217,7 @@ const ProgressModal = ({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isOpen, totalDuration, stages]);
+  }, [isOpen, totalDuration, stages, useRealTime]);
 
   const formatTime = (seconds: number): string => {
     if (seconds < 60) {

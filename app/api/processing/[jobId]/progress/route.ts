@@ -72,7 +72,7 @@ export function updateProgress(
         // Keep data for a bit in case of reconnection
         setTimeout(() => progressData.delete(jobId), 30000);
       }
-    } catch (err) {
+    } catch {
       // Controller might be closed
       progressStreams.delete(jobId);
     }

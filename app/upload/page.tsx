@@ -8,7 +8,6 @@ import { useProcessing } from '../client-provider';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import ProgressModal from '../components/ProgressModal';
-import type { EditableInvoice } from '@/app/types';
 
 const UploadPage = () => {
   const user = useUser();
@@ -28,7 +27,7 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
+  const [progressProcessingType] = useState<'text' | 'image'>('text');
 
   // Real-time progress modal state
   const [showRealTimeProgress, setShowRealTimeProgress] = useState(false);
@@ -231,101 +230,7 @@ const UploadPage = () => {
     }
   };
 
-  const processInvoice = async (type: 'openai' | 'privacy') => {
-    if (!file || !typeResult) return setError('No file or type detected');
 
-    setLocalProcessing(true);
-    setError(null);
-
-    const isImageProcessing = typeResult === 'image';
-    setProgressProcessingType(isImageProcessing ? 'image' : 'text');
-    setShowProgressModal(true);
-
-    try {
-      const token = await getToken();
-      if (!token) {
-        setShowProgressModal(false);
-        return alert('You must be logged in to use this feature.');
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('processor', type);
-
-      let endpoint = '/api/processTextPDF';
-      let processingMethod = 'text';
-
-      if (type === 'openai') {
-        if (typeResult === 'text') {
-          endpoint = '/api/processTextPDF';
-          processingMethod = 'text';
-        } else {
-          endpoint = '/api/processImagePDF';
-          processingMethod = 'image';
-        }
-      } else if (type === 'privacy') {
-        // Privacy-focused processing using OCR + Ollama via proxy
-        endpoint = '/api/proxy/process-invoice';
-        processingMethod = 'privacy';
-      }
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      const rawText = await res.text();
-
-      if (!res.ok) {
-        throw new Error(`Processing failed with status ${res.status}: ${rawText}`);
-      }
-
-      const parsed = JSON.parse(rawText);
-
-      if ('error' in parsed && parsed.error === 'PAGE_LIMIT_EXCEEDED') {
-        setError('PDF exceeds the 10-page limit. Please upload a smaller document.');
-        return;
-      }
-
-      if ('error' in parsed) {
-        throw new Error(parsed.error || 'Processing failed');
-      }
-
-      const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
-
-      if (!isValidStructure(result)) {
-        throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
-      }
-
-      // Store result with method info
-      sessionStorage.setItem('openai_json', JSON.stringify(result));
-      sessionStorage.setItem('pdf_base64', await fileToBase64(file));
-      sessionStorage.setItem('processing_method', processingMethod);
-
-      setTimeout(() => {
-        setShowProgressModal(false);
-        window.location.href = '/edit';
-      }, 1000);
-
-    } catch (err) {
-      setShowProgressModal(false);
-      setError(err instanceof Error ? err.message : 'Failed to process file');
-    } finally {
-      setLocalProcessing(false);
-    }
-  };
-
-  const isValidStructure = (data: unknown): data is EditableInvoice => {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'seller' in data &&
-      'buyer' in data &&
-      'invoice_data' in data &&
-      Array.isArray((data as EditableInvoice).invoice_data)
-    );
-  };
 
   useEffect(() => {
     return () => {
