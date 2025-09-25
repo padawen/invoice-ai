@@ -29,6 +29,7 @@ RUN npm run build && npm prune --omit=dev
 FROM mcr.microsoft.com/playwright:v1.52.0-jammy AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 
 # No ENV remapping here - expect runtime injection from Render
 
@@ -37,5 +38,5 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 USER pwuser
-EXPOSE 3000
-CMD ["sh", "-c", "PORT=${PORT:-3000} node server.js"]
+EXPOSE $PORT
+CMD ["sh", "-c", "PORT=${PORT:-3000} HOSTNAME=0.0.0.0 node server.js"]
