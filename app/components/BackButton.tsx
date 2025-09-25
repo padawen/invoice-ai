@@ -27,7 +27,7 @@ const BackButton = ({
   return (
     <button
       onClick={handleClick}
-      className={`w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-zinc-800 hover:bg-zinc-700 text-green-400 px-4 py-2.5 rounded-lg font-semibold shadow transition border border-green-700/50 ${className}`}
+      className={`w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-zinc-800 hover:bg-zinc-700 text-green-400 px-4 py-2.5 rounded-lg font-semibold shadow transition border border-green-700/50 cursor-pointer ${className}`}
     >
       <ArrowLeft size={20} />
       <span>{label}</span>

@@ -158,7 +158,7 @@ const ExportCSVButton = ({
   return (
     <button
       onClick={handleExport}
-      className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-lg hover:shadow-green-900/20 transition-all duration-300 border border-green-700/50 relative overflow-hidden group"
+      className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-lg hover:shadow-green-900/20 transition-all duration-300 border border-green-700/50 relative overflow-hidden group cursor-pointer"
     >
       <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-green-400/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
       <Download size={18} className="relative z-10" />

@@ -98,7 +98,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                 <button
                   onClick={handleLogout}
                   disabled={isProcessing}
-                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition ${
+                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
                     isProcessing ? 'opacity-50 pointer-events-none' : ''
                   }`}
                 >
@@ -110,7 +110,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
               <button
                 onClick={handleLogin}
                 disabled={isProcessing}
-                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition ${
+                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
                   isProcessing ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >
@@ -120,7 +120,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
           </div>
 
           <button
-            className="md:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="md:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             onClick={() => setOpen(!open)}
             disabled={isProcessing}
           >
@@ -146,7 +146,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                     setOpen(false);
                   }}
                   disabled={isProcessing}
-                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition ${
+                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
                     isProcessing ? 'opacity-50 pointer-events-none' : ''
                   }`}
                 >
@@ -161,7 +161,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                   setOpen(false);
                 }}
                 disabled={isProcessing}
-                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition ${
+                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
                   isProcessing ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >

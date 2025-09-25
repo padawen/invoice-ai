@@ -36,7 +36,7 @@ const ProjectCard = ({ name, onClick, onDelete }: ProjectCardProps) => {
               onDelete();
             }}
             title="Delete project"
-            className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md flex-shrink-0 ml-2"
+            className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md flex-shrink-0 ml-2 cursor-pointer"
             aria-label="Delete project"
           >
             <Trash2 size={16} />
