@@ -253,8 +253,9 @@ const ProgressModal = ({
         'completed': { label: 'Processing Complete!', icon: CheckCircle, color: 'text-green-500' },
         'error': { label: 'Processing Failed', icon: XCircle, color: 'text-red-500' }
       }
-    };
-    return steps[serviceType][step] || { label: step, icon: Loader2, color: 'text-gray-400' };
+    } as const;
+    const stepConfig = steps[serviceType];
+    return stepConfig[step as keyof typeof stepConfig] || { label: step, icon: Loader2, color: 'text-gray-400' };
   };
 
   const getTimeEstimate = (step: string, serviceType: 'privacy' | 'openai') => {

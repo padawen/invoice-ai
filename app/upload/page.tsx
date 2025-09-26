@@ -387,7 +387,7 @@ const UploadPage = () => {
 
       <ProgressModal
         isOpen={showRealTimeProgress}
-        processingType={typeResult || 'text'}
+        processingType={typeResult === 'unknown' ? 'text' : typeResult || 'text'}
         useRealTime={true}
         jobId={currentJobId}
         serviceType={realTimeProcessingType}
