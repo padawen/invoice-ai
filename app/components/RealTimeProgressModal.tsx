@@ -38,9 +38,10 @@ const getStepInfo = (step: string, processingType: 'privacy' | 'openai') => {
       'completed': { label: 'Processing Complete!', icon: CheckCircle, color: 'text-green-500' },
       'error': { label: 'Processing Failed', icon: XCircle, color: 'text-red-500' }
     }
-  };
+  } as const;
 
-  return steps[processingType][step] || { label: step, icon: Loader2, color: 'text-gray-400' };
+  const stepConfig = steps[processingType];
+  return stepConfig[step as keyof typeof stepConfig] || { label: step, icon: Loader2, color: 'text-gray-400' };
 };
 
 const getTimeEstimate = (step: string, processingType: 'privacy' | 'openai') => {
