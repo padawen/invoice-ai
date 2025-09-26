@@ -156,14 +156,14 @@ async function processOpenAIInvoice(jobId: string, formData: FormData, processin
 }
 
 async function processTextPDF(openai: OpenAI, buffer: Buffer, jobId: string) {
-  updateProgress(jobId, 'processing', 25, 'Creating OpenAI assistant...');
+  updateProgress(jobId, 'processing', 25, 'Uploading file to OpenAI...');
 
   const uploadedFile = await openai.files.create({
     file: fileFromBuffer(buffer, 'invoice.pdf'),
     purpose: 'assistants',
   });
 
-  updateProgress(jobId, 'processing', 35, 'Setting up AI assistant...');
+  updateProgress(jobId, 'processing', 35, 'Creating AI assistant...');
 
   const assistant = await openai.beta.assistants.create({
     name: 'PDF Assistant',
@@ -195,14 +195,14 @@ async function processTextPDF(openai: OpenAI, buffer: Buffer, jobId: string) {
 
   let result;
   let attempts = 0;
-  const maxAttempts = 15;
+  const maxAttempts = 30;
 
   while (attempts < maxAttempts) {
     const status = await openai.beta.threads.runs.retrieve(thread.id, run.id);
 
     // Update progress based on attempts
     const progressValue = Math.min(55 + (attempts * 2), 85);
-    updateProgress(jobId, 'processing', progressValue, 'AI is analyzing the document...');
+    updateProgress(jobId, 'processing', progressValue, `AI is analyzing the document... (attempt ${attempts + 1}/${maxAttempts})`);
 
     if (status.status === 'completed') {
       result = await openai.beta.threads.messages.list(thread.id);
@@ -214,7 +214,7 @@ async function processTextPDF(openai: OpenAI, buffer: Buffer, jobId: string) {
       throw new Error(`OpenAI processing failed: ${status.last_error?.message || 'Unknown error'}`);
     }
 
-    await new Promise((res) => setTimeout(res, 1000));
+    await new Promise((res) => setTimeout(res, 2000));
     attempts++;
   }
 
