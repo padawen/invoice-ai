@@ -82,7 +82,7 @@ const ProjectCreator = ({
         </h3>
         <button 
           onClick={onCancel}
-          className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors"
+          className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
           aria-label="Back to project selection"
         >
           <X size={18} />
@@ -115,17 +115,17 @@ const ProjectCreator = ({
           onClick={handleCreate}
           disabled={loading || !newProject.trim()}
           className={`flex-1 flex items-center justify-center gap-2 ${
-            isDemo 
-              ? 'bg-amber-600 hover:bg-amber-500' 
+            isDemo
+              ? 'bg-amber-600 hover:bg-amber-500'
               : 'bg-green-600 hover:bg-green-500'
-          } text-white px-4 py-3 rounded-lg font-medium shadow-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed`}
+          } text-white px-4 py-3 rounded-lg font-medium shadow-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer`}
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : (isDemo ? <Info size={18} /> : <FolderPlus size={18} />)}
           <span>{loading ? 'Creating...' : 'Create Project'}</span>
         </button>
         <button
           onClick={onCancel}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors cursor-pointer"
           disabled={loading}
         >
           <span>Cancel</span>

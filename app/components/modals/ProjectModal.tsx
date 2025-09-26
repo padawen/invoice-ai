@@ -130,7 +130,7 @@ const ProjectModal = ({
               </div>
               <button
                 onClick={() => setIsCreating(true)}
-                className={`w-full flex items-center justify-center gap-2 py-3 ${isDemo ? 'bg-amber-600 hover:bg-amber-500' : 'bg-green-600 hover:bg-green-500'} text-white rounded-lg font-medium shadow-md transition-colors`}
+                className={`w-full flex items-center justify-center gap-2 py-3 ${isDemo ? 'bg-amber-600 hover:bg-amber-500' : 'bg-green-600 hover:bg-green-500'} text-white rounded-lg font-medium shadow-md transition-colors cursor-pointer`}
               >
                 <Plus size={18} />
                 Create New Project
