@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateProgress } from '../[jobId]/progress/route';
+import { updateProgress } from '../utils/progress';
 
 export async function POST(request: NextRequest) {
   try {

@@ -4,7 +4,7 @@ import type { ChatCompletionContentPart } from 'openai/resources/chat/completion
 import { getGuidelinesText, getGuidelinesImage } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
-import { updateProgress } from '../[jobId]/progress/route';
+import { updateProgress } from '../utils/progress';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
