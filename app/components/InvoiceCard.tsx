@@ -76,7 +76,7 @@ const InvoiceCard = ({
           </span>
         </div>
         <button
-          className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md"
+          className="bg-zinc-800 hover:bg-red-500 text-zinc-400 hover:text-white rounded-full p-2 transition-all duration-300 shadow-md cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(id);

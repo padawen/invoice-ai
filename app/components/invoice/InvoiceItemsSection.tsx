@@ -110,7 +110,7 @@ const InvoiceItem = React.memo<{
       <div className="col-span-1 text-center">
         <button
           onClick={() => onDeleteItem(index)}
-          className="inline-flex items-center justify-center w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
+          className="inline-flex items-center justify-center w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded transition-colors cursor-pointer"
           title="Delete item"
         >
           <Trash2 size={12} />
@@ -272,7 +272,7 @@ const InvoiceItemsSection: React.FC<InvoiceItemsSectionProps> = ({
           <div className="mt-6 pt-4 border-t border-zinc-700/30">
             <button
               onClick={onAddItem}
-              className="w-full lg:w-auto px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium shadow-lg flex items-center justify-center gap-2 transition-colors"
+              className="w-full lg:w-auto px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium shadow-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Plus size={20} /> Add New Item
             </button>
