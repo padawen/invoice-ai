@@ -79,8 +79,8 @@ async function processPrivacyInvoice(jobId: string, formData: FormData) {
 
     // Store the result for retrieval
     // Note: In production, you'd store this in a database or Redis
-    (global as any).processingResults = (global as any).processingResults || {};
-    (global as any).processingResults[jobId] = result;
+    global.processingResults = global.processingResults || {};
+    global.processingResults[jobId] = result;
 
   } catch (error) {
     console.error('Privacy processing error:', error);
@@ -110,13 +110,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Job ID required' }, { status: 400 });
   }
 
-  const results = (global as any).processingResults?.[jobId];
+  const results = global.processingResults?.[jobId];
   if (!results) {
     return NextResponse.json({ error: 'Results not found or expired' }, { status: 404 });
   }
 
   // Clean up the result after retrieval
-  delete (global as any).processingResults[jobId];
+  delete global.processingResults![jobId];
 
   return NextResponse.json(results);
 }

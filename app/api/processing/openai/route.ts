@@ -129,8 +129,8 @@ async function processOpenAIInvoice(jobId: string, formData: FormData, processin
     updateProgress(jobId, 'completed', 100, 'Processing completed successfully!', undefined, true);
 
     // Store the result for retrieval
-    (global as any).processingResults = (global as any).processingResults || {};
-    (global as any).processingResults[jobId] = result;
+    global.processingResults = global.processingResults || {};
+    global.processingResults[jobId] = result;
 
   } catch (error) {
     console.error('OpenAI processing error:', error);
@@ -537,13 +537,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Job ID required' }, { status: 400 });
   }
 
-  const results = (global as any).processingResults?.[jobId];
+  const results = global.processingResults?.[jobId];
   if (!results) {
     return NextResponse.json({ error: 'Results not found or expired' }, { status: 404 });
   }
 
   // Clean up the result after retrieval
-  delete (global as any).processingResults[jobId];
+  delete global.processingResults![jobId];
 
   return NextResponse.json(results);
 }
