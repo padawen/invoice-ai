@@ -3,18 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 export default function LoginPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-  const [showDonatLogin, setShowDonatLogin] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     if (!clientSideSupabase) {
@@ -53,28 +46,6 @@ export default function LoginPage() {
     });
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!supabase) return;
-
-    setLoginLoading(true);
-    setLoginError('');
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setLoginError(error.message);
-      }
-    } catch (err) {
-      setLoginError(err instanceof Error ? err.message : 'An unexpected error occurred');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
@@ -92,7 +63,7 @@ export default function LoginPage() {
         {/* Google Login Button */}
         <button
           onClick={handleGoogleLogin}
-          className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 transition-colors px-8 py-4 rounded-xl shadow-lg text-white font-semibold text-lg border border-blue-700 hover:border-blue-600 w-full justify-center"
+          className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 transition-colors px-8 py-4 rounded-xl shadow-lg text-white font-semibold text-lg border border-blue-700 hover:border-blue-600 w-full justify-center cursor-pointer"
         >
           <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clipPath="url(#clip0)">
@@ -108,85 +79,6 @@ export default function LoginPage() {
           Sign in with Google
         </button>
 
-        {/* Divider */}
-        <div className="w-full flex items-center gap-4">
-          <div className="flex-1 h-px bg-zinc-700"></div>
-          <span className="text-zinc-500 text-sm">or</span>
-          <div className="flex-1 h-px bg-zinc-700"></div>
-        </div>
-
-        {/* Donát Login Collapsible Section */}
-        <div className="w-full">
-          <button
-            onClick={() => setShowDonatLogin(!showDonatLogin)}
-            className="w-full flex items-center justify-center gap-3 bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors px-6 py-3 rounded-lg border border-zinc-700/50 text-zinc-300 hover:text-white"
-          >
-            <span className="font-medium">Donát Login</span>
-            {showDonatLogin ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
-
-          {/* Collapsible Email/Password Form */}
-          {showDonatLogin && (
-            <form onSubmit={handleEmailLogin} className="mt-4 space-y-4 border-t border-zinc-700/50 pt-4">
-              {/* Email Input */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors pr-12"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-zinc-300 transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {loginError && (
-                <div className="text-red-400 text-sm bg-red-400/10 px-3 py-2 rounded-lg border border-red-400/20">
-                  {loginError}
-                </div>
-              )}
-
-              {/* Login Button */}
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full bg-green-600 hover:bg-green-500 disabled:bg-green-600/50 transition-colors px-6 py-3 rounded-lg text-white font-semibold shadow-lg disabled:cursor-not-allowed"
-              >
-                {loginLoading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
-          )}
-        </div>
       </div>
     </main>
   );
