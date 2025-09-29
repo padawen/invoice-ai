@@ -8,6 +8,8 @@ import { useProcessing } from '../client-provider';
 
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import ProgressModal from '../components/ProgressModal';
+import PrivacyProgressModal from '../components/PrivacyProgressModal';
+import type { EditableInvoice } from '@/app/types';
 
 const UploadPage = () => {
   const user = useUser();
@@ -27,15 +29,11 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [progressProcessingType] = useState<'text' | 'image'>('text');
-
-  // Real-time progress modal state
-  const [showRealTimeProgress, setShowRealTimeProgress] = useState(false);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [realTimeProcessingType, setRealTimeProcessingType] = useState<'privacy' | 'openai'>('privacy');
+  const [showPrivacyProgressModal, setShowPrivacyProgressModal] = useState(false);
+  const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
 
   const isOperationInProgress = isDetecting || localProcessing;
-  
+
   useEffect(() => {
     setIsProcessing(isOperationInProgress);
     return () => setIsProcessing(false);
@@ -61,7 +59,7 @@ const UploadPage = () => {
       setFile(selectedFile);
       setFileUrl(URL.createObjectURL(selectedFile));
       setTypeResult(null);
-      
+
       handleDetectType(selectedFile);
     } else {
       setError('Please upload a valid PDF file!');
@@ -81,7 +79,7 @@ const UploadPage = () => {
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const droppedFile = e.dataTransfer.files[0];
     processFile(droppedFile);
   };
@@ -100,7 +98,7 @@ const UploadPage = () => {
 
         const formData = new FormData();
         formData.append('file', pdfFile);
-        
+
         const res = await fetch('/api/detectType', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +110,7 @@ const UploadPage = () => {
           console.error('Detection request failed:', res.status, errorText);
           throw new Error(`Detection request failed with status ${res.status}: ${errorText}`);
         }
-        
+
         const data = await res.json();
         return data;
       } catch (err) {
@@ -127,16 +125,16 @@ const UploadPage = () => {
         try {
           const data = await attemptDetection();
           setTypeResult(data.type || 'unknown');
-          return; 
+          return;
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
-          
+
           if (i < 2) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
       }
-      
+
       console.error('All detection attempts failed:', lastError);
       throw lastError || new Error('Failed after multiple attempts');
     } catch (err) {
@@ -148,89 +146,123 @@ const UploadPage = () => {
   };
 
   const handleProcessWithOpenAI = async () => {
-    if (!file || !typeResult) return setError('No file or type detected');
-
-    setLocalProcessing(true);
-    setError(null);
-
-    try {
-      const token = await getToken();
-      if (!token) {
-        return alert('You must be logged in to use this feature.');
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('processingType', typeResult);
-
-      // Start OpenAI processing with SSE
-      const response = await fetch('/api/processing/openai', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to start processing: ${errorText}`);
-      }
-
-      const { jobId } = await response.json();
-
-      // Show real-time progress modal
-      setCurrentJobId(jobId);
-      setRealTimeProcessingType('openai');
-      setShowRealTimeProgress(true);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start processing');
-    } finally {
-      setLocalProcessing(false);
-    }
+    await processInvoice('openai');
   };
 
   const handleProcessWithPrivacy = async () => {
+    await processInvoice('privacy');
+  };
+
+  const processInvoice = async (type: 'openai' | 'privacy') => {
     if (!file || !typeResult) return setError('No file or type detected');
 
     setLocalProcessing(true);
     setError(null);
 
+    const isImageProcessing = typeResult === 'image';
+    setProgressProcessingType(isImageProcessing ? 'image' : 'text');
+
+    if (type === 'privacy') {
+      setShowPrivacyProgressModal(true);
+    } else {
+      setShowProgressModal(true);
+    }
+
     try {
       const token = await getToken();
       if (!token) {
+        if (type === 'privacy') {
+          setShowPrivacyProgressModal(false);
+        } else {
+          setShowProgressModal(false);
+        }
         return alert('You must be logged in to use this feature.');
       }
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('processor', type);
 
-      // Start privacy processing with SSE
-      const response = await fetch('/api/processing/privacy', {
+      let endpoint = '/api/processTextPDF';
+      let processingMethod = 'text';
+
+      if (type === 'openai') {
+        if (typeResult === 'text') {
+          endpoint = '/api/processTextPDF';
+          processingMethod = 'text';
+        } else {
+          endpoint = '/api/processImagePDF';
+          processingMethod = 'image';
+        }
+      } else if (type === 'privacy') {
+        endpoint = '/api/proxy/process-invoice';
+        processingMethod = 'privacy';
+      }
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to start processing: ${errorText}`);
+      const rawText = await res.text();
+
+      if (!res.ok) {
+        throw new Error(`Processing failed with status ${res.status}: ${rawText}`);
       }
 
-      const { jobId } = await response.json();
+      const parsed = JSON.parse(rawText);
 
-      // Show real-time progress modal
-      setCurrentJobId(jobId);
-      setRealTimeProcessingType('privacy');
-      setShowRealTimeProgress(true);
+      if ('error' in parsed && parsed.error === 'PAGE_LIMIT_EXCEEDED') {
+        setError('PDF exceeds the 10-page limit. Please upload a smaller document.');
+        return;
+      }
+
+      if ('error' in parsed) {
+        throw new Error(parsed.error || 'Processing failed');
+      }
+
+      const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
+
+      if (!isValidStructure(result)) {
+        throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
+      }
+
+      sessionStorage.setItem('openai_json', JSON.stringify(result));
+      sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+      sessionStorage.setItem('processing_method', processingMethod);
+
+      setTimeout(() => {
+        if (type === 'privacy') {
+          setShowPrivacyProgressModal(false);
+        } else {
+          setShowProgressModal(false);
+        }
+        window.location.href = '/edit';
+      }, 1000);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start processing');
+      if (type === 'privacy') {
+        setShowPrivacyProgressModal(false);
+      } else {
+        setShowProgressModal(false);
+      }
+      setError(err instanceof Error ? err.message : 'Failed to process file');
     } finally {
       setLocalProcessing(false);
     }
   };
 
-
+  const isValidStructure = (data: unknown): data is EditableInvoice => {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'seller' in data &&
+      'buyer' in data &&
+      'invoice_data' in data &&
+      Array.isArray((data as EditableInvoice).invoice_data)
+    );
+  };
 
   useEffect(() => {
     return () => {
@@ -350,28 +382,28 @@ const UploadPage = () => {
                   </div>
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+
+              <div className="flex flex-col sm:flex-row gap-6 justify-center w-full max-w-2xl mx-auto">
                 <button
                   onClick={handleProcessWithOpenAI}
                   disabled={isOperationInProgress}
-                  className={`px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                  className={`px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
                     isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                  }`}
+                  } flex-1 min-h-[80px]`}
                 >
                   Extract with OpenAI
-                  <span className="text-xs px-2 py-0.5 bg-green-700 rounded ml-1">Cloud</span>
+                  <span className="text-sm px-3 py-1 bg-green-700 rounded">Cloud</span>
                 </button>
 
                 <button
                   onClick={handleProcessWithPrivacy}
                   disabled={isOperationInProgress}
-                  className={`px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2 transition ${
+                  className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
                     isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                  }`}
+                  } flex-1 min-h-[80px]`}
                 >
                   Extract with Privacy AI
-                  <span className="text-xs px-2 py-0.5 bg-blue-700 rounded ml-1">Local</span>
+                  <span className="text-sm px-3 py-1 bg-blue-700 rounded">Local</span>
                 </button>
               </div>
             </div>
@@ -385,36 +417,9 @@ const UploadPage = () => {
         onClose={() => setShowProgressModal(false)}
       />
 
-      <ProgressModal
-        isOpen={showRealTimeProgress}
-        processingType={typeResult === 'unknown' ? 'text' : typeResult || 'text'}
-        useRealTime={true}
-        jobId={currentJobId}
-        serviceType={realTimeProcessingType}
-        onComplete={async (result) => {
-          setShowRealTimeProgress(false);
-          setCurrentJobId(null);
-
-          // Store result and redirect
-          sessionStorage.setItem('openai_json', JSON.stringify(result));
-          if (file) {
-            sessionStorage.setItem('pdf_base64', await fileToBase64(file));
-          }
-          sessionStorage.setItem('processing_method', realTimeProcessingType);
-
-          setTimeout(() => {
-            window.location.href = '/edit';
-          }, 1000);
-        }}
-        onError={(error) => {
-          setShowRealTimeProgress(false);
-          setCurrentJobId(null);
-          setError(error);
-        }}
-        onClose={() => {
-          setShowRealTimeProgress(false);
-          setCurrentJobId(null);
-        }}
+      <PrivacyProgressModal
+        isOpen={showPrivacyProgressModal}
+        onClose={() => setShowPrivacyProgressModal(false)}
       />
     </>
   );
