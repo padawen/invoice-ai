@@ -137,11 +137,59 @@ export default function ProjectDetailsPage() {
     if (filterOptions.searchTerm) {
       const term = filterOptions.searchTerm.toLowerCase();
       filtered = filtered.filter(item => {
+        // Original fields
         const invoiceNumber = (item.invoice_number || item.fields?.invoice_number || '').toLowerCase();
         const buyer = (item.buyer_name || item.fields?.buyer?.name || '').toLowerCase();
         const seller = (item.seller_name || item.fields?.seller?.name || '').toLowerCase();
-        
-        return invoiceNumber.includes(term) || buyer.includes(term) || seller.includes(term);
+
+        // Dates
+        const issueDate = (item.issue_date || item.fields?.issue_date || '').toLowerCase();
+        const dueDate = (item.fields?.due_date || '').toLowerCase();
+        const fulfillmentDate = (item.fields?.fulfillment_date || '').toLowerCase();
+
+        // Payment method
+        const paymentMethod = (item.fields?.payment_method || '').toLowerCase();
+
+        // Addresses and Tax IDs
+        const buyerAddress = (item.fields?.buyer?.address || '').toLowerCase();
+        const buyerTaxId = (item.fields?.buyer?.tax_id || '').toLowerCase();
+        const sellerAddress = (item.fields?.seller?.address || '').toLowerCase();
+        const sellerTaxId = (item.fields?.seller?.tax_id || '').toLowerCase();
+        const sellerEmail = (item.fields?.seller?.email || '').toLowerCase();
+        const sellerPhone = (item.fields?.seller?.phone || '').toLowerCase();
+
+        // Invoice line items/products
+        const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
+        const itemMatches = invoiceItems.some(invItem => {
+          const itemName = (invItem.name || '').toLowerCase();
+          const itemQuantity = (invItem.quantity || '').toString().toLowerCase();
+          const itemUnitPrice = (invItem.unit_price || '').toString().toLowerCase();
+          const itemNet = (invItem.net || '').toString().toLowerCase();
+          const itemGross = (invItem.gross || '').toString().toLowerCase();
+          const itemCurrency = (invItem.currency || '').toLowerCase();
+
+          return itemName.includes(term) ||
+                 itemQuantity.includes(term) ||
+                 itemUnitPrice.includes(term) ||
+                 itemNet.includes(term) ||
+                 itemGross.includes(term) ||
+                 itemCurrency.includes(term);
+        });
+
+        return invoiceNumber.includes(term) ||
+               buyer.includes(term) ||
+               seller.includes(term) ||
+               issueDate.includes(term) ||
+               dueDate.includes(term) ||
+               fulfillmentDate.includes(term) ||
+               paymentMethod.includes(term) ||
+               buyerAddress.includes(term) ||
+               buyerTaxId.includes(term) ||
+               sellerAddress.includes(term) ||
+               sellerTaxId.includes(term) ||
+               sellerEmail.includes(term) ||
+               sellerPhone.includes(term) ||
+               itemMatches;
       });
     }
     

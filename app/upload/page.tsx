@@ -179,12 +179,10 @@ const UploadPage = () => {
         return alert('You must be logged in to use this feature.');
       }
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('processor', type);
-
       let endpoint = '/api/processTextPDF';
       let processingMethod = 'text';
+      const formData = new FormData();
+      formData.append('file', file);
 
       if (type === 'openai') {
         if (typeResult === 'text') {
@@ -197,6 +195,7 @@ const UploadPage = () => {
       } else if (type === 'privacy') {
         endpoint = '/api/proxy/process-invoice';
         processingMethod = 'privacy';
+        formData.append('processor', 'privacy'); // Only privacy endpoint needs this
       }
 
       const res = await fetch(endpoint, {
