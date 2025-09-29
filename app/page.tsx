@@ -8,7 +8,7 @@ export default function Home() {
   const user = useUser();
 
   return (
-    <main className="flex-grow flex flex-col bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
+    <main className="flex-grow flex flex-col bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden select-none">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-500/10 via-transparent to-transparent opacity-50 pointer-events-none" />
 
       <div className="flex-grow flex flex-col items-center justify-center px-4">
@@ -68,7 +68,7 @@ export default function Home() {
 
       <footer className="w-full py-4 px-6 mt-auto flex justify-center text-center z-10 bg-zinc-900/70 backdrop-blur-sm border-t border-zinc-800">
         <div className="text-zinc-400 font-medium">
-          © {new Date().getFullYear()} Invoice AI · Built with <span className="text-yellow-200">🥂</span>, <span className="text-blue-300">💧</span>, <span className="text-green-400">🌿</span> & <span className="text-blue-400">Next.js</span>
+          © {new Date().getFullYear()} Invoice AI · Built with <span className="text-yellow-200">🥂</span>, <span className="text-blue-300">💧</span>, <span className="text-green-400">🌿</span> & <span className="text-zinc-400">Next.js</span>
         </div>
       </footer>
     </main>
