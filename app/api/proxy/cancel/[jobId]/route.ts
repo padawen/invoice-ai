@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ jobId: string }> }
+) {
   try {
+    const { jobId } = await params;
+
     // Get the authorization header from the original request
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the form data from the request
-    const formData = await request.formData();
-
     // Get the privacy API configuration from environment
     const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
 
+
     if (!privacyApiBaseUrl) {
       return NextResponse.json({ error: 'Privacy API URL not configured' }, { status: 500 });
     }
-    const privacyApiUrl = `${privacyApiBaseUrl}/process-invoice`;
 
-    console.log('Attempting to connect to privacy service...');
-    console.log('Privacy API URL:', privacyApiUrl);
-    console.log('Has API key:', !!privacyApiKey);
+    const privacyApiUrl = `${privacyApiBaseUrl}/cancel-job/${jobId}`;
 
     // Prepare headers with API key authentication
     const headers: HeadersInit = {};
@@ -30,56 +30,47 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = `Bearer ${privacyApiKey}`;
     }
 
-    // Forward the request to the privacy API
+    // Forward the request to the privacy API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 350000);
-
-    console.log('Making request to privacy API...');
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for cancel
 
     const response = await fetch(privacyApiUrl, {
-      method: 'POST',
+      method: 'DELETE',
       headers,
-      body: formData,
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
-    console.log('Received response from privacy API, status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Privacy API responded with error:', response.status, errorText);
+      console.error('Privacy API cancel failed:', response.status, errorText);
       return NextResponse.json(
-        { error: `Privacy API error: ${errorText}` },
+        { error: `Cancel failed: ${errorText}` },
         { status: response.status }
       );
     }
 
     const result = await response.json();
-    console.log('Privacy API responded successfully');
-
-    // Add job ID to metadata if available
-    if (result._processing_metadata) {
-      result._processing_metadata.privacy_service = true;
-    }
-
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('Cancel proxy error:', error);
 
-    // More specific error messages
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         return NextResponse.json(
-          { error: 'Privacy API request timed out after 350 seconds.' },
+          {
+            error: 'Cancel request timed out',
+            details: 'Request to privacy API timed out after 5 seconds'
+          },
           { status: 504 }
         );
       }
       if (error.message.includes('ECONNREFUSED')) {
         return NextResponse.json(
           {
-            error: 'Cannot connect to privacy API. Please check if the service is running.',
+            error: 'Cannot connect to privacy API for cancellation.',
             details: 'ECONNREFUSED - Connection refused by target server',
             url: process.env.PRIVACY_API_URL || 'Environment variable not set'
           },
@@ -90,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: 'Failed to process request',
+        error: 'Failed to cancel job',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

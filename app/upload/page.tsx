@@ -9,6 +9,7 @@ import { useProcessing } from '../client-provider';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import ProgressModal from '../components/ProgressModal';
 import PrivacyProgressModal from '../components/PrivacyProgressModal';
+import Footer from '../components/Footer';
 import type { EditableInvoice } from '@/app/types';
 
 const UploadPage = () => {
@@ -31,6 +32,7 @@ const UploadPage = () => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showPrivacyProgressModal, setShowPrivacyProgressModal] = useState(false);
   const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
+  const [privacyJobId, setPrivacyJobId] = useState<string | null>(null);
 
   const isOperationInProgress = isDetecting || localProcessing;
 
@@ -162,21 +164,16 @@ const UploadPage = () => {
     const isImageProcessing = typeResult === 'image';
     setProgressProcessingType(isImageProcessing ? 'image' : 'text');
 
-    if (type === 'privacy') {
-      setShowPrivacyProgressModal(true);
-    } else {
-      setShowProgressModal(true);
-    }
-
     try {
       const token = await getToken();
       if (!token) {
-        if (type === 'privacy') {
-          setShowPrivacyProgressModal(false);
-        } else {
-          setShowProgressModal(false);
-        }
         return alert('You must be logged in to use this feature.');
+      }
+
+      if (type === 'privacy') {
+        setShowPrivacyProgressModal(true);
+      } else {
+        setShowProgressModal(true);
       }
 
       let endpoint = '/api/processTextPDF';
@@ -223,6 +220,18 @@ const UploadPage = () => {
 
       const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
 
+      // Handle privacy processing differently - it returns job ID immediately
+      if (type === 'privacy') {
+        if (result._processing_metadata?.job_id) {
+          setPrivacyJobId(result._processing_metadata.job_id);
+          // Progress modal will handle the rest - don't validate structure yet
+          return;
+        } else {
+          throw new Error('Privacy processing failed to return job ID');
+        }
+      }
+
+      // For OpenAI processing, validate structure immediately
       if (!isValidStructure(result)) {
         throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
       }
@@ -232,11 +241,7 @@ const UploadPage = () => {
       sessionStorage.setItem('processing_method', processingMethod);
 
       setTimeout(() => {
-        if (type === 'privacy') {
-          setShowPrivacyProgressModal(false);
-        } else {
-          setShowProgressModal(false);
-        }
+        setShowProgressModal(false);
         window.location.href = '/edit';
       }, 1000);
 
@@ -290,7 +295,7 @@ const UploadPage = () => {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-12 px-4">
+      <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-12 px-4 pb-16">
         <div className="w-full max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
@@ -408,6 +413,8 @@ const UploadPage = () => {
             </div>
           )}
         </div>
+
+        <Footer />
       </main>
 
       <ProgressModal
@@ -419,6 +426,8 @@ const UploadPage = () => {
       <PrivacyProgressModal
         isOpen={showPrivacyProgressModal}
         onClose={() => setShowPrivacyProgressModal(false)}
+        jobId={privacyJobId || undefined}
+        file={file || undefined}
       />
     </>
   );

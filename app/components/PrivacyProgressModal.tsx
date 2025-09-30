@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server } from 'lucide-react';
+import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server, Upload, X } from 'lucide-react';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface PrivacyProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
+  jobId?: string;
+  file?: File;
 }
 
 interface ProcessingStage {
@@ -14,93 +17,210 @@ interface ProcessingStage {
   description: string;
 }
 
-const PrivacyProgressModal = ({ isOpen }: PrivacyProgressModalProps) => {
+interface ProgressData {
+  id: string;
+  filename: string;
+  status: 'started' | 'processing' | 'completed' | 'error';
+  progress: number;
+  stage: string;
+  message: string;
+  created_at: string;
+  updated_at: string;
+  stages: {
+    upload: { progress: number; status: string; duration?: number };
+    ocr: { progress: number; status: string; duration?: number };
+    llm: { progress: number; status: string; duration?: number };
+    postprocess: { progress: number; status: string; duration?: number };
+  };
+  error?: string;
+  result?: any;
+}
+
+const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps) => {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const startTimeRef = useRef<number | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+
+  useEffect(() => {
+    const client = createSupabaseBrowserClient();
+    if (client) setSupabase(client);
+  }, []);
 
   const stages: ProcessingStage[] = useMemo(() => [
     {
       id: 'upload',
-      name: 'Uploading to Privacy Server',
-      icon: <Shield className="w-5 h-5" />,
-      duration: 8,
-      description: 'Securely uploading PDF to local privacy server...'
+      name: 'File Upload',
+      icon: <Upload className="w-5 h-5" />,
+      duration: 5,
+      description: 'Uploading file to privacy server...'
     },
     {
       id: 'ocr',
       name: 'OCR Text Extraction',
       icon: <FileText className="w-5 h-5" />,
-      duration: 45,
+      duration: 15,
       description: 'Extracting text using local OCR - no external services...'
     },
     {
-      id: 'analyze',
+      id: 'llm',
       name: 'Local AI Processing',
       icon: <Brain className="w-5 h-5" />,
-      duration: 120,
+      duration: 70,
       description: 'Processing with local LLM - your data stays private...'
     },
     {
-      id: 'finalize',
-      name: 'Formatting Results',
+      id: 'postprocess',
+      name: 'Post-processing',
       icon: <Server className="w-5 h-5" />,
       duration: 10,
       description: 'Structuring data and preparing final results...'
-    },
-    {
-      id: 'complete',
-      name: 'Processing Complete',
-      icon: <CheckCircle className="w-5 h-5" />,
-      duration: 2,
-      description: 'Privacy processing complete - no data shared externally!'
     }
   ], []);
 
   const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
 
+  // Progress polling effect
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !jobId) {
       setCurrentStageIndex(0);
       setProgress(0);
       setTimeRemaining(0);
+      setProgressData(null);
+      setError(null);
       startTimeRef.current = null;
       return;
     }
 
     startTimeRef.current = Date.now();
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = startTimeRef.current ? (now - startTimeRef.current) / 1000 : 0;
-
-      let cumulativeTime = 0;
-      let newStageIndex = 0;
-
-      for (let i = 0; i < stages.length; i++) {
-        if (elapsed >= cumulativeTime && elapsed < cumulativeTime + stages[i].duration) {
-          newStageIndex = i;
-          break;
+    const pollProgress = async () => {
+      try {
+        let authToken = '';
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          authToken = session?.access_token || '';
         }
-        cumulativeTime += stages[i].duration;
-        if (i === stages.length - 1) {
-          newStageIndex = stages.length - 1;
+
+        const progressUrl = `/api/proxy/progress/${jobId}`;
+
+        const response = await fetch(progressUrl, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Progress error response:', errorText);
         }
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch progress: ${response.status}`);
+        }
+
+        const data: ProgressData = await response.json();
+        setProgressData(data);
+        setProgress(data.progress);
+
+        // Map stage to index
+        const stageToIndex = {
+          'upload': 0,
+          'ocr': 1,
+          'llm': 2,
+          'postprocess': 3
+        };
+
+        const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
+        setCurrentStageIndex(stageIndex);
+
+        // Calculate time remaining based on current progress and elapsed time
+        if (startTimeRef.current) {
+          const elapsed = (Date.now() - startTimeRef.current) / 1000;
+          const progressRate = data.progress / elapsed;
+          const remaining = progressRate > 0 ? (100 - data.progress) / progressRate : 0;
+          setTimeRemaining(Math.max(remaining, 0));
+        }
+
+        // Handle completion or error
+        if (data.status === 'completed' || data.status === 'error') {
+          if (data.status === 'error') {
+            setError(data.error || 'Processing failed');
+          } else if (data.status === 'completed' && data.result) {
+            // Processing completed successfully - save result and redirect
+            const saveResultAndRedirect = async () => {
+              sessionStorage.setItem('openai_json', JSON.stringify(data.result));
+              if (file) {
+                sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+              }
+              sessionStorage.setItem('processing_method', 'privacy');
+
+              setTimeout(() => {
+                window.location.href = '/edit';
+              }, 1000);
+            };
+
+            saveResultAndRedirect();
+          }
+          return; // Stop polling
+        }
+
+      } catch (err) {
+        console.error('Progress polling error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch progress');
       }
+    };
 
-      setCurrentStageIndex(newStageIndex);
+    // Initial poll
+    pollProgress();
 
-      const overallProgress = Math.min((elapsed / totalDuration) * 100, 100);
-      setProgress(overallProgress);
-
-      const remaining = Math.max(totalDuration - elapsed, 0);
-      setTimeRemaining(remaining);
-
-    }, 100);
+    // Set up polling interval
+    const interval = setInterval(pollProgress, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, totalDuration, stages]);
+  }, [isOpen, jobId, supabase]);
+
+  const handleCancel = async () => {
+    if (!jobId || isCancelling) return;
+
+    try {
+      setIsCancelling(true);
+
+      let authToken = '';
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        authToken = session?.access_token || '';
+      }
+
+      const cancelUrl = `/api/proxy/cancel/${jobId}`;
+      const response = await fetch(cancelUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (response.ok) {
+        console.log('Job cancelled successfully');
+        // Close modal and go back to upload page
+        window.location.href = '/upload';
+      } else {
+        const errorText = await response.text();
+        console.error('Cancel failed:', errorText);
+        setError('Failed to cancel processing');
+      }
+    } catch (err) {
+      console.error('Cancel error:', err);
+      setError('Failed to cancel processing');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const formatTime = (seconds: number): string => {
     if (seconds < 60) {
@@ -152,68 +272,101 @@ const PrivacyProgressModal = ({ isOpen }: PrivacyProgressModalProps) => {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center justify-center w-10 h-10 bg-blue-500/20 rounded-full">
-              {currentStageIndex === stages.length - 1 ? (
-                <CheckCircle className="w-5 h-5 text-blue-400" />
+              {error ? (
+                <AlertCircle className="w-5 h-5 text-red-400" />
+              ) : progressData?.status === 'completed' ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
               ) : (
                 <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
               )}
             </div>
             <div>
               <h3 className="text-white font-semibold">
-                {stages[currentStageIndex]?.name}
+                {error ? 'Processing Error' :
+                 progressData?.status === 'completed' ? 'Processing Complete' :
+                 stages[currentStageIndex]?.name || 'Processing'}
               </h3>
               <p className="text-zinc-400 text-sm">
-                {stages[currentStageIndex]?.description}
+                {error ? error :
+                 progressData?.message ||
+                 stages[currentStageIndex]?.description}
               </p>
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          {stages.map((stage, index) => (
-            <div
-              key={stage.id}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                index < currentStageIndex
-                  ? 'bg-blue-500/10 border border-blue-500/20'
-                  : index === currentStageIndex
-                  ? 'bg-cyan-500/10 border border-cyan-500/20'
-                  : 'bg-zinc-800/50 border border-zinc-700/50'
-              }`}
-            >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                index < currentStageIndex
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : index === currentStageIndex
-                  ? 'bg-cyan-500/20 text-cyan-400'
-                  : 'bg-zinc-700/50 text-zinc-500'
-              }`}>
-                {index < currentStageIndex ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : index === currentStageIndex ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  stage.icon
+          {stages.map((stage, index) => {
+            const stageData = progressData?.stages?.[stage.id as keyof typeof progressData.stages];
+            const isCompleted = stageData?.status === 'completed' || index < currentStageIndex;
+            const isCurrent = index === currentStageIndex && progressData?.status !== 'completed';
+            const hasError = error && index === currentStageIndex;
+
+            return (
+              <div
+                key={stage.id}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                  hasError
+                    ? 'bg-red-500/10 border border-red-500/20'
+                    : isCompleted
+                    ? 'bg-green-500/10 border border-green-500/20'
+                    : isCurrent
+                    ? 'bg-cyan-500/10 border border-cyan-500/20'
+                    : 'bg-zinc-800/50 border border-zinc-700/50'
+                }`}
+              >
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                  hasError
+                    ? 'bg-red-500/20 text-red-400'
+                    : isCompleted
+                    ? 'bg-green-500/20 text-green-400'
+                    : isCurrent
+                    ? 'bg-cyan-500/20 text-cyan-400'
+                    : 'bg-zinc-700/50 text-zinc-500'
+                }`}>
+                  {hasError ? (
+                    <AlertCircle className="w-4 h-4" />
+                  ) : isCompleted ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : isCurrent ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    stage.icon
+                  )}
+                </div>
+                <div className="flex-1">
+                  <span className={`text-sm font-medium ${
+                    hasError
+                      ? 'text-red-400'
+                      : isCompleted
+                      ? 'text-green-400'
+                      : isCurrent
+                      ? 'text-cyan-400'
+                      : 'text-zinc-500'
+                  }`}>
+                    {stage.name}
+                  </span>
+                  {stageData?.duration && (
+                    <span className="text-xs text-zinc-500 ml-2">
+                      ({stageData.duration.toFixed(1)}s)
+                    </span>
+                  )}
+                </div>
+                {stageData?.progress && (
+                  <span className="text-xs text-zinc-400">
+                    {stageData.progress}%
+                  </span>
                 )}
               </div>
-              <span className={`text-sm font-medium ${
-                index < currentStageIndex
-                  ? 'text-blue-400'
-                  : index === currentStageIndex
-                  ? 'text-cyan-400'
-                  : 'text-zinc-500'
-              }`}>
-                {stage.name}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs text-blue-300">
-              <div className="font-medium mb-1">🔒 Privacy Mode Active</div>
+              <div className="font-medium mb-1">Privacy Mode Active</div>
               <div>
                 Processing on local server with CPU inference. This takes longer but ensures your
                 invoice data never leaves your infrastructure and is not shared with external AI services.
@@ -221,9 +374,54 @@ const PrivacyProgressModal = ({ isOpen }: PrivacyProgressModalProps) => {
             </div>
           </div>
         </div>
+
+        {/* Action buttons */}
+        <div className="mt-4 flex justify-center">
+          {/* Stop button - only show if processing and not completed/errored */}
+          {progressData?.status === 'processing' && !error && (
+            <button
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className={`px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition ${
+                isCancelling ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              }`}
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Stopping...
+                </>
+              ) : (
+                <>
+                  <X className="w-4 h-4" />
+                  Stop Processing
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Close button - show when there's an error or processing is cancelled (NOT when completed) */}
+          {(error || progressData?.status === 'error') && (
+            <button
+              onClick={() => window.location.href = '/upload'}
+              className="px-6 py-2 bg-zinc-600 hover:bg-zinc-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              Close
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 export default PrivacyProgressModal;

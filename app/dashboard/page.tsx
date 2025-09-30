@@ -8,6 +8,7 @@ import ProjectCard from "../components/ProjectCard";
 import slugify from "slugify";
 import BackButton from "../components/BackButton";
 import DeleteModal from "../components/modals/DeleteModal";
+import Footer from "../components/Footer";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 interface Project {
@@ -106,7 +107,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white select-none pb-16">
       <div className="max-w-5xl mx-auto py-12 px-4">
         <div className="flex flex-col items-center justify-center mb-10">
           <div className="w-full flex items-center justify-between mb-4">
@@ -169,6 +170,7 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -3,7 +3,14 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Get the privacy API URL from environment
-    const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000';
+    const privacyApiUrl = process.env.PRIVACY_API_URL;
+
+    if (!privacyApiUrl) {
+      return NextResponse.json({
+        status: 'unhealthy',
+        message: 'Privacy API URL not configured'
+      }, { status: 500 });
+    }
 
     // Remove /process-invoice if it's in the URL for health check
     const baseUrl = privacyApiUrl.replace('/process-invoice', '');
@@ -46,8 +53,8 @@ export async function GET() {
   } catch (error) {
     console.error('Health check error:', error);
 
-    const privacyApiUrl = process.env.PRIVACY_API_URL || 'http://localhost:5000';
-    const baseUrl = privacyApiUrl.replace('/process-invoice', '');
+    const privacyApiUrl = process.env.PRIVACY_API_URL;
+    const baseUrl = privacyApiUrl?.replace('/process-invoice', '') || 'NOT_CONFIGURED';
     const healthUrl = `${baseUrl}/health`;
 
     return NextResponse.json(
