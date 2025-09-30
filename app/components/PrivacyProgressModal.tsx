@@ -33,7 +33,7 @@ interface ProgressData {
     postprocess: { progress: number; status: string; duration?: number };
   };
   error?: string;
-  result?: any;
+  result?: Record<string, unknown>;
 }
 
 const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps) => {
@@ -183,7 +183,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     const interval = setInterval(pollProgress, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, jobId, supabase]);
+  }, [isOpen, jobId, supabase, file]);
 
   const handleCancel = async () => {
     if (!jobId || isCancelling) return;
