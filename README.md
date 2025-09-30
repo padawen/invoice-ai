@@ -15,7 +15,7 @@ This isn't just another boring invoice processor. Oh no, no, no. This is a **FUL
 - Automatic PDF type detection (text vs image) because we're fancy like that
 - Support for multiple processing engines:
   - **OpenAI GPT-4** (when you want the good stuff)
-  - **Local LLM** (when you're feeling rebellious)
+  - **Privacy Mode with Mistral 7B Instruct** (local processing with real-time progress tracking)
   - **DocTR OCR** (for those sketchy scanned invoices)
 
 **🧠 AI-Powered Data Extraction**
@@ -24,6 +24,9 @@ This isn't just another boring invoice processor. Oh no, no, no. This is a **FUL
 - Invoice metadata (numbers, dates, payment methods)
 - Line items with quantities, prices, and currencies
 - Automatically calculates net/gross amounts
+- **NEW:** Privacy mode with local Mistral 7B Instruct processing
+- **NEW:** Real-time progress tracking with cancellation support
+- **NEW:** Background processing with streaming responses
 
 **🎨 Beautiful Editing Interface**
 - Collapsible sections for seller, buyer, and invoice details
@@ -31,6 +34,9 @@ This isn't just another boring invoice processor. Oh no, no, no. This is a **FUL
 - Add/remove invoice items with ease
 - Live financial summaries
 - Export to CSV because Excel is still king
+- **NEW:** Privacy processing modal with live progress tracking
+- **NEW:** Cancellable processing with stop button
+- **NEW:** Multi-stage progress visualization (Upload → OCR → AI → Results)
 
 **📊 Project Management & Analytics**
 - Dashboard with all your projects
@@ -94,8 +100,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
-# Optional: Local LLM endpoint (if you're running your own)
-LOCAL_LLM_ENDPOINT=http://localhost:8000
+# Privacy Processing API (local Mistral 7B Instruct)
+PRIVACY_API_URL=http://localhost:5000
+PRIVACY_API_KEY=your_privacy_api_key
 
 # Optional: Custom API endpoints
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
@@ -187,7 +194,8 @@ Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
 - `POSTGRES_PASSWORD` - Database password (server-only, sensitive)
 - `POSTGRES_DATABASE` - Database name (server-only, sensitive)
 - `POSTGRES_HOST` - Database host (server-only, sensitive)
-- `PRIVACY_API_URL` - Optional privacy API endpoint (server-only)
+- `PRIVACY_API_URL` - Privacy API endpoint for local processing (server-only)
+- `PRIVACY_API_KEY` - Privacy API authentication key (server-only, sensitive)
 
 #### Docker Deployment
 
