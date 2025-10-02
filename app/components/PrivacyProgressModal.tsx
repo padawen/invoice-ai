@@ -64,21 +64,21 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       id: 'ocr',
       name: 'OCR Text Extraction',
       icon: <FileText className="w-5 h-5" />,
-      duration: 15,
+      duration: 20,
       description: 'Extracting text using local OCR - no external services...'
     },
     {
       id: 'llm',
       name: 'Local AI Processing',
       icon: <Brain className="w-5 h-5" />,
-      duration: 70,
+      duration: 160,
       description: 'Processing with local LLM - your data stays private...'
     },
     {
       id: 'postprocess',
       name: 'Post-processing',
       icon: <Server className="w-5 h-5" />,
-      duration: 10,
+      duration: 15,
       description: 'Structuring data and preparing final results...'
     }
   ], []);
@@ -137,9 +137,11 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           // Only calculate if we have meaningful progress (>5%) to avoid wild estimates
           if (startTimeRef.current && data.progress > 5) {
             const elapsed = (Date.now() - startTimeRef.current) / 1000;
-            const progressRate = data.progress / elapsed;
-            const remaining = progressRate > 0 ? (100 - data.progress) / progressRate : 0;
-            setTimeRemaining(Math.max(remaining, 0));
+            // Calculate how much time remains based on current progress rate
+            const progressRate = data.progress / 100; // Convert to fraction (0-1)
+            const estimatedTotal = progressRate > 0 ? elapsed / progressRate : 0;
+            const remaining = Math.max(estimatedTotal - elapsed, 0);
+            setTimeRemaining(remaining);
           }
         } catch {
           // Failed to parse progress data
