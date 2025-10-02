@@ -33,6 +33,8 @@ const UploadPage = () => {
   const [showPrivacyProgressModal, setShowPrivacyProgressModal] = useState(false);
   const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
   const [privacyJobId, setPrivacyJobId] = useState<string | null>(null);
+  const [isPrivacyModeAvailable, setIsPrivacyModeAvailable] = useState<boolean>(false);
+  const [isCheckingPrivacy, setIsCheckingPrivacy] = useState<boolean>(true);
 
   const isOperationInProgress = isDetecting || localProcessing;
 
@@ -40,6 +42,27 @@ const UploadPage = () => {
     setIsProcessing(isOperationInProgress);
     return () => setIsProcessing(false);
   }, [isOperationInProgress, setIsProcessing]);
+
+  // Check privacy mode availability on mount
+  useEffect(() => {
+    const checkPrivacyHealth = async () => {
+      try {
+        const response = await fetch('/api/proxy/health');
+        if (response.ok) {
+          const data = await response.json();
+          setIsPrivacyModeAvailable(data.status === 'ok' || data.status === 'healthy');
+        } else {
+          setIsPrivacyModeAvailable(false);
+        }
+      } catch {
+        setIsPrivacyModeAvailable(false);
+      } finally {
+        setIsCheckingPrivacy(false);
+      }
+    };
+
+    checkPrivacyHealth();
+  }, []);
 
   const getToken = async (): Promise<string | null> => {
     if (!supabase) return null;
@@ -408,13 +431,28 @@ const UploadPage = () => {
 
                 <button
                   onClick={handleProcessWithPrivacy}
-                  disabled={isOperationInProgress}
+                  disabled={isOperationInProgress || !isPrivacyModeAvailable}
                   className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
-                    isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    isOperationInProgress || !isPrivacyModeAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                   } flex-1 min-h-[80px]`}
+                  title={!isPrivacyModeAvailable ? 'Privacy mode is currently offline' : ''}
                 >
-                  Extract with Privacy AI
-                  <span className="text-sm px-3 py-1 bg-blue-700 rounded">Local</span>
+                  {isCheckingPrivacy ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Checking availability...
+                    </>
+                  ) : !isPrivacyModeAvailable ? (
+                    <>
+                      Extract with Privacy AI
+                      <span className="text-sm px-3 py-1 bg-red-700 rounded">Offline</span>
+                    </>
+                  ) : (
+                    <>
+                      Extract with Privacy AI
+                      <span className="text-sm px-3 py-1 bg-blue-700 rounded">Local</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

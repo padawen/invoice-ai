@@ -12,18 +12,13 @@ export async function GET(
   // Get auth token from query param (EventSource doesn't support headers)
   const authToken = request.nextUrl.searchParams.get('auth') || '';
 
-  console.log('[SSE-API] GET request received for jobId:', jobId);
-  console.log('[SSE-API] Auth token present:', !!authToken);
-
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      console.log('[SSE-API] Stream started for jobId:', jobId);
       let isActive = true;
 
       const sendEvent = (event: string, data: unknown) => {
         if (!isActive) return;
-        console.log('[SSE-API] Sending event:', event, 'data:', data);
         const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
         controller.enqueue(encoder.encode(message));
       };
@@ -39,19 +34,15 @@ export async function GET(
             headers['Authorization'] = `Bearer ${authToken}`;
           }
 
-          console.log('[SSE-API] Polling progress for jobId:', jobId);
           const response = await fetch(`${PRIVACY_API_URL}/progress/${jobId}`, {
             headers,
           });
-
-          console.log('[SSE-API] Progress API response status:', response.status);
 
           if (!response.ok) {
             throw new Error(`Failed to fetch progress: ${response.status}`);
           }
 
           const data = await response.json();
-          console.log('[SSE-API] Progress data:', data);
 
           // Send progress update
           sendEvent('progress', {

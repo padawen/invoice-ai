@@ -113,8 +113,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     const setupSSE = async () => {
       const authToken = await getAuthToken();
       const progressUrl = `/api/proxy/progress-stream/${jobId}${authToken ? `?auth=${authToken}` : ''}`;
-
-      console.log('[SSE] Setting up EventSource:', progressUrl);
       const eventSource = new EventSource(progressUrl);
 
       // Map stage to index
@@ -125,14 +123,8 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         'postprocess': 3
       };
 
-      // Handle connection open
-      eventSource.onopen = () => {
-        console.log('[SSE] Connection opened successfully');
-      };
-
       // Handle progress updates
       eventSource.addEventListener('progress', (event) => {
-        console.log('[SSE] Progress event received:', event.data);
         try {
           const data: ProgressData = JSON.parse(event.data);
           setProgressData(data);
@@ -149,14 +141,13 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
             const remaining = progressRate > 0 ? (100 - data.progress) / progressRate : 0;
             setTimeRemaining(Math.max(remaining, 0));
           }
-        } catch (err) {
-          console.log('[SSE] Failed to parse progress data:', err);
+        } catch {
+          // Failed to parse progress data
         }
       });
 
       // Handle completion
       eventSource.addEventListener('complete', (event) => {
-        console.log('[SSE] Complete event received:', event.data);
         try {
           const data: { result: unknown } = JSON.parse(event.data);
           eventSource.close();
@@ -182,15 +173,13 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           };
 
           saveResultAndRedirect();
-        } catch (err) {
-          console.log('[SSE] Failed to process completion data:', err);
+        } catch {
           setError('Failed to process completion data');
         }
       });
 
       // Handle errors
       eventSource.addEventListener('error', (event) => {
-        console.log('[SSE] Error event received:', event);
         try {
           const data: { error: string } = JSON.parse((event as MessageEvent).data);
           setError(data.error || 'Processing failed');
@@ -201,8 +190,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       });
 
       // Handle connection errors
-      eventSource.onerror = (err) => {
-        console.log('[SSE] Connection error:', err, 'ReadyState:', eventSource.readyState);
+      eventSource.onerror = () => {
         eventSource.close();
         setError('Connection lost. Please try again.');
       };
