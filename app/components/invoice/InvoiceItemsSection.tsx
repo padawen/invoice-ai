@@ -130,7 +130,7 @@ const InvoiceItem = React.memo<{
         </div>
         <button
           onClick={() => onDeleteItem(index)}
-          className="flex items-center justify-center w-7 h-7 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+          className="flex items-center justify-center w-7 h-7 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors cursor-pointer"
           title="Delete item"
         >
           <Trash2 size={14} />
@@ -236,7 +236,7 @@ const InvoiceItemsSection: React.FC<InvoiceItemsSectionProps> = ({
           {globalDirtyOperations.size > 0 && (
             <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
           )}
-          <button className="text-green-400 hover:text-green-300 transition-colors">
+          <button className="text-green-400 hover:text-green-300 transition-colors cursor-pointer">
             {isCollapsed ? <ChevronDown size={20} className="sm:w-6 sm:h-6" /> : <ChevronUp size={20} className="sm:w-6 sm:h-6" />}
           </button>
         </div>

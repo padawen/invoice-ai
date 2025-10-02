@@ -44,6 +44,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const startTimeRef = useRef<number | null>(null);
+  const processingStartTimeRef = useRef<number | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   useEffect(() => {
@@ -93,10 +94,12 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       setProgressData(null);
       setError(null);
       startTimeRef.current = null;
+      processingStartTimeRef.current = null;
       return;
     }
 
     startTimeRef.current = Date.now();
+    processingStartTimeRef.current = Date.now();
 
     const pollProgress = async () => {
       try {
@@ -154,11 +157,18 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           } else if (data.status === 'completed' && data.result) {
             // Processing completed successfully - save result and redirect
             const saveResultAndRedirect = async () => {
+              const endTime = Date.now();
+              const extractionTime = processingStartTimeRef.current
+                ? (endTime - processingStartTimeRef.current) / 1000
+                : 0;
+
               sessionStorage.setItem('openai_json', JSON.stringify(data.result));
               if (file) {
                 sessionStorage.setItem('pdf_base64', await fileToBase64(file));
               }
               sessionStorage.setItem('processing_method', 'privacy');
+              sessionStorage.setItem('extraction_method', 'privacy');
+              sessionStorage.setItem('extraction_time', extractionTime.toString());
 
               setTimeout(() => {
                 window.location.href = '/edit';

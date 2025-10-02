@@ -57,7 +57,9 @@ const EditPage = () => {
         const raw = sessionStorage.getItem('openai_json');
         const pdfBase64 = sessionStorage.getItem('pdf_base64');
         const method = sessionStorage.getItem('processing_method');
-        
+        const extractionMethod = sessionStorage.getItem('extraction_method') as 'openai' | 'privacy' | null;
+        const extractionTime = sessionStorage.getItem('extraction_time');
+
         if (method === 'text') {
           setProcessingMethod('text');
         } else if (method === 'image') {
@@ -78,7 +80,14 @@ const EditPage = () => {
             parsed.seller &&
             parsed.buyer
           ) {
-            setFields({ ...parsed, id: parsed.id || crypto.randomUUID() });
+            const invoiceData = {
+              ...parsed,
+              id: parsed.id || crypto.randomUUID(),
+              extraction_method: extractionMethod || undefined,
+              extraction_time: extractionTime ? parseFloat(extractionTime) : undefined,
+              user_changes_count: 0
+            };
+            setFields(invoiceData);
             setPdfUrl(pdfBase64);
           } else {
             setError('Invalid data structure received from AI processing.');
@@ -283,9 +292,9 @@ const EditPage = () => {
           <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
             Edit Invoice Data
           </h2>
-          <button 
+          <button
             onClick={toggleExpandedView}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 transition-colors cursor-pointer"
             title={expandedView ? "Show PDF preview" : "Hide PDF preview"}
           >
             {expandedView ? <Minimize2 size={18} /> : <Maximize2 size={18} />}

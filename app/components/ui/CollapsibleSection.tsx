@@ -20,7 +20,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         onClick={onToggle}
       >
         <h3 className="text-lg sm:text-xl font-bold text-green-400">{title}</h3>
-        <button className="text-green-400 hover:text-green-300 transition-colors">
+        <button className="text-green-400 hover:text-green-300 transition-colors cursor-pointer">
           {isCollapsed ? <ChevronDown size={20} className="sm:w-6 sm:h-6" /> : <ChevronUp size={20} className="sm:w-6 sm:h-6" />}
         </button>
       </div>

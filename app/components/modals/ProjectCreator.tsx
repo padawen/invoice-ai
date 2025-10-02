@@ -6,20 +6,26 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface ProjectCreatorProps {
   onCancel: () => void;
+  onClose: () => void;
   onProjectCreated: (project: string) => void;
   onError: (error: string) => void;
   existingProjects: string[];
   isDemo?: boolean;
+  showCancelButton?: boolean;
+  initialProjectName?: string;
 }
 
-const ProjectCreator = ({ 
-  onCancel, 
-  onProjectCreated, 
+const ProjectCreator = ({
+  onCancel,
+  onClose,
+  onProjectCreated,
   onError,
   existingProjects,
-  isDemo = false
+  isDemo = false,
+  showCancelButton = true,
+  initialProjectName = ''
 }: ProjectCreatorProps) => {
-  const [newProject, setNewProject] = useState('');
+  const [newProject, setNewProject] = useState(initialProjectName);
   const [loading, setLoading] = useState(false);
   
   const getToken = useCallback(async () => {
@@ -80,10 +86,10 @@ const ProjectCreator = ({
         <h3 className={`text-lg font-medium ${isDemo ? 'text-amber-400' : 'text-green-400'}`}>
           Create New Project
         </h3>
-        <button 
-          onClick={onCancel}
+        <button
+          onClick={onClose}
           className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
-          aria-label="Back to project selection"
+          aria-label="Close"
         >
           <X size={18} />
         </button>
@@ -123,13 +129,15 @@ const ProjectCreator = ({
           {loading ? <Loader2 size={18} className="animate-spin" /> : (isDemo ? <Info size={18} /> : <FolderPlus size={18} />)}
           <span>{loading ? 'Creating...' : 'Create Project'}</span>
         </button>
-        <button
-          onClick={onCancel}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors cursor-pointer"
-          disabled={loading}
-        >
-          <span>Cancel</span>
-        </button>
+        {showCancelButton && (
+          <button
+            onClick={onCancel}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors cursor-pointer"
+            disabled={loading}
+          >
+            <span>Cancel</span>
+          </button>
+        )}
       </div>
     </div>
   );

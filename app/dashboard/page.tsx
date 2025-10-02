@@ -16,6 +16,12 @@ interface Project {
   name: string;
 }
 
+interface ExtractionStats {
+  openai: number;
+  privacy: number;
+  total: number;
+}
+
 export default function DashboardPage() {
   const user = useUser();
   const router = useRouter();
@@ -37,6 +43,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; name: string } | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [projectStats, setProjectStats] = useState<Record<string, ExtractionStats>>({});
 
   useEffect(() => {
     if (user !== undefined) {
@@ -47,7 +54,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       if (!authInitialized) return;
-      
+
       if (user && supabase) {
         try {
           const { data, error } = await supabase.from("projects").select("id, name");
@@ -57,6 +64,25 @@ export default function DashboardPage() {
           }
           if (data) {
             setProjects(data);
+
+            const stats: Record<string, ExtractionStats> = {};
+            for (const project of data) {
+              const { data: processedData } = await supabase
+                .from("processed_data")
+                .select("extraction_method")
+                .eq("project_id", project.id);
+
+              if (processedData) {
+                const openaiCount = processedData.filter(item => item.extraction_method === 'openai').length;
+                const privacyCount = processedData.filter(item => item.extraction_method === 'privacy').length;
+                stats[project.id] = {
+                  openai: openaiCount,
+                  privacy: privacyCount,
+                  total: processedData.length
+                };
+              }
+            }
+            setProjectStats(stats);
           }
         } catch (err) {
           console.error("Failed to fetch projects:", err);
@@ -127,7 +153,7 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center justify-center py-16">
               <div className="text-zinc-400 text-lg mb-6">No projects found.</div>
               <button
-                className="bg-green-500 hover:bg-green-400 text-white font-bold px-8 py-4 rounded-xl shadow-lg text-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400"
+                className="bg-green-500 hover:bg-green-400 text-white font-bold px-8 py-4 rounded-xl shadow-lg text-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 cursor-pointer"
                 onClick={() => router.push("/upload")}
               >
                 Upload your first invoice
@@ -152,6 +178,7 @@ export default function DashboardPage() {
                       name={name}
                       onClick={() => router.push(`/projects/${slug}`)}
                       onDelete={() => setShowDeleteModal({ id, name })}
+                      extractionStats={projectStats[id]}
                     />
                   );
                 })}

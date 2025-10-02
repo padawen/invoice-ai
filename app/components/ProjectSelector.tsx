@@ -76,29 +76,39 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
 
   return (
     <div className="w-full">
-      <div 
-        onClick={() => setIsModalOpen(true)} 
-        className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${
-          isDemo ? 'border-amber-500/50 hover:border-amber-400/70' : 'border-zinc-700 hover:border-green-500/50'
-        } text-white cursor-pointer shadow-md transition-all group`}
-        title={isDemo ? "Demo Mode - Project selection is for demonstration purposes only" : "Select a project"}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDemo ? 'bg-amber-600/20 text-amber-400' : 'bg-green-600/20 text-green-400'}`}>
-            {isDemo ? <Info size={20} /> : <Folder size={20} />}
+      {projects.length === 0 ? (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className={`w-full flex items-center justify-center gap-2 py-4 px-6 ${isDemo ? 'bg-amber-600 hover:bg-amber-500' : 'bg-green-600 hover:bg-green-500'} text-white rounded-xl font-medium shadow-md transition-colors cursor-pointer`}
+        >
+          <Folder size={20} />
+          Create New Project
+        </button>
+      ) : (
+        <div
+          onClick={() => setIsModalOpen(true)}
+          className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${
+            isDemo ? 'border-amber-500/50 hover:border-amber-400/70' : 'border-zinc-700 hover:border-green-500/50'
+          } text-white cursor-pointer shadow-md transition-all group`}
+          title={isDemo ? "Demo Mode - Project selection is for demonstration purposes only" : "Select a project"}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDemo ? 'bg-amber-600/20 text-amber-400' : 'bg-green-600/20 text-green-400'}`}>
+              {isDemo ? <Info size={20} /> : <Folder size={20} />}
+            </div>
+            <div>
+              {selectedProject ? (
+                <span className="font-medium">{selectedProject}</span>
+              ) : (
+                <span className="text-zinc-500">Select a project</span>
+              )}
+            </div>
           </div>
-          <div>
-            {selectedProject ? (
-              <span className="font-medium">{selectedProject}</span>
-            ) : (
-              <span className="text-zinc-500">Select a project</span>
-            )}
+          <div className={`h-9 w-9 flex items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors ${isDemo ? 'text-amber-500' : 'text-green-500'}`}>
+            <ChevronDown size={18} />
           </div>
         </div>
-        <div className={`h-9 w-9 flex items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors ${isDemo ? 'text-amber-500' : 'text-green-500'}`}>
-          <ChevronDown size={18} />
-        </div>
-      </div>
+      )}
 
       <ProjectModal 
         isOpen={isModalOpen} 

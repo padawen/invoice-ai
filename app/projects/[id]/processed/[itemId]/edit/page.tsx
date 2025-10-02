@@ -56,7 +56,7 @@ export default function EditProcessedItemPage() {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [isNavigatingAfterSave, setIsNavigatingAfterSave] = useState(false);
 
-  const { hasDirtyChanges } = useDirtyFields(fields || {} as EditableInvoice);
+  const { hasDirtyChanges, totalChanges } = useDirtyFields(fields || {} as EditableInvoice);
 
   const handleProjectSelect = (newProjectName: string) => {
     const selectedProject = allProjects.find(p => p.name === newProjectName);
@@ -146,7 +146,7 @@ export default function EditProcessedItemPage() {
           const { data, error: itemErr } = await supabase
             .from('processed_data')
             .select(
-              'id, project_id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, currency, raw_data'
+              'id, project_id, seller_name, seller_address, seller_tax_id, seller_email, seller_phone, buyer_name, buyer_address, buyer_tax_id, invoice_number, issue_date, fulfillment_date, due_date, payment_method, currency, raw_data, extraction_method, extraction_time, user_changes_count'
             )
             .eq('id', itemId)
             .single();
@@ -179,6 +179,9 @@ export default function EditProcessedItemPage() {
             payment_method: data.payment_method,
             currency: data.currency || 'HUF',
             invoice_data: data.raw_data || [],
+            extraction_method: data.extraction_method,
+            extraction_time: data.extraction_time,
+            user_changes_count: data.user_changes_count || 0,
           });
           
           setLoading(false);
@@ -224,25 +227,29 @@ export default function EditProcessedItemPage() {
     try {
       if (user && supabase) {
         const updateData: Record<string, string | string[] | number | null | InvoiceData[]> = {};
-        
+
         if (fields.seller.name) updateData.seller_name = fields.seller.name;
         if (fields.seller.address) updateData.seller_address = fields.seller.address;
         if (fields.seller.tax_id) updateData.seller_tax_id = fields.seller.tax_id;
         if (fields.seller.email) updateData.seller_email = fields.seller.email;
         if (fields.seller.phone) updateData.seller_phone = fields.seller.phone;
-        
+
         if (fields.buyer.name) updateData.buyer_name = fields.buyer.name;
         if (fields.buyer.address) updateData.buyer_address = fields.buyer.address;
         if (fields.buyer.tax_id) updateData.buyer_tax_id = fields.buyer.tax_id;
-        
+
         if (fields.invoice_number) updateData.invoice_number = fields.invoice_number;
         if (fields.issue_date) updateData.issue_date = fields.issue_date;
         if (fields.fulfillment_date) updateData.fulfillment_date = fields.fulfillment_date;
         if (fields.due_date) updateData.due_date = fields.due_date;
         if (fields.payment_method) updateData.payment_method = fields.payment_method;
         if (fields.currency) updateData.currency = fields.currency;
-        
+
         updateData.raw_data = fields.invoice_data;
+
+        const changesCount = totalChanges;
+        const currentChangesCount = fields.user_changes_count || 0;
+        updateData.user_changes_count = currentChangesCount + changesCount;
 
         const { error } = await supabase
           .from('processed_data')

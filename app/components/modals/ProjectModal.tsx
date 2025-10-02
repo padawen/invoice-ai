@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, AlertCircle, Plus, X, Search, Info } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import ProjectCreator from './ProjectCreator';
 import ProjectList from './ProjectList';
 
@@ -15,9 +16,9 @@ interface ProjectModalProps {
   isDemo?: boolean;
 }
 
-const ProjectModal = ({ 
-  isOpen, 
-  onClose, 
+const ProjectModal = ({
+  isOpen,
+  onClose,
   onSelect,
   selectedProject,
   existingProjects,
@@ -28,12 +29,23 @@ const ProjectModal = ({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [prefillProjectName, setPrefillProjectName] = useState('');
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  useEffect(() => {
+    if (isOpen && existingProjects.length === 0) {
+      setIsCreating(true);
+    } else if (!isOpen) {
+      setIsCreating(false);
+      setSearchQuery('');
+      setPrefillProjectName('');
+    }
+  }, [isOpen, existingProjects.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -73,6 +85,54 @@ const ProjectModal = ({
     setError(errorMessage);
   };
 
+  const createProjectDirectly = async (projectName: string) => {
+    const trimmed = projectName.trim();
+    if (!trimmed) return;
+
+    if (existingProjects.includes(trimmed)) {
+      setError('A project with this name already exists.');
+      return;
+    }
+
+    try {
+      if (isDemo) {
+        setTimeout(() => {
+          handleProjectCreated(trimmed);
+        }, 500);
+        return;
+      }
+
+      const supabase = createSupabaseBrowserClient();
+      if (!supabase) {
+        setError('Failed to initialize Supabase client');
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        setError('Authentication error. Please log in again.');
+        return;
+      }
+
+      const res = await fetch('/api/project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: trimmed }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      handleProjectCreated(trimmed);
+    } catch {
+      setError('Failed to create project.');
+    }
+  };
+
   const filteredProjects = existingProjects.filter(p => 
     p.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -95,21 +155,27 @@ const ProjectModal = ({
         )}
         
         {isCreating ? (
-          <ProjectCreator 
-            onCancel={() => setIsCreating(false)}
+          <ProjectCreator
+            onCancel={() => {
+              setIsCreating(false);
+              setPrefillProjectName('');
+            }}
+            onClose={onClose}
             onProjectCreated={handleProjectCreated}
             onError={handleError}
             existingProjects={existingProjects}
             isDemo={isDemo}
+            showCancelButton={existingProjects.length > 0}
+            initialProjectName={prefillProjectName}
           />
         ) : (
           <div>
             <div className={`p-5 border-b ${isDemo ? 'border-amber-500/30' : 'border-zinc-800'}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-lg font-medium ${isDemo ? 'text-amber-400' : 'text-green-400'}`}>Select Project</h3>
-                <button 
+                <button
                   onClick={onClose}
-                  className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors"
+                  className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -129,15 +195,26 @@ const ProjectModal = ({
                 />
               </div>
               <button
-                onClick={() => setIsCreating(true)}
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    createProjectDirectly(searchQuery);
+                  } else {
+                    setPrefillProjectName(searchQuery);
+                    setIsCreating(true);
+                  }
+                }}
                 className={`w-full flex items-center justify-center gap-2 py-3 ${isDemo ? 'bg-amber-600 hover:bg-amber-500' : 'bg-green-600 hover:bg-green-500'} text-white rounded-lg font-medium shadow-md transition-colors cursor-pointer`}
               >
                 <Plus size={18} />
-                Create New Project
+                {searchQuery.trim() ? (
+                  <span>Create new project: <span className="font-bold">&quot;{searchQuery}&quot;</span></span>
+                ) : (
+                  <span>Create New Project</span>
+                )}
               </button>
             </div>
-            
-            <ProjectList 
+
+            <ProjectList
               projects={filteredProjects}
               selectedProject={selectedProject}
               onSelect={(project) => {

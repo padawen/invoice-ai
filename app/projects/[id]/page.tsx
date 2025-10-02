@@ -28,6 +28,9 @@ interface ProcessedItem {
   seller_name?: string;
   currency?: string;
   raw_data?: InvoiceData[];
+  extraction_method?: 'openai' | 'privacy';
+  extraction_time?: number;
+  user_changes_count?: number;
   fields?: {
     buyer?: {
       name: string;
@@ -121,7 +124,7 @@ export default function ProjectDetailsPage() {
         if (found) {
           const { data: processedData } = await supabase
             .from('processed_data')
-            .select('id, invoice_number, issue_date, buyer_name, seller_name, raw_data')
+            .select('id, invoice_number, issue_date, buyer_name, seller_name, raw_data, extraction_method, extraction_time, user_changes_count')
             .eq('project_id', found.id);
 
           setProcessed(processedData || []);
@@ -415,7 +418,7 @@ export default function ProjectDetailsPage() {
               const currency = normalizeCurrency(detectedCurrency);
 
               return (
-                <InvoiceCard 
+                <InvoiceCard
                   key={item.id}
                   id={item.id}
                   invoiceNumber={invoiceNumber}
@@ -425,6 +428,9 @@ export default function ProjectDetailsPage() {
                   itemsCount={itemsCount}
                   totalPrice={totalPrice}
                   currency={currency}
+                  extractionMethod={item.extraction_method}
+                  extractionTime={item.extraction_time}
+                  userChangesCount={item.user_changes_count}
                   onClick={() => router.push(`/projects/${slug}/processed/${item.id}/edit`)}
                   onDelete={(id) => setShowDeleteModal(id)}
                 />

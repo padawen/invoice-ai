@@ -164,6 +164,8 @@ const UploadPage = () => {
     const isImageProcessing = typeResult === 'image';
     setProgressProcessingType(isImageProcessing ? 'image' : 'text');
 
+    const startTime = Date.now();
+
     try {
       const token = await getToken();
       if (!token) {
@@ -236,9 +238,14 @@ const UploadPage = () => {
         throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
       }
 
+      const endTime = Date.now();
+      const extractionTime = (endTime - startTime) / 1000;
+
       sessionStorage.setItem('openai_json', JSON.stringify(result));
       sessionStorage.setItem('pdf_base64', await fileToBase64(file));
       sessionStorage.setItem('processing_method', processingMethod);
+      sessionStorage.setItem('extraction_method', type);
+      sessionStorage.setItem('extraction_time', extractionTime.toString());
 
       setTimeout(() => {
         setShowProgressModal(false);

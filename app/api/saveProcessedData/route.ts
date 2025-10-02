@@ -90,14 +90,18 @@ export async function POST(req: NextRequest) {
       due_date,
       payment_method,
       currency,
-      invoice_data
+      invoice_data,
+      extraction_method,
+      extraction_time,
+      user_changes_count
     } = fields;
 
     const insertData: Record<string, string | string[] | number | null | InvoiceData[]> = {
       user_id: user.id,
       project_id: projectData.id,
       seller_name: seller.name,
-      raw_data: invoice_data || []
+      raw_data: invoice_data || [],
+      user_changes_count: user_changes_count || 0
     };
 
     if (seller.address) insertData.seller_address = seller.address;
@@ -115,6 +119,8 @@ export async function POST(req: NextRequest) {
     if (due_date) insertData.due_date = convertToISODate(due_date);
     if (payment_method) insertData.payment_method = payment_method;
     if (currency) insertData.currency = currency;
+    if (extraction_method) insertData.extraction_method = extraction_method;
+    if (extraction_time !== undefined) insertData.extraction_time = extraction_time;
 
     const { data: insertedData, error: insertError } = await supabase
       .from('processed_data')

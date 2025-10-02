@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, Trash2, DollarSign } from 'lucide-react';
+import { FileText, Trash2, DollarSign, Cloud, Shield, Clock, Edit3 } from 'lucide-react';
 
 const normalizeCurrency = (currency: string): string => {
   const currencyMap: Record<string, string> = {
@@ -26,6 +26,9 @@ interface InvoiceCardProps {
   itemsCount: number;
   totalPrice?: number;
   currency?: string;
+  extractionMethod?: 'openai' | 'privacy';
+  extractionTime?: number;
+  userChangesCount?: number;
   onClick: () => void;
   onDelete: (id: string) => void;
 }
@@ -39,6 +42,9 @@ const InvoiceCard = ({
   itemsCount,
   totalPrice,
   currency = 'HUF',
+  extractionMethod,
+  extractionTime,
+  userChangesCount,
   onClick,
   onDelete
 }: InvoiceCardProps) => {
@@ -116,14 +122,41 @@ const InvoiceCard = ({
           </div>
         </div>
       )}
-      
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <span className="bg-green-400/20 text-green-400 font-medium rounded-full px-3 py-1 text-xs">
-            {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
-          </span>
+
+      <div className="mt-4 space-y-3">
+        {extractionMethod && (
+          <div className="flex flex-wrap gap-2">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
+              extractionMethod === 'openai'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+            }`}>
+              {extractionMethod === 'openai' ? <Cloud size={12} /> : <Shield size={12} />}
+              {extractionMethod === 'openai' ? 'OpenAI' : 'Privacy'}
+            </div>
+            {extractionTime !== undefined && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-700/50 text-zinc-300 border border-zinc-600/50">
+                <Clock size={12} />
+                {extractionTime.toFixed(1)}s
+              </div>
+            )}
+            {userChangesCount !== undefined && userChangesCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Edit3 size={12} />
+                {userChangesCount} {userChangesCount === 1 ? 'change' : 'changes'}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="bg-green-400/20 text-green-400 font-medium rounded-full px-3 py-1 text-xs">
+              {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
+            </span>
+          </div>
+          <div className="text-xs text-zinc-500 italic">Click to edit</div>
         </div>
-        <div className="text-xs text-zinc-500 italic">Click to edit</div>
       </div>
     </div>
   );

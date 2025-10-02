@@ -28,4 +28,7 @@ export interface EditableInvoice {
   payment_method?: string;
   currency?: string;
   invoice_data: InvoiceData[];
+  extraction_method?: 'openai' | 'privacy';
+  extraction_time?: number;
+  user_changes_count?: number;
 }

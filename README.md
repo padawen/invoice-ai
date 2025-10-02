@@ -139,18 +139,56 @@ CREATE TABLE projects (
 );
 
 -- Processed invoices table
-CREATE TABLE processed_items (
+CREATE TABLE processed_data (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-  fields JSONB NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  seller_name TEXT NOT NULL,
+  seller_address TEXT,
+  seller_tax_id TEXT,
+  seller_email TEXT,
+  seller_phone TEXT,
+  buyer_name TEXT,
+  buyer_address TEXT,
+  buyer_tax_id TEXT,
+  invoice_number TEXT,
+  issue_date DATE,
+  fulfillment_date DATE,
+  due_date DATE,
+  payment_method TEXT,
+  currency TEXT,
+  raw_data JSONB,
+  extraction_method TEXT CHECK (extraction_method IN ('openai', 'privacy')),
+  extraction_time REAL,
+  user_changes_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_processed_data_extraction_method ON processed_data(extraction_method);
+CREATE INDEX IF NOT EXISTS idx_processed_data_project_id ON processed_data(project_id);
+CREATE INDEX IF NOT EXISTS idx_processed_data_user_id ON processed_data(user_id);
+
+-- Create trigger for automatic updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_processed_data_updated_at
+    BEFORE UPDATE ON processed_data
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Enable Row Level Security
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE processed_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE processed_data ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Create policies for projects
 CREATE POLICY "Users can view their own projects" ON projects
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -160,7 +198,21 @@ CREATE POLICY "Users can insert their own projects" ON projects
 CREATE POLICY "Users can delete their own projects" ON projects
   FOR DELETE USING (auth.uid() = user_id);
 
--- Similar policies for processed_items...
+CREATE POLICY "Users can update their own projects" ON projects
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create policies for processed_data
+CREATE POLICY "Users can view their own processed data" ON processed_data
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own processed data" ON processed_data
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own processed data" ON processed_data
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own processed data" ON processed_data
+  FOR DELETE USING (auth.uid() = user_id);
 ```
 
 #### 5. Run the Development Server 🏃‍♂️
