@@ -85,7 +85,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
   const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
 
-  // Progress polling effect
+  // SSE Progress streaming effect
   useEffect(() => {
     if (!isOpen || !jobId) {
       setCurrentStageIndex(0);
@@ -101,98 +101,121 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     startTimeRef.current = Date.now();
     processingStartTimeRef.current = Date.now();
 
-    const pollProgress = async () => {
-      try {
-        let authToken = '';
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          authToken = session?.access_token || '';
-        }
-
-        const progressUrl = `/api/proxy/progress/${jobId}`;
-
-        const response = await fetch(progressUrl, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
-
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Progress error response:', errorText);
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch progress: ${response.status}`);
-        }
-
-        const data: ProgressData = await response.json();
-        setProgressData(data);
-        setProgress(data.progress);
-
-        // Map stage to index
-        const stageToIndex = {
-          'upload': 0,
-          'ocr': 1,
-          'llm': 2,
-          'postprocess': 3
-        };
-
-        const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
-        setCurrentStageIndex(stageIndex);
-
-        // Calculate time remaining based on current progress and elapsed time
-        if (startTimeRef.current) {
-          const elapsed = (Date.now() - startTimeRef.current) / 1000;
-          const progressRate = data.progress / elapsed;
-          const remaining = progressRate > 0 ? (100 - data.progress) / progressRate : 0;
-          setTimeRemaining(Math.max(remaining, 0));
-        }
-
-        // Handle completion or error
-        if (data.status === 'completed' || data.status === 'error') {
-          if (data.status === 'error') {
-            setError(data.error || 'Processing failed');
-          } else if (data.status === 'completed' && data.result) {
-            // Processing completed successfully - save result and redirect
-            const saveResultAndRedirect = async () => {
-              const endTime = Date.now();
-              const extractionTime = processingStartTimeRef.current
-                ? (endTime - processingStartTimeRef.current) / 1000
-                : 0;
-
-              sessionStorage.setItem('openai_json', JSON.stringify(data.result));
-              if (file) {
-                sessionStorage.setItem('pdf_base64', await fileToBase64(file));
-              }
-              sessionStorage.setItem('processing_method', 'privacy');
-              sessionStorage.setItem('extraction_method', 'privacy');
-              sessionStorage.setItem('extraction_time', extractionTime.toString());
-
-              setTimeout(() => {
-                window.location.href = '/edit';
-              }, 1000);
-            };
-
-            saveResultAndRedirect();
-          }
-          return; // Stop polling
-        }
-
-      } catch (err) {
-        console.error('Progress polling error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch progress');
+    // Get auth token for SSE connection (passed as query param since EventSource doesn't support headers)
+    const getAuthToken = async () => {
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token || '';
       }
+      return '';
     };
 
-    // Initial poll
-    pollProgress();
+    const setupSSE = async () => {
+      const authToken = await getAuthToken();
+      const progressUrl = `/api/proxy/progress-stream/${jobId}${authToken ? `?auth=${authToken}` : ''}`;
 
-    // Set up polling interval
-    const interval = setInterval(pollProgress, 1000);
+      console.log('[SSE] Setting up EventSource:', progressUrl);
+      const eventSource = new EventSource(progressUrl);
 
-    return () => clearInterval(interval);
+      // Map stage to index
+      const stageToIndex = {
+        'upload': 0,
+        'ocr': 1,
+        'llm': 2,
+        'postprocess': 3
+      };
+
+      // Handle connection open
+      eventSource.onopen = () => {
+        console.log('[SSE] Connection opened successfully');
+      };
+
+      // Handle progress updates
+      eventSource.addEventListener('progress', (event) => {
+        console.log('[SSE] Progress event received:', event.data);
+        try {
+          const data: ProgressData = JSON.parse(event.data);
+          setProgressData(data);
+          setProgress(data.progress);
+
+          const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
+          setCurrentStageIndex(stageIndex);
+
+          // Calculate time remaining based on current progress and elapsed time
+          // Only calculate if we have meaningful progress (>5%) to avoid wild estimates
+          if (startTimeRef.current && data.progress > 5) {
+            const elapsed = (Date.now() - startTimeRef.current) / 1000;
+            const progressRate = data.progress / elapsed;
+            const remaining = progressRate > 0 ? (100 - data.progress) / progressRate : 0;
+            setTimeRemaining(Math.max(remaining, 0));
+          }
+        } catch (err) {
+          console.log('[SSE] Failed to parse progress data:', err);
+        }
+      });
+
+      // Handle completion
+      eventSource.addEventListener('complete', (event) => {
+        console.log('[SSE] Complete event received:', event.data);
+        try {
+          const data: { result: unknown } = JSON.parse(event.data);
+          eventSource.close();
+
+          // Processing completed successfully - save result and redirect
+          const saveResultAndRedirect = async () => {
+            const endTime = Date.now();
+            const extractionTime = processingStartTimeRef.current
+              ? (endTime - processingStartTimeRef.current) / 1000
+              : 0;
+
+            sessionStorage.setItem('openai_json', JSON.stringify(data.result));
+            if (file) {
+              sessionStorage.setItem('pdf_base64', await fileToBase64(file));
+            }
+            sessionStorage.setItem('processing_method', 'privacy');
+            sessionStorage.setItem('extraction_method', 'privacy');
+            sessionStorage.setItem('extraction_time', extractionTime.toString());
+
+            setTimeout(() => {
+              window.location.href = '/edit';
+            }, 1000);
+          };
+
+          saveResultAndRedirect();
+        } catch (err) {
+          console.log('[SSE] Failed to process completion data:', err);
+          setError('Failed to process completion data');
+        }
+      });
+
+      // Handle errors
+      eventSource.addEventListener('error', (event) => {
+        console.log('[SSE] Error event received:', event);
+        try {
+          const data: { error: string } = JSON.parse((event as MessageEvent).data);
+          setError(data.error || 'Processing failed');
+        } catch {
+          setError('Connection error. Please try again.');
+        }
+        eventSource.close();
+      });
+
+      // Handle connection errors
+      eventSource.onerror = (err) => {
+        console.log('[SSE] Connection error:', err, 'ReadyState:', eventSource.readyState);
+        eventSource.close();
+        setError('Connection lost. Please try again.');
+      };
+
+      return eventSource;
+    };
+
+    const eventSourcePromise = setupSSE();
+
+    // Cleanup on unmount
+    return () => {
+      eventSourcePromise.then(es => es.close());
+    };
   }, [isOpen, jobId, supabase, file]);
 
   const handleCancel = async () => {

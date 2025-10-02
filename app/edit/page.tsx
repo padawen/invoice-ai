@@ -45,6 +45,7 @@ const EditPage = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [processingMethod, setProcessingMethod] = useState<'text' | 'image' | null>(null);
   const [isReprocessing, setIsReprocessing] = useState(false);
+  const [userChangesCount, setUserChangesCount] = useState(0);
 
   useEffect(() => {
     setIsProcessing(isReprocessing);
@@ -85,7 +86,7 @@ const EditPage = () => {
               id: parsed.id || crypto.randomUUID(),
               extraction_method: extractionMethod || undefined,
               extraction_time: extractionTime ? parseFloat(extractionTime) : undefined,
-              user_changes_count: 0
+              user_changes_count: 0 // Will be updated when user makes changes
             };
             setFields(invoiceData);
             setPdfUrl(pdfBase64);
@@ -187,7 +188,10 @@ const EditPage = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fields, project }),
+        body: JSON.stringify({
+          fields: { ...fields, user_changes_count: userChangesCount },
+          project
+        }),
       });
   
       if (!response.ok) {
@@ -349,9 +353,10 @@ const EditPage = () => {
 
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
               {fields ? (
-                <EditableFields 
-                  fields={fields} 
+                <EditableFields
+                  fields={fields}
                   onChange={setFields}
+                  onChangesCountUpdate={setUserChangesCount}
                 />
               ) : (
                 <div className="text-center py-12 text-zinc-400">Loading invoice data...</div>

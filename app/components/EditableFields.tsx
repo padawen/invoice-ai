@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { InvoiceData, EditableInvoice } from '@/app/types';
 import { useDirtyFields } from '@/app/hooks/useDirtyFields';
@@ -14,9 +14,10 @@ import InvoiceSummary from '@/app/components/invoice/InvoiceSummary';
 interface Props {
   fields: EditableInvoice;
   onChange: (updated: EditableInvoice) => void;
+  onChangesCountUpdate?: (count: number) => void;
 }
 
-const EditableFields = ({ fields, onChange }: Props) => {
+const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
   const [sellerCollapsed, setSellerCollapsed] = useState(false);
   const [buyerCollapsed, setBuyerCollapsed] = useState(false);
   const [invoiceDetailsCollapsed, setInvoiceDetailsCollapsed] = useState(false);
@@ -32,6 +33,13 @@ const EditableFields = ({ fields, onChange }: Props) => {
     hasDirtyChanges,
     totalChanges
   } = useDirtyFields(fields);
+
+  // Notify parent component when total changes count updates
+  useEffect(() => {
+    if (onChangesCountUpdate) {
+      onChangesCountUpdate(totalChanges);
+    }
+  }, [totalChanges, onChangesCountUpdate]);
 
   const updateField = (key: string, value: string) => {
     markFieldDirty(`field_${key}`, value);
