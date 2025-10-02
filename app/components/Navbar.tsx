@@ -84,7 +84,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
             )}
           </div>
 
-          <div className="hidden md:flex gap-8 items-center">
+          <div className="hidden min-[901px]:flex gap-8 items-center">
             {navLinks.map((link) => (
               <LinkItem key={link.href} {...link} />
             ))}
@@ -120,7 +120,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
           </div>
 
           <button
-            className="md:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+            className="min-[901px]:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
             onClick={() => setOpen(!open)}
             disabled={isProcessing}
           >
@@ -129,7 +129,7 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
         </div>
 
         {open && (
-          <div className="md:hidden flex flex-col gap-4 pb-4 pt-2 border-t border-zinc-800">
+          <div className="min-[901px]:hidden flex flex-col gap-4 pb-4 pt-2 border-t border-zinc-800">
             {navLinks.map((link) => (
               <LinkItem key={link.href} {...link} />
             ))}
