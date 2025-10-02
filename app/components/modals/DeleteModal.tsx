@@ -44,13 +44,13 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
         <p className="text-zinc-300 mb-6">{description}</p>
         <div className="flex justify-end gap-4">
           <button
-            className="px-6 py-2 rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition"
+            className="px-6 py-2 rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition cursor-pointer"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
-            className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition font-bold"
+            className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition font-bold cursor-pointer"
             onClick={onConfirm}
           >
             Delete

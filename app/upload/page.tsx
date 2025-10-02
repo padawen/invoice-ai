@@ -403,57 +403,55 @@ const UploadPage = () => {
                 </span>
               </div>
 
-              <div className="text-center text-sm text-zinc-500 max-w-2xl">
-                <p className="mb-2">Choose your processing method:</p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center text-xs">
-                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-                    <div className="text-green-400 font-medium mb-1">OpenAI (Cloud)</div>
-                    <div>Fast • High accuracy • External API</div>
-                  </div>
-                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                    <div className="text-blue-400 font-medium mb-1">Privacy AI (Local)</div>
-                    <div>Private • On-premise • No data sharing</div>
-                  </div>
-                </div>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-6 justify-center w-full max-w-2xl mx-auto">
-                <button
-                  onClick={handleProcessWithOpenAI}
-                  disabled={isOperationInProgress}
-                  className={`px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
-                    isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                  } flex-1 min-h-[80px]`}
-                >
-                  Extract with OpenAI
-                  <span className="text-sm px-3 py-1 bg-green-700 rounded">Cloud</span>
-                </button>
+                <div className="flex flex-col gap-3 flex-1">
+                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-sm text-center">
+                    <div className="text-green-400 font-medium mb-1">OpenAI (Cloud)</div>
+                    <div className="text-zinc-400">Fast • High accuracy • External API</div>
+                  </div>
+                  <button
+                    onClick={handleProcessWithOpenAI}
+                    disabled={isOperationInProgress}
+                    className={`px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
+                      isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    } min-h-[80px]`}
+                  >
+                    Extract with OpenAI
+                    <span className="text-sm px-3 py-1 bg-green-700 rounded">Cloud</span>
+                  </button>
+                </div>
 
-                <button
-                  onClick={handleProcessWithPrivacy}
-                  disabled={isOperationInProgress || !isPrivacyModeAvailable}
-                  className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
-                    isOperationInProgress || !isPrivacyModeAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                  } flex-1 min-h-[80px]`}
-                  title={!isPrivacyModeAvailable ? 'Privacy mode is currently offline' : ''}
-                >
-                  {isCheckingPrivacy ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Checking availability...
-                    </>
-                  ) : !isPrivacyModeAvailable ? (
-                    <>
-                      Extract with Privacy AI
-                      <span className="text-sm px-3 py-1 bg-red-700 rounded">Offline</span>
-                    </>
-                  ) : (
-                    <>
-                      Extract with Privacy AI
-                      <span className="text-sm px-3 py-1 bg-blue-700 rounded">Local</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col gap-3 flex-1">
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-sm text-center">
+                    <div className="text-blue-400 font-medium mb-1">Privacy AI (Local)</div>
+                    <div className="text-zinc-400">Private • On-premise • No data sharing</div>
+                  </div>
+                  <button
+                    onClick={handleProcessWithPrivacy}
+                    disabled={isOperationInProgress || !isPrivacyModeAvailable}
+                    className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
+                      isOperationInProgress || !isPrivacyModeAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    } min-h-[80px]`}
+                    title={!isPrivacyModeAvailable ? 'Privacy mode is currently offline' : ''}
+                  >
+                    {isCheckingPrivacy ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Checking availability...
+                      </>
+                    ) : !isPrivacyModeAvailable ? (
+                      <>
+                        Extract with Privacy AI
+                        <span className="text-sm px-3 py-1 bg-red-700 rounded">Offline</span>
+                      </>
+                    ) : (
+                      <>
+                        Extract with Privacy AI
+                        <span className="text-sm px-3 py-1 bg-blue-700 rounded">Local</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
