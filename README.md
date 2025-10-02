@@ -1,95 +1,107 @@
-# 🤖 Invoice AI: Because Reading PDFs is for Peasants
+# 🤖 Invoice AI - Intelligent Invoice Processing System
 
-> *"Built with 🥂, 💧, 🌿 & Next.js"* - Ancient Hungarian Proverb
+> *"Built with 🥂, 💧, 🌿 & Next.js"*
 
-**Welcome to Invoice AI**, the most sophisticated invoice processing system known to mankind! We've taught artificial intelligence to read invoices faster than your accountant can say "receipt"! 🧾✨
+**Invoice AI** is an AI-powered invoice processing application that automates data extraction from PDF invoices using both cloud-based (OpenAI) and on-premise (privacy mode) processing options.
 
-## 🎭 What This Magnificent Beast Does
+## 📖 Overview
 
-This isn't just another boring invoice processor. Oh no, no, no. This is a **FULL-STACK ENGINEERING MASTERPIECE** that turns your crappy PDF invoices into beautiful, structured data faster than you can pour a proper fröccs!
+Transform PDF invoices into structured, searchable data in seconds. Built as a full-stack TypeScript application with Next.js 15, featuring real-time processing, project management, and comprehensive analytics.
 
-### 🚀 Core Features (AKA "The Good Stuff")
+## ✨ Key Features
 
-**📄 PDF Upload & Processing**
-- Drag & drop PDFs like you're DJ-ing at a Gödöllő club
-- Automatic PDF type detection (text vs image) because we're fancy like that
-- Support for multiple processing engines:
-  - **OpenAI GPT-4** (when you want the good stuff)
-  - **Privacy Mode with Mistral 7B Instruct** (local processing with real-time progress tracking)
-  - **DocTR OCR** (for those sketchy scanned invoices)
+### 📄 Dual Processing Modes
 
-**🧠 AI-Powered Data Extraction**
-- Extracts seller info (name, address, tax ID, email, phone)
-- Grabs buyer details (because we need to know who owes what)
-- Invoice metadata (numbers, dates, payment methods)
-- Line items with quantities, prices, and currencies
-- Automatically calculates net/gross amounts
-- **NEW:** Privacy mode with local Mistral 7B Instruct processing
-- **NEW:** Real-time progress tracking with cancellation support
-- **NEW:** Background processing with streaming responses
+**OpenAI Cloud Processing**
+- Fast, high-accuracy extraction using GPT-4
+- Ideal for quick processing and best results
+- Requires OpenAI API key and credits
 
-**🎨 Beautiful Editing Interface**
-- Collapsible sections for seller, buyer, and invoice details
-- Real-time dirty field tracking (we see your edits 👀)
-- Add/remove invoice items with ease
-- Live financial summaries
-- Export to CSV because Excel is still king
-- **NEW:** Privacy processing modal with live progress tracking
-- **NEW:** Cancellable processing with stop button
-- **NEW:** Multi-stage progress visualization (Upload → OCR → AI → Results)
+**Privacy Mode (On-Premise)**
+- Local LLM processing (model selection in progress)
+- Pytesseract OCR for scanned documents
+- Real-time progress tracking with Server-Sent Events
+- Cancellable processing
+- Data stays on your infrastructure
+- Slower than OpenAI but fully private
 
-**📊 Project Management & Analytics**
-- Dashboard with all your projects
-- Financial summaries by currency (supports HUF, EUR, USD, GBP)
-- Monthly and quarterly breakdowns
-- Top buyers/sellers analysis
-- Beautiful charts that would make your CFO weep with joy
+### 🧠 Data Extraction
 
-**🔐 Authentication & Data Storage**
-- Supabase integration for user management
-- Secure project storage
-- Demo mode for commitment-phobic users
+Automatically extracts:
+- **Seller Information**: Name, address, tax ID, email, phone
+- **Buyer Information**: Name, address, tax ID
+- **Invoice Details**: Number, issue date, fulfillment date, due date, payment method
+- **Line Items**: Description, quantity, unit price, total, VAT rate
+- **Totals**: Net amount, VAT amount, gross amount (by currency)
 
-## 🛠 Tech Stack (The Magnificent Seven... Plus Some)
+### 📊 Project Management
 
-- **Next.js 15** - Because we live in the future
-- **React 19** - Hooks everywhere!
-- **TypeScript** - Type safety is not optional
-- **Tailwind CSS** - Making things pretty since forever
-- **Supabase** - Database + Auth + Everything
-- **OpenAI API** - The brain of the operation
-- **Playwright** - For those fancy PDF operations
-- **Lucide React** - Icons that don't suck
+- Organize invoices into projects
+- Filter and search across all data
+- Track extraction methods and processing times
+- Monitor user edits and changes
+- Multi-currency support (HUF, EUR, USD, GBP)
+- Export to CSV/JSON
 
-## 🏗️ Environment Setup (Don't Skip This!)
+### 🎨 User Interface
 
-### Prerequisites (Install These or Cry Later)
+- Real-time PDF preview alongside editing
+- Collapsible sections for better organization
+- Dirty field tracking for change monitoring
+- Add/remove invoice line items
+- Live financial calculations
+- Responsive design for mobile and desktop
+- Dark theme optimized UI
 
-1. **Node.js 18+** - [Download here](https://nodejs.org/)
-2. **npm/yarn** - Should come with Node.js
-3. **Git** - You know what this is
-4. **A sense of humor** - Essential for debugging
+## 🛠 Technology Stack
 
-### 🚦 Step-by-Step Setup Guide
+### Frontend
+- **Next.js 15** (App Router)
+- **React 19** with Server Components
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
 
-#### 1. Clone This Magnificent Repository
+### Backend & Infrastructure
+- **Supabase** (PostgreSQL, Authentication, Row Level Security)
+- **OpenAI API** (GPT-4 for cloud processing)
+- **Custom Privacy API** (Local LLM + Pytesseract OCR)
+- **Server-Sent Events** for real-time progress streaming
+
+### Processing Pipeline
+- **PDF.js** for PDF rendering
+- **OpenAI GPT-4** for intelligent extraction
+- **Pytesseract** for OCR on scanned documents
+- **Local LLM** (in evaluation - privacy mode backend)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js 18+** ([Download](https://nodejs.org/))
+- **npm or yarn**
+- **Git**
+- **Supabase account** (free tier available)
+- **OpenAI API key** (for cloud processing)
+
+### Installation
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/your-username/invoice-ai.git
 cd invoice-ai
 ```
 
-#### 2. Install Dependencies (The Fun Part)
+#### 2. Install Dependencies
 ```bash
 npm install
-# or if you're a yarn person
+# or
 yarn install
 ```
 
-This will also automatically install Playwright browsers (thanks to our postinstall script).
+#### 3. Environment Configuration
 
-#### 3. Environment Variables Setup 🔑
-
-Create a `.env.local` file in the root directory and add these secrets:
+Create a `.env.local` file in the root directory:
 
 ```env
 # Supabase Configuration
@@ -100,7 +112,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
-# Privacy Processing API (local Mistral 7B Instruct)
+# Privacy Processing API (local LLM with Pytesseract OCR)
 PRIVACY_API_URL=http://localhost:5000
 PRIVACY_API_KEY=your_privacy_api_key
 
@@ -108,26 +120,24 @@ PRIVACY_API_KEY=your_privacy_api_key
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 ```
 
-**Where to get these magical keys:**
+**Configuration Guide:**
 
-**Supabase Setup:**
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project (it's free!)
-3. Go to Project Settings → API
-4. Copy your Project URL and anon key
-5. Go to Project Settings → API → Service Role Keys
-6. Copy the service role key (keep this secret!)
+**Supabase**
+1. Create account at [supabase.com](https://supabase.com)
+2. Create new project
+3. Navigate to Project Settings → API
+4. Copy Project URL and anon key
+5. Copy service role key from Service Role Keys section
 
-**OpenAI Setup:**
-1. Visit [platform.openai.com](https://platform.openai.com)
-2. Create an account and get API credits
-3. Go to API Keys section
-4. Create a new secret key
-5. Add some credits to your account (you'll need them)
+**OpenAI**
+1. Sign up at [platform.openai.com](https://platform.openai.com)
+2. Navigate to API Keys section
+3. Create new secret key
+4. Add credits to your account
 
-#### 4. Database Setup (Supabase Magic) 🗃️
+#### 4. Database Setup
 
-You'll need to create these tables in your Supabase database:
+Run this SQL in your Supabase SQL Editor:
 
 ```sql
 -- Projects table
@@ -215,15 +225,13 @@ CREATE POLICY "Users can delete their own processed data" ON processed_data
   FOR DELETE USING (auth.uid() = user_id);
 ```
 
-#### 5. Run the Development Server 🏃‍♂️
+#### 5. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) and witness the magic!
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### 🚀 Production Deployment
 
@@ -271,94 +279,65 @@ docker run --rm -p 3000:3000 \
 - All sensitive env vars are injected at runtime by Render
 - Client-side env vars (`NEXT_PUBLIC_*`) are compiled into the build
 
-## 🎯 How to Use This Beast
+## 📝 Usage
 
-### 1. **Upload Your First Invoice**
-- Hit the "Upload" button
-- Drag & drop a PDF invoice
-- Watch the AI magic happen ✨
+### Processing an Invoice
 
-### 2. **Edit Like a Pro**
-- Review extracted data
-- Edit any fields that look wonky
-- Add/remove invoice items
-- Save your masterpiece
+1. **Upload**: Navigate to Upload page and drag-drop a PDF invoice
+2. **Choose Method**: Select OpenAI (fast) or Privacy Mode (secure)
+3. **Review**: Check extracted data in the edit interface
+4. **Edit**: Modify any incorrect fields or line items
+5. **Save**: Assign to a project and save
 
-### 3. **Analyze Your Data**
-- Check out the financial summary
-- Filter by currency and date ranges
-- Export to CSV for your spreadsheet addiction
+### Managing Projects
 
-### 4. **Organize with Projects**
-- Group related invoices together
-- Track different clients or time periods
-- Delete projects when you're done
+- Create projects to organize invoices by client, period, or category
+- View financial summaries and analytics per project
+- Search and filter invoices across all fields
+- Export data to CSV for external analysis
 
-## 🐛 Troubleshooting (When Things Go Wrong)
+## 🏗️ Project Structure
 
-### "OpenAI API Error"
-- Check your API key is correct
-- Make sure you have credits
-- Verify your rate limits
+```
+invoice-ai/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API routes
+│   ├── components/           # React components
+│   ├── dashboard/            # Dashboard page
+│   ├── edit/                 # Invoice editing page
+│   ├── projects/             # Project management
+│   └── upload/               # Upload interface
+├── lib/                      # Utility functions
+└── public/                   # Static assets
+```
 
-### "Supabase Connection Failed"
-- Double-check your environment variables
-- Ensure your Supabase project is active
-- Check if your database tables exist
+## 🔒 Privacy & Security
 
-### "PDF Processing Failed"
-- Make sure the PDF isn't password-protected
-- Check if it's under 10 pages (current limit)
-- Try a different processing method
+- **Row Level Security (RLS)**: All database queries are user-scoped
+- **Authentication**: Supabase Auth with Google OAuth
+- **Privacy Mode**: Optional on-premise processing without external API calls
+- **Data Isolation**: Each user can only access their own data
 
-### "It's Not Working!"
-- Turn it off and on again
-- Check the browser console for errors
-- Make sure you followed ALL the setup steps
-- Drink some water, it helps
+## 📊 Analytics & Tracking
 
-## 🤝 Contributing (Join the Party!)
+The system tracks:
+- **Extraction Method**: Which AI model processed each invoice (OpenAI/Privacy)
+- **Processing Time**: How long extraction took
+- **User Changes**: Number of manual edits made to extracted data
+- **Extraction Accuracy**: Metrics for improvement analysis
 
-Want to make this even more awesome? Here's how:
+## 🐛 Known Limitations
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- PDF size limit: 10MB per file
+- Supported currencies: HUF, EUR, USD, GBP
+- Privacy mode requires separate backend service
+- OCR quality depends on scan resolution
+- Does not process invoices written in Comic Sans (this is a feature, not a bug)
 
-### Code Style
-- Use TypeScript (please!)
-- Follow the existing code style
-- Add comments for complex logic
-- Test your changes
+## 📄 License
 
-## 📜 License
-
-This project is licensed under the "Do Whatever You Want But Don't Sue Me" License. See the LICENSE file for details.
-
-## 🍺 Special Thanks
-
-- **ChatGPT** - For helping debug those weird TypeScript errors
-- **Hungarian Wine Industry** - For providing the inspiration (🥂)
-- **Sparkling Water Companies** - Essential for staying hydrated (💧)
-- **Mother Nature** - For the herbs (🌿)
-- **Next.js Team** - For the incredible framework
-
-## 📞 Support
-
-If you need help, you can:
-- Open an issue on GitHub
-- Send smoke signals
-- Pray to the JavaScript gods
-- Actually read the documentation (revolutionary!)
-
-## 🎉 Final Words
-
-Remember: This tool is designed to make your life easier, not to replace your brain. Always double-check the extracted data, especially for important financial documents.
-
-Now go forth and process those invoices like the data wizard you were meant to be! 🧙‍♂️✨
+This project is open source under the MIT License.
 
 ---
 
-**Built with Hungarian wine, sparkling water, mysterious herbs, and an unhealthy amount of Next.js** 🇭🇺❤️
+**Built with 🥂, 💧, 🌿 & Next.js**
