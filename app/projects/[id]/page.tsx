@@ -153,20 +153,16 @@ export default function ProjectDetailsPage() {
     if (filterOptions.searchTerm) {
       const term = filterOptions.searchTerm.toLowerCase();
       filtered = filtered.filter(item => {
-        // Original fields
         const invoiceNumber = (item.invoice_number || item.fields?.invoice_number || '').toLowerCase();
         const buyer = (item.buyer_name || item.fields?.buyer?.name || '').toLowerCase();
         const seller = (item.seller_name || item.fields?.seller?.name || '').toLowerCase();
 
-        // Dates
         const issueDate = (item.issue_date || item.fields?.issue_date || '').toLowerCase();
         const dueDate = (item.fields?.due_date || '').toLowerCase();
         const fulfillmentDate = (item.fields?.fulfillment_date || '').toLowerCase();
 
-        // Payment method
         const paymentMethod = (item.fields?.payment_method || '').toLowerCase();
 
-        // Addresses and Tax IDs
         const buyerAddress = (item.fields?.buyer?.address || '').toLowerCase();
         const buyerTaxId = (item.fields?.buyer?.tax_id || '').toLowerCase();
         const sellerAddress = (item.fields?.seller?.address || '').toLowerCase();
@@ -174,7 +170,6 @@ export default function ProjectDetailsPage() {
         const sellerEmail = (item.fields?.seller?.email || '').toLowerCase();
         const sellerPhone = (item.fields?.seller?.phone || '').toLowerCase();
 
-        // Invoice line items/products
         const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
         const itemMatches = invoiceItems.some(invItem => {
           const itemName = (invItem.name || '').toLowerCase();

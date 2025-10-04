@@ -2,16 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the authorization header from the original request
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the form data from the request
     const formData = await request.formData();
 
-    // Get the privacy API configuration from environment
     const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
 
@@ -20,21 +17,13 @@ export async function POST(request: NextRequest) {
     }
     const privacyApiUrl = `${privacyApiBaseUrl}/process-invoice`;
 
-    console.log('Attempting to connect to privacy service...');
-    console.log('Privacy API URL:', privacyApiUrl);
-    console.log('Has API key:', !!privacyApiKey);
-
-    // Prepare headers with API key authentication
     const headers: HeadersInit = {};
     if (privacyApiKey) {
       headers['Authorization'] = `Bearer ${privacyApiKey}`;
     }
 
-    // Forward the request to the privacy API
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 350000);
-
-    console.log('Making request to privacy API...');
 
     const response = await fetch(privacyApiUrl, {
       method: 'POST',
@@ -44,7 +33,6 @@ export async function POST(request: NextRequest) {
     });
 
     clearTimeout(timeoutId);
-    console.log('Received response from privacy API, status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -56,9 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
-    console.log('Privacy API responded successfully');
 
-    // Add job ID to metadata if available
     if (result._processing_metadata) {
       result._processing_metadata.privacy_service = true;
     }
@@ -68,7 +54,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Proxy error:', error);
 
-    // More specific error messages
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         return NextResponse.json(

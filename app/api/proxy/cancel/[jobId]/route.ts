@@ -7,16 +7,13 @@ export async function DELETE(
   try {
     const { jobId } = await params;
 
-    // Get the authorization header from the original request
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the privacy API configuration from environment
     const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
-
 
     if (!privacyApiBaseUrl) {
       return NextResponse.json({ error: 'Privacy API URL not configured' }, { status: 500 });
@@ -24,15 +21,13 @@ export async function DELETE(
 
     const privacyApiUrl = `${privacyApiBaseUrl}/cancel-job/${jobId}`;
 
-    // Prepare headers with API key authentication
     const headers: HeadersInit = {};
     if (privacyApiKey) {
       headers['Authorization'] = `Bearer ${privacyApiKey}`;
     }
 
-    // Forward the request to the privacy API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for cancel
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(privacyApiUrl, {
       method: 'DELETE',

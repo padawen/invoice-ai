@@ -85,7 +85,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
   const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
 
-  // SSE Progress streaming effect
   useEffect(() => {
     if (!isOpen || !jobId) {
       setCurrentStageIndex(0);
@@ -101,7 +100,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     startTimeRef.current = Date.now();
     processingStartTimeRef.current = Date.now();
 
-    // Get auth token for SSE connection (passed as query param since EventSource doesn't support headers)
     const getAuthToken = async () => {
       if (supabase) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -115,7 +113,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       const progressUrl = `/api/proxy/progress-stream/${jobId}${authToken ? `?auth=${authToken}` : ''}`;
       const eventSource = new EventSource(progressUrl);
 
-      // Map stage to index
       const stageToIndex = {
         'upload': 0,
         'ocr': 1,
@@ -123,7 +120,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         'postprocess': 3
       };
 
-      // Handle progress updates
       eventSource.addEventListener('progress', (event) => {
         try {
           const data: ProgressData = JSON.parse(event.data);
@@ -133,28 +129,22 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
           setCurrentStageIndex(stageIndex);
 
-          // Calculate time remaining based on current progress and elapsed time
-          // Only calculate if we have meaningful progress (>5%) to avoid wild estimates
           if (startTimeRef.current && data.progress > 5) {
             const elapsed = (Date.now() - startTimeRef.current) / 1000;
-            // Calculate how much time remains based on current progress rate
-            const progressRate = data.progress / 100; // Convert to fraction (0-1)
+            const progressRate = data.progress / 100;
             const estimatedTotal = progressRate > 0 ? elapsed / progressRate : 0;
             const remaining = Math.max(estimatedTotal - elapsed, 0);
             setTimeRemaining(remaining);
           }
         } catch {
-          // Failed to parse progress data
         }
       });
 
-      // Handle completion
       eventSource.addEventListener('complete', (event) => {
         try {
           const data: { result: unknown } = JSON.parse(event.data);
           eventSource.close();
 
-          // Processing completed successfully - save result and redirect
           const saveResultAndRedirect = async () => {
             const endTime = Date.now();
             const extractionTime = processingStartTimeRef.current
@@ -180,7 +170,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         }
       });
 
-      // Handle errors
       eventSource.addEventListener('error', (event) => {
         try {
           const data: { error: string } = JSON.parse((event as MessageEvent).data);
@@ -191,7 +180,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         eventSource.close();
       });
 
-      // Handle connection errors
       eventSource.onerror = () => {
         eventSource.close();
         setError('Connection lost. Please try again.');
@@ -202,7 +190,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
     const eventSourcePromise = setupSSE();
 
-    // Cleanup on unmount
     return () => {
       eventSourcePromise.then(es => es.close());
     };
@@ -229,8 +216,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       });
 
       if (response.ok) {
-        console.log('Job cancelled successfully');
-        // Close modal and go back to upload page
         window.location.href = '/upload';
       } else {
         const errorText = await response.text();

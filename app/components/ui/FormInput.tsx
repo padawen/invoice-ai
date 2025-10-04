@@ -29,21 +29,16 @@ const FormInput: React.FC<FormInputProps> = ({
 }) => {
   const handleChange = (inputValue: string) => {
     if (isNumeric) {
-      // Replace comma with dot and allow only numbers, dots, and minus sign
       let cleanValue = inputValue.replace(/,/g, '.');
-      
-      // Allow only numbers, one dot, and minus sign at the beginning
       cleanValue = cleanValue.replace(/[^0-9.-]/g, '');
-      
-      // Ensure only one dot
+
       const dotCount = (cleanValue.match(/\./g) || []).length;
       if (dotCount > 1) {
         const firstDotIndex = cleanValue.indexOf('.');
-        cleanValue = cleanValue.substring(0, firstDotIndex + 1) + 
+        cleanValue = cleanValue.substring(0, firstDotIndex + 1) +
                     cleanValue.substring(firstDotIndex + 1).replace(/\./g, '');
       }
-      
-      // Ensure minus only at the beginning
+
       if (cleanValue.includes('-')) {
         const withoutMinus = cleanValue.replace(/-/g, '');
         cleanValue = inputValue.startsWith('-') ? '-' + withoutMinus : withoutMinus;

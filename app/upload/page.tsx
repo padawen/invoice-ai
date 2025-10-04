@@ -43,7 +43,6 @@ const UploadPage = () => {
     return () => setIsProcessing(false);
   }, [isOperationInProgress, setIsProcessing]);
 
-  // Check privacy mode availability on mount
   useEffect(() => {
     const checkPrivacyHealth = async () => {
       try {
@@ -245,18 +244,15 @@ const UploadPage = () => {
 
       const result = 'fallbackData' in parsed ? parsed.fallbackData : parsed;
 
-      // Handle privacy processing differently - it returns job ID immediately
       if (type === 'privacy') {
         if (result._processing_metadata?.job_id) {
           setPrivacyJobId(result._processing_metadata.job_id);
-          // Progress modal will handle the rest - don't validate structure yet
           return;
         } else {
           throw new Error('Privacy processing failed to return job ID');
         }
       }
 
-      // For OpenAI processing, validate structure immediately
       if (!isValidStructure(result)) {
         throw new Error('The AI processing result has an invalid structure. Please try again or contact support.');
       }

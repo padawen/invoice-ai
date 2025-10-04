@@ -34,7 +34,6 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
     totalChanges
   } = useDirtyFields(fields);
 
-  // Notify parent component when total changes count updates
   useEffect(() => {
     if (onChangesCountUpdate) {
       onChangesCountUpdate(totalChanges);

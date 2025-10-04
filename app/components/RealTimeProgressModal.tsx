@@ -101,7 +101,6 @@ export default function RealTimeProgressModal({
         setProgress(progressData);
 
         if (progressData.completed && !progressData.error) {
-          // Fetch the final result
           fetch(`/api/processing/privacy?jobId=${jobId}`)
             .then(res => res.json())
             .then(result => {

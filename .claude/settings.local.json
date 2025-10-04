@@ -6,5 +6,7 @@
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "spinnerTipsEnabled": false,
+  "outputStyle": "Learning"
 }

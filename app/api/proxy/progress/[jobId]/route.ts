@@ -7,35 +7,27 @@ export async function GET(
   try {
     const { jobId } = await params;
 
-    // Get the authorization header from the original request
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
-      console.log('No auth header provided');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the privacy API configuration from environment
     const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
-
-    console.log('Privacy API URL:', privacyApiBaseUrl);
 
     if (!privacyApiBaseUrl) {
       return NextResponse.json({ error: 'Privacy API URL not configured' }, { status: 500 });
     }
 
     const privacyApiUrl = `${privacyApiBaseUrl}/progress/${jobId}`;
-    console.log('Calling privacy API at:', privacyApiUrl);
 
-    // Prepare headers with API key authentication
     const headers: HeadersInit = {};
     if (privacyApiKey) {
       headers['Authorization'] = `Bearer ${privacyApiKey}`;
     }
 
-    // Forward the request to the privacy API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const response = await fetch(privacyApiUrl, {
       method: 'GET',
@@ -55,7 +47,6 @@ export async function GET(
     }
 
     const result = await response.json();
-    console.log('Privacy API response:', result);
     return NextResponse.json(result);
 
   } catch (error) {

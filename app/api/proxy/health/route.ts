@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // Get the privacy API URL from environment
     const privacyApiUrl = process.env.PRIVACY_API_URL;
 
     if (!privacyApiUrl) {
@@ -12,13 +11,9 @@ export async function GET() {
       }, { status: 500 });
     }
 
-    // Remove /process-invoice if it's in the URL for health check
     const baseUrl = privacyApiUrl.replace('/process-invoice', '');
     const healthUrl = `${baseUrl}/health`;
 
-    console.log('Health check URL:', healthUrl);
-
-    // Check if the privacy API is healthy with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -30,7 +25,6 @@ export async function GET() {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.log('Privacy API health check failed:', response.status);
       return NextResponse.json(
         {
           status: 'unhealthy',

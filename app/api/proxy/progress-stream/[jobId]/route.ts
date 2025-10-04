@@ -9,7 +9,6 @@ export async function GET(
 ) {
   const { jobId } = await params;
 
-  // Get auth token from query param (EventSource doesn't support headers)
   const authToken = request.nextUrl.searchParams.get('auth') || '';
 
   const encoder = new TextEncoder();
@@ -29,7 +28,6 @@ export async function GET(
             'x-api-key': PRIVACY_API_KEY,
           };
 
-          // Add auth token if provided
           if (authToken) {
             headers['Authorization'] = `Bearer ${authToken}`;
           }
@@ -44,7 +42,6 @@ export async function GET(
 
           const data = await response.json();
 
-          // Send progress update
           sendEvent('progress', {
             progress: data.progress,
             stage: data.stage,
@@ -52,7 +49,6 @@ export async function GET(
             status: data.status
           });
 
-          // Check if completed or error
           if (data.status === 'completed') {
             sendEvent('complete', {
               result: data.result
@@ -80,7 +76,6 @@ export async function GET(
         }
       };
 
-      // Poll every second
       const intervalId = setInterval(async () => {
         if (!isActive) {
           clearInterval(intervalId);
@@ -92,10 +87,8 @@ export async function GET(
         }
       }, 1000);
 
-      // Initial poll
       await pollProgress();
 
-      // Cleanup on connection close
       request.signal.addEventListener('abort', () => {
         isActive = false;
         clearInterval(intervalId);
