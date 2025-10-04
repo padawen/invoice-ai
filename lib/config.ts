@@ -1,7 +1,10 @@
 function getEnvVar(key: string, fallback?: string): string {
   const value = process.env[key];
   if (!value && !fallback) {
-    throw new Error(`Missing required environment variable: ${key}`);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+    return fallback || '';
   }
   return value || fallback || '';
 }
@@ -12,25 +15,25 @@ function getOptionalEnvVar(key: string, fallback: string = ''): string {
 
 export const config = {
   openai: {
-    apiKey: getEnvVar('OPENAI_API_KEY'),
-    internalApiKey: getOptionalEnvVar('INTERNAL_API_KEY'),
+    get apiKey() { return getEnvVar('OPENAI_API_KEY'); },
+    get internalApiKey() { return getOptionalEnvVar('INTERNAL_API_KEY'); },
   },
   supabase: {
-    url: getEnvVar('SUPABASE_URL'),
-    anonKey: getEnvVar('SUPABASE_ANON_KEY'),
-    serviceRoleKey: getOptionalEnvVar('SUPABASE_SERVICE_ROLE_KEY'),
+    get url() { return getEnvVar('SUPABASE_URL'); },
+    get anonKey() { return getEnvVar('SUPABASE_ANON_KEY'); },
+    get serviceRoleKey() { return getOptionalEnvVar('SUPABASE_SERVICE_ROLE_KEY'); },
   },
   privacy: {
-    apiUrl: getOptionalEnvVar('PRIVACY_API_URL', 'http://localhost:5000'),
-    apiKey: getOptionalEnvVar('PRIVACY_API_KEY'),
+    get apiUrl() { return getOptionalEnvVar('PRIVACY_API_URL', 'http://localhost:5000'); },
+    get apiKey() { return getOptionalEnvVar('PRIVACY_API_KEY'); },
   },
   app: {
-    siteUrl: getOptionalEnvVar('NEXT_PUBLIC_SITE_URL'),
-    nodeEnv: getOptionalEnvVar('NODE_ENV', 'development'),
-    isDevelopment: process.env.NODE_ENV !== 'production',
-    isProduction: process.env.NODE_ENV === 'production',
+    get siteUrl() { return getOptionalEnvVar('NEXT_PUBLIC_SITE_URL'); },
+    get nodeEnv() { return getOptionalEnvVar('NODE_ENV', 'development'); },
+    get isDevelopment() { return process.env.NODE_ENV !== 'production'; },
+    get isProduction() { return process.env.NODE_ENV === 'production'; },
   },
-} as const;
+};
 
 export function validateConfig(): void {
   try {
