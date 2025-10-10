@@ -99,3 +99,14 @@ export interface ProgressStreamEvent {
 export interface ProxyRequestInit extends RequestInit {
   timeout?: number;
 }
+
+export interface TimeEstimationResponse {
+  char_count: number;
+  estimated_time_seconds: number;
+  breakdown: {
+    ocr: number;
+    metadata_extraction: number;
+    items_extraction: number;
+  };
+  note: string;
+}

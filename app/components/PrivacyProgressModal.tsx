@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server, Upload, X } from 'lucide-react';
+import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server, Upload, X, Clock } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import type { TimeEstimationResponse } from '@/app/types/api';
 
 interface PrivacyProgressModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface ProcessingStage {
   icon: React.ReactNode;
   duration: number;
   description: string;
+  isSubStage?: boolean;
 }
 
 interface ProgressData {
@@ -46,44 +48,158 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
   const startTimeRef = useRef<number | null>(null);
   const processingStartTimeRef = useRef<number | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [timeEstimation, setTimeEstimation] = useState<TimeEstimationResponse | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const timeEstimationRef = useRef<TimeEstimationResponse | null>(null);
 
   useEffect(() => {
     const client = createSupabaseBrowserClient();
     if (client) setSupabase(client);
   }, []);
 
-  const stages: ProcessingStage[] = useMemo(() => [
-    {
-      id: 'upload',
-      name: 'File Upload',
-      icon: <Upload className="w-5 h-5" />,
-      duration: 5,
-      description: 'Uploading file to privacy server...'
-    },
-    {
-      id: 'ocr',
-      name: 'OCR Text Extraction',
-      icon: <FileText className="w-5 h-5" />,
-      duration: 20,
-      description: 'Extracting text using local OCR - no external services...'
-    },
-    {
-      id: 'llm',
-      name: 'Local AI Processing',
-      icon: <Brain className="w-5 h-5" />,
-      duration: 160,
-      description: 'Processing with local LLM - your data stays private...'
-    },
-    {
-      id: 'postprocess',
-      name: 'Post-processing',
-      icon: <Server className="w-5 h-5" />,
-      duration: 15,
-      description: 'Structuring data and preparing final results...'
+  const stages: ProcessingStage[] = useMemo(() => {
+    // Use estimated durations if available, otherwise use defaults
+    if (timeEstimation) {
+      return [
+        {
+          id: 'upload',
+          name: 'File Upload',
+          icon: <Upload className="w-5 h-5" />,
+          duration: 5,
+          description: 'Uploading file to privacy server...'
+        },
+        {
+          id: 'ocr',
+          name: 'OCR Text Extraction',
+          icon: <FileText className="w-5 h-5" />,
+          duration: timeEstimation.breakdown.ocr,
+          description: `Extracted ${timeEstimation.char_count.toLocaleString()} characters using local OCR`
+        },
+        {
+          id: 'llm',
+          name: 'Local AI Processing',
+          icon: <Brain className="w-5 h-5" />,
+          duration: timeEstimation.breakdown.metadata_extraction + timeEstimation.breakdown.items_extraction,
+          description: 'Processing invoice data with local LLM...'
+        },
+        {
+          id: 'metadata',
+          name: 'Metadata Extraction',
+          icon: <Brain className="w-4 h-4" />,
+          duration: timeEstimation.breakdown.metadata_extraction,
+          description: 'Extracting seller, buyer, and invoice details...',
+          isSubStage: true
+        },
+        {
+          id: 'items',
+          name: 'Line Items Extraction',
+          icon: <Brain className="w-4 h-4" />,
+          duration: timeEstimation.breakdown.items_extraction,
+          description: 'Extracting invoice line items and amounts...',
+          isSubStage: true
+        },
+        {
+          id: 'postprocess',
+          name: 'Post-processing',
+          icon: <Server className="w-5 h-5" />,
+          duration: 10,
+          description: 'Structuring data and preparing final results...'
+        }
+      ];
     }
-  ], []);
 
-  const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
+    // Default durations if no estimation available
+    return [
+      {
+        id: 'upload',
+        name: 'File Upload',
+        icon: <Upload className="w-5 h-5" />,
+        duration: 5,
+        description: 'Uploading file to privacy server...'
+      },
+      {
+        id: 'ocr',
+        name: 'OCR Text Extraction',
+        icon: <FileText className="w-5 h-5" />,
+        duration: 20,
+        description: 'Extracting text using local OCR - no external services...'
+      },
+      {
+        id: 'llm',
+        name: 'Local AI Processing',
+        icon: <Brain className="w-5 h-5" />,
+        duration: 160,
+        description: 'Processing invoice data with local LLM...'
+      },
+      {
+        id: 'postprocess',
+        name: 'Post-processing',
+        icon: <Server className="w-5 h-5" />,
+        duration: 15,
+        description: 'Structuring data and preparing final results...'
+      }
+    ];
+  }, [timeEstimation]);
+
+
+  // Determine active sub-stage based on backend message
+  const activeSubStage = useMemo(() => {
+    if (!progressData || progressData.stage !== 'llm') {
+      return null;
+    }
+
+    const message = progressData.message?.toLowerCase() || '';
+
+    if (message.includes('metadata')) {
+      return 'metadata';
+    } else if (message.includes('line items') || message.includes('items')) {
+      return 'items';
+    }
+
+    return null;
+  }, [progressData]);
+
+  // Fetch time estimation when modal opens
+  useEffect(() => {
+    if (!isOpen || !file || timeEstimation || isEstimating) {
+      return;
+    }
+
+    const fetchEstimation = async () => {
+      setIsEstimating(true);
+      try {
+        let authToken = '';
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          authToken = session?.access_token || '';
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/proxy/estimate-time', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const estimation = await response.json();
+          setTimeEstimation(estimation);
+          timeEstimationRef.current = estimation;
+        }
+      } catch (err) {
+        console.error('Failed to fetch time estimation:', err);
+        // Don't show error to user, just use default durations
+      } finally {
+        setIsEstimating(false);
+      }
+    };
+
+    fetchEstimation();
+  }, [isOpen, file, timeEstimation, isEstimating, supabase]);
 
   useEffect(() => {
     if (!isOpen || !jobId) {
@@ -124,17 +240,34 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         try {
           const data: ProgressData = JSON.parse(event.data);
           setProgressData(data);
-          setProgress(data.progress);
 
           const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
           setCurrentStageIndex(stageIndex);
 
-          if (startTimeRef.current && data.progress > 5) {
+          // Calculate progress and time remaining based on elapsed time vs estimated time
+          if (startTimeRef.current) {
             const elapsed = (Date.now() - startTimeRef.current) / 1000;
-            const progressRate = data.progress / 100;
-            const estimatedTotal = progressRate > 0 ? elapsed / progressRate : 0;
-            const remaining = Math.max(estimatedTotal - elapsed, 0);
-            setTimeRemaining(remaining);
+
+            if (timeEstimationRef.current) {
+              // Calculate progress based on elapsed time vs estimated total time
+              const estimatedTotal = timeEstimationRef.current.estimated_time_seconds;
+              const calculatedProgress = Math.min((elapsed / estimatedTotal) * 100, 99);
+              setProgress(calculatedProgress);
+
+              // Calculate remaining time
+              const remaining = Math.max(estimatedTotal - elapsed, 0);
+              setTimeRemaining(remaining);
+            } else {
+              // Fall back to backend progress if no estimation available
+              setProgress(data.progress);
+
+              if (data.progress > 5) {
+                const progressRate = data.progress / 100;
+                const estimatedTotal = progressRate > 0 ? elapsed / progressRate : 0;
+                const remaining = Math.max(estimatedTotal - elapsed, 0);
+                setTimeRemaining(remaining);
+              }
+            }
           }
         } catch {
         }
@@ -252,6 +385,22 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           <p className="text-blue-300">
             Local processing keeps your data completely private
           </p>
+          {isEstimating && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+              <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+              <span className="text-zinc-400">
+                Calculating estimated time...
+              </span>
+            </div>
+          )}
+          {timeEstimation && !isEstimating && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+              <Clock className="w-4 h-4 text-blue-400" />
+              <span className="text-zinc-400">
+                Estimated time: <span className="text-blue-400 font-medium">{formatTime(timeEstimation.estimated_time_seconds)}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mb-8">
@@ -269,10 +418,17 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-zinc-500">
-              {timeRemaining > 0 ? `~${formatTime(timeRemaining)} remaining` : 'Almost done...'}
+              {timeEstimation ? (
+                timeRemaining > 0 ? `~${formatTime(timeRemaining)} remaining` : 'Almost done...'
+              ) : (
+                'Calculating...'
+              )}
             </span>
             <span className="text-xs text-zinc-500">
-              {formatTime(totalDuration)} total
+              {timeEstimation
+                ? `${formatTime(timeEstimation.estimated_time_seconds)} estimated`
+                : 'Estimating time...'
+              }
             </span>
           </div>
         </div>
@@ -305,15 +461,40 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
         <div className="space-y-3">
           {stages.map((stage, index) => {
-            const stageData = progressData?.stages?.[stage.id as keyof typeof progressData.stages];
-            const isCompleted = stageData?.status === 'completed' || index < currentStageIndex;
-            const isCurrent = index === currentStageIndex && progressData?.status !== 'completed';
+            // Skip LLM parent stage if we have sub-stages
+            if (stage.id === 'llm' && timeEstimation) {
+              return null;
+            }
+
+            // Determine stage status
+            let isCompleted = false;
+            let isCurrent = false;
+
+            if (stage.isSubStage) {
+              // Sub-stage logic
+              const llmCompleted = currentStageIndex > 2;
+              if (stage.id === 'metadata') {
+                isCompleted = activeSubStage === 'items' || llmCompleted;
+                isCurrent = activeSubStage === 'metadata';
+              } else if (stage.id === 'items') {
+                isCompleted = llmCompleted;
+                isCurrent = activeSubStage === 'items';
+              }
+            } else {
+              // Main stage logic
+              const stageData = progressData?.stages?.[stage.id as keyof typeof progressData.stages];
+              isCompleted = stageData?.status === 'completed' || index < currentStageIndex;
+              isCurrent = index === currentStageIndex && progressData?.status !== 'completed';
+            }
+
             const hasError = error && index === currentStageIndex;
 
             return (
               <div
                 key={stage.id}
                 className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                  stage.isSubStage ? 'ml-11' : ''
+                } ${
                   hasError
                     ? 'bg-red-500/10 border border-red-500/20'
                     : isCompleted
@@ -323,7 +504,9 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
                     : 'bg-zinc-800/50 border border-zinc-700/50'
                 }`}
               >
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                <div className={`flex items-center justify-center ${
+                  stage.isSubStage ? 'w-6 h-6' : 'w-8 h-8'
+                } rounded-full ${
                   hasError
                     ? 'bg-red-500/20 text-red-400'
                     : isCompleted
@@ -333,17 +516,17 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
                     : 'bg-zinc-700/50 text-zinc-500'
                 }`}>
                   {hasError ? (
-                    <AlertCircle className="w-4 h-4" />
+                    <AlertCircle className={stage.isSubStage ? 'w-3 h-3' : 'w-4 h-4'} />
                   ) : isCompleted ? (
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className={stage.isSubStage ? 'w-3 h-3' : 'w-4 h-4'} />
                   ) : isCurrent ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className={`${stage.isSubStage ? 'w-3 h-3' : 'w-4 h-4'} animate-spin`} />
                   ) : (
                     stage.icon
                   )}
                 </div>
                 <div className="flex-1">
-                  <span className={`text-sm font-medium ${
+                  <span className={`${stage.isSubStage ? 'text-xs' : 'text-sm'} font-medium ${
                     hasError
                       ? 'text-red-400'
                       : isCompleted
@@ -354,17 +537,14 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
                   }`}>
                     {stage.name}
                   </span>
-                  {stageData?.duration && (
-                    <span className="text-xs text-zinc-500 ml-2">
-                      ({stageData.duration.toFixed(1)}s)
-                    </span>
+                  {stage.id === 'ocr' && timeEstimation && (isCompleted || isCurrent) && (
+                    <div className={`text-xs mt-1 ${
+                      isCompleted ? 'text-green-400' : 'text-cyan-400'
+                    }`}>
+                      {timeEstimation.char_count.toLocaleString()} characters extracted
+                    </div>
                   )}
                 </div>
-                {stageData?.progress && (
-                  <span className="text-xs text-zinc-400">
-                    {stageData.progress}%
-                  </span>
-                )}
               </div>
             );
           })}
@@ -376,7 +556,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
             <div className="text-xs text-blue-300">
               <div className="font-medium mb-1">Privacy Mode Active</div>
               <div>
-                Processing on local server with CPU inference. This takes longer but ensures your
+                Processing on local server with GPU acceleration. This takes longer but ensures your
                 invoice data never leaves your infrastructure and is not shared with external AI services.
               </div>
             </div>
