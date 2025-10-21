@@ -4,7 +4,7 @@ import { Loader2, FileText, Image as ImageIcon, Brain, CheckCircle } from 'lucid
 interface ProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
-  processingType: 'text' | 'image';
+  processingType: 'image';
 }
 
 interface ProcessingStage {
@@ -15,73 +15,42 @@ interface ProcessingStage {
   description: string;
 }
 
-const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
+const ProgressModal = ({ isOpen }: ProgressModalProps) => {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const startTimeRef = useRef<number | null>(null);
 
-  const stages: ProcessingStage[] = useMemo(() => processingType === 'image'
-    ? [
-        {
-          id: 'upload',
-          name: 'Uploading PDF',
-          icon: <FileText className="w-5 h-5" />,
-          duration: 3,
-          description: 'Uploading and validating PDF file...'
-        },
-        {
-          id: 'render',
-          name: 'Rendering PDF',
-          icon: <ImageIcon className="w-5 h-5" />,
-          duration: 10,
-          description: 'Converting PDF pages to high-quality images...'
-        },
-        {
-          id: 'analyze',
-          name: 'AI Analysis',
-          icon: <Brain className="w-5 h-5" />,
-          duration: 15,
-          description: 'OpenAI is analyzing the invoice content...'
-        },
-        {
-          id: 'complete',
-          name: 'Processing Complete',
-          icon: <CheckCircle className="w-5 h-5" />,
-          duration: 2,
-          description: 'Finalizing results and preparing data...'
-        }
-      ]
-    : [
-        {
-          id: 'upload',
-          name: 'Uploading PDF',
-          icon: <FileText className="w-5 h-5" />,
-          duration: 3,
-          description: 'Uploading and validating PDF file...'
-        },
-        {
-          id: 'extract',
-          name: 'Extracting Text',
-          icon: <FileText className="w-5 h-5" />,
-          duration: 8,
-          description: 'Extracting text content from PDF...'
-        },
-        {
-          id: 'analyze',
-          name: 'AI Analysis',
-          icon: <Brain className="w-5 h-5" />,
-          duration: 17,
-          description: 'OpenAI is analyzing the invoice content...'
-        },
-        {
-          id: 'complete',
-          name: 'Processing Complete',
-          icon: <CheckCircle className="w-5 h-5" />,
-          duration: 2,
-          description: 'Finalizing results and preparing data...'
-        }
-      ], [processingType]);
+  const stages: ProcessingStage[] = useMemo(() => [
+    {
+      id: 'upload',
+      name: 'Uploading PDF',
+      icon: <FileText className="w-5 h-5" />,
+      duration: 3,
+      description: 'Uploading and validating PDF file...'
+    },
+    {
+      id: 'render',
+      name: 'Rendering PDF',
+      icon: <ImageIcon className="w-5 h-5" />,
+      duration: 10,
+      description: 'Converting PDF pages to high-quality images...'
+    },
+    {
+      id: 'analyze',
+      name: 'AI Analysis',
+      icon: <Brain className="w-5 h-5" />,
+      duration: 15,
+      description: 'OpenAI is analyzing the invoice content...'
+    },
+    {
+      id: 'complete',
+      name: 'Processing Complete',
+      icon: <CheckCircle className="w-5 h-5" />,
+      duration: 2,
+      description: 'Finalizing results and preparing data...'
+    }
+  ], []);
 
   const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
 
@@ -144,7 +113,7 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-white mb-2">Processing Invoice</h2>
           <p className="text-zinc-400">
-            Processing {processingType === 'image' ? 'image-based' : 'text-based'} PDF with AI
+            Processing invoice with AI
           </p>
         </div>
 
@@ -233,10 +202,7 @@ const ProgressModal = ({ isOpen, processingType }: ProgressModalProps) => {
 
         <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
           <p className="text-xs text-zinc-400 text-center">
-            💡 {processingType === 'image'
-              ? 'Image processing takes longer but works with scanned documents'
-              : 'Text processing is faster for digital PDFs with selectable text'
-            }
+            AI is extracting structured data from your invoice
           </p>
         </div>
       </div>

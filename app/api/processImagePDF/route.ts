@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions';
-import { getGuidelinesImage } from '@/lib/instructions';
+import { getGuidelines } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
 import fs from 'fs';
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
     }
 
     const content: ChatCompletionContentPart[] = [
-      { type: 'text', text: getGuidelinesImage() },
+      { type: 'text', text: getGuidelines() },
       ...imagePaths.map(
         (p): ChatCompletionContentPart => {
           const { base64, mimeType } = encodeImageToBase64(p);

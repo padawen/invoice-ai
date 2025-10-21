@@ -24,19 +24,16 @@ const UploadPage = () => {
 
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [typeResult, setTypeResult] = useState<'text' | 'image' | 'unknown' | null>(null);
-  const [isDetecting, setIsDetecting] = useState(false);
   const [localProcessing, setLocalProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showPrivacyProgressModal, setShowPrivacyProgressModal] = useState(false);
-  const [progressProcessingType, setProgressProcessingType] = useState<'text' | 'image'>('text');
   const [privacyJobId, setPrivacyJobId] = useState<string | null>(null);
   const [isPrivacyModeAvailable, setIsPrivacyModeAvailable] = useState<boolean>(false);
   const [isCheckingPrivacy, setIsCheckingPrivacy] = useState<boolean>(true);
 
-  const isOperationInProgress = isDetecting || localProcessing;
+  const isOperationInProgress = localProcessing;
 
   useEffect(() => {
     setIsProcessing(isOperationInProgress);
@@ -82,9 +79,6 @@ const UploadPage = () => {
     if (selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
       setFileUrl(URL.createObjectURL(selectedFile));
-      setTypeResult(null);
-
-      handleDetectType(selectedFile);
     } else {
       setError('Please upload a valid PDF file!');
     }
@@ -108,67 +102,6 @@ const UploadPage = () => {
     processFile(droppedFile);
   };
 
-  const handleDetectType = async (pdfFile: File) => {
-    if (!pdfFile) return setError('No file selected');
-    setIsDetecting(true);
-    setError(null);
-
-    const attemptDetection = async (): Promise<{ type: 'text' | 'image' | 'unknown' }> => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          throw new Error('Authentication token not available');
-        }
-
-        const formData = new FormData();
-        formData.append('file', pdfFile);
-
-        const res = await fetch('/api/detectType', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('Detection request failed:', res.status, errorText);
-          throw new Error(`Detection request failed with status ${res.status}: ${errorText}`);
-        }
-
-        const data = await res.json();
-        return data;
-      } catch (err) {
-        console.error('Detection error:', err);
-        throw err;
-      }
-    };
-
-    try {
-      let lastError: Error | null = null;
-      for (let i = 0; i < 3; i++) {
-        try {
-          const data = await attemptDetection();
-          setTypeResult(data.type || 'unknown');
-          return;
-        } catch (err) {
-          lastError = err instanceof Error ? err : new Error(String(err));
-
-          if (i < 2) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-      }
-
-      console.error('All detection attempts failed:', lastError);
-      throw lastError || new Error('Failed after multiple attempts');
-    } catch (err) {
-      console.error('All detection attempts failed:', err);
-      setError(`Detection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsDetecting(false);
-    }
-  };
-
   const handleProcessWithOpenAI = async () => {
     await processInvoice('openai');
   };
@@ -178,13 +111,10 @@ const UploadPage = () => {
   };
 
   const processInvoice = async (type: 'openai' | 'privacy') => {
-    if (!file || !typeResult) return setError('No file or type detected');
+    if (!file) return setError('No file selected');
 
     setLocalProcessing(true);
     setError(null);
-
-    const isImageProcessing = typeResult === 'image';
-    setProgressProcessingType(isImageProcessing ? 'image' : 'text');
 
     const startTime = Date.now();
 
@@ -200,23 +130,15 @@ const UploadPage = () => {
         setShowProgressModal(true);
       }
 
-      let endpoint = '/api/processTextPDF';
-      let processingMethod = 'text';
+      let endpoint = '/api/processImagePDF';
+      let processingMethod = 'image';
       const formData = new FormData();
       formData.append('file', file);
 
-      if (type === 'openai') {
-        if (typeResult === 'text') {
-          endpoint = '/api/processTextPDF';
-          processingMethod = 'text';
-        } else {
-          endpoint = '/api/processImagePDF';
-          processingMethod = 'image';
-        }
-      } else if (type === 'privacy') {
+      if (type === 'privacy') {
         endpoint = '/api/proxy/process-invoice';
         processingMethod = 'privacy';
-        formData.append('processor', 'privacy'); // Only privacy endpoint needs this
+        formData.append('processor', 'privacy');
       }
 
       const res = await fetch(endpoint, {
@@ -381,24 +303,8 @@ const UploadPage = () => {
             )}
           </div>
 
-          {isDetecting && (
-            <div className="flex justify-center mt-8">
-              <div className="flex items-center gap-3 text-green-400">
-                <Loader2 size={24} className="animate-spin" />
-                <span>Detecting document type...</span>
-              </div>
-            </div>
-          )}
-
-          {typeResult && (
+          {fileUrl && (
             <div className="space-y-6 flex flex-col items-center mt-8">
-              <div className="flex items-center justify-center gap-2 text-lg mb-4">
-                <span className="text-zinc-400">Detected type:</span>
-                <span className="px-3 py-1 bg-zinc-800 rounded-lg text-green-400 font-medium">
-                  {typeResult}
-                </span>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-6 justify-center w-full max-w-2xl mx-auto">
                 <div className="flex flex-col gap-3 flex-1">
                   <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-sm text-center">
@@ -458,7 +364,7 @@ const UploadPage = () => {
 
       <ProgressModal
         isOpen={showProgressModal}
-        processingType={progressProcessingType}
+        processingType="image"
         onClose={() => setShowProgressModal(false)}
       />
 

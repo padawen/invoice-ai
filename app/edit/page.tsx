@@ -6,18 +6,15 @@ import EditableFields from '../components/EditableFields';
 import ProjectSelector, { ProjectSelectorRef } from '../components/ProjectSelector';
 import PdfPreviewFrame from '../components/PdfPreviewFrame';
 import SaveButton from '../components/SaveButton';
-import ProgressModal from '../components/ProgressModal';
 import { AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import slugify from 'slugify';
-import { useProcessing } from '../client-provider';
 
 let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
 const EditPage = () => {
   const router = useRouter();
-  const { setIsProcessing } = useProcessing();
   const projectSelectorRef = useRef<ProjectSelectorRef>(null);
   
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
@@ -43,29 +40,15 @@ const EditPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [localProcessing, setLocalProcessing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [processingMethod, setProcessingMethod] = useState<'text' | 'image' | null>(null);
-  const [isReprocessing, setIsReprocessing] = useState(false);
   const [userChangesCount, setUserChangesCount] = useState(0);
-
-  useEffect(() => {
-    setIsProcessing(isReprocessing);
-    return () => setIsProcessing(false);
-  }, [isReprocessing, setIsProcessing]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const raw = sessionStorage.getItem('openai_json');
         const pdfBase64 = sessionStorage.getItem('pdf_base64');
-        const method = sessionStorage.getItem('processing_method');
         const extractionMethod = sessionStorage.getItem('extraction_method') as 'openai' | 'privacy' | null;
         const extractionTime = sessionStorage.getItem('extraction_time');
-
-        if (method === 'text') {
-          setProcessingMethod('text');
-        } else if (method === 'image') {
-          setProcessingMethod('image');
-        }
 
         if (!raw || !pdfBase64) {
           setError('No data found. Please upload and process an invoice first.');
@@ -223,68 +206,6 @@ const EditPage = () => {
     }
   };
 
-  const handleReprocessWithImage = async () => {
-    if (!pdfUrl) {
-      setError('No PDF available for reprocessing.');
-      return;
-    }
-    
-    setIsReprocessing(true);
-    setError(null);
-    
-    try {
-      const base64Response = await fetch(pdfUrl);
-      const blob = await base64Response.blob();
-      const file = new File([blob], 'invoice.pdf', { type: 'application/pdf' });
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
-      
-      const response = await fetch('/api/processImagePDF', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData
-      });
-      
-      let result;
-      
-      try {
-        const rawText = await response.text();
-        result = JSON.parse(rawText);
-      } catch (parseError) {
-        console.error('Error parsing response:', parseError);
-        throw new Error('Failed to parse API response. The server may be experiencing issues.');
-      }
-      
-      if (!response.ok) {
-        if (result?.fallbackData) {
-          setError(`Warning: ${result.error || 'API processing error'}. Using fallback structure.`);
-          result = result.fallbackData;
-        } else {
-          throw new Error(result?.error || 'Failed to reprocess with image method');
-        }
-      }
-      
-      if (!result.seller || !result.buyer || !Array.isArray(result.invoice_data)) {
-        throw new Error('The API response is missing required invoice data fields');
-      }
-      
-      sessionStorage.setItem('openai_json', JSON.stringify(result));
-      sessionStorage.setItem('processing_method', 'image');
-      
-      setFields({ ...result, id: result.id || crypto.randomUUID() });
-      setProcessingMethod('image');
-      
-    } catch (err) {
-      console.error('Reprocessing error:', err);
-      setError((err as Error)?.message || 'Failed to reprocess PDF.');
-    } finally {
-      setIsReprocessing(false);
-    }
-  };
-
   const toggleExpandedView = () => {
     setExpandedView(!expandedView);
   };
@@ -336,21 +257,6 @@ const EditPage = () => {
               </div>
             )}
 
-            {processingMethod === 'text' && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-amber-900/20 border border-amber-500/30 rounded-lg p-4">
-                <p className="text-amber-400">
-                  This invoice was processed using text-based extraction. If the results aren&apos;t optimal, try image-based extraction.
-                </p>
-                <button
-                  onClick={handleReprocessWithImage}
-                  disabled={isReprocessing}
-                  className="whitespace-nowrap px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isReprocessing ? 'Processing...' : 'Try Image Method'}
-                </button>
-              </div>
-            )}
-
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8" ref={itemsContainerRef}>
               {fields ? (
                 <EditableFields
@@ -387,12 +293,6 @@ const EditPage = () => {
           </div>
         </div>
       </div>
-      
-      <ProgressModal
-        isOpen={isReprocessing}
-        onClose={() => {}}
-        processingType="image"
-      />
     </div>
   );
 };
