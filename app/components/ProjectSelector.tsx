@@ -127,7 +127,7 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
       )}
       
       {isDemo && (
-        <div className="mt-2 text-xs text-amber-400 text-center">
+        <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-xs text-amber-400 text-center">
           Demo mode - project selection is for demonstration only
         </div>
       )}

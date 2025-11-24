@@ -2,6 +2,9 @@ import type { EditableInvoice } from './types';
 
 export interface FakeProcessedItem {
   id: string;
+  extraction_method?: 'openai' | 'privacy';
+  extraction_time?: number;
+  user_changes_count?: number;
   fields: EditableInvoice;
 }
 
@@ -18,6 +21,9 @@ export const fakeProjects: FakeProject[] = [
     processed: [
       {
         id: '1',
+        extraction_method: 'openai',
+        extraction_time: 15.3,
+        user_changes_count: 0,
         fields: {
           id: '1',
           seller: {
@@ -46,6 +52,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '2',
+        extraction_method: 'privacy',
+        extraction_time: 67.8,
+        user_changes_count: 3,
         fields: {
           id: '2',
           seller: {
@@ -73,6 +82,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '3',
+        extraction_method: 'openai',
+        extraction_time: 22.7,
+        user_changes_count: 1,
         fields: {
           id: '3',
           seller: {
@@ -106,6 +118,9 @@ export const fakeProjects: FakeProject[] = [
     processed: [
       {
         id: '1',
+        extraction_method: 'privacy',
+        extraction_time: 54.2,
+        user_changes_count: 2,
         fields: {
           id: '1',
           seller: {
@@ -133,6 +148,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '2',
+        extraction_method: 'openai',
+        extraction_time: 18.4,
+        user_changes_count: 0,
         fields: {
           id: '2',
           seller: {
@@ -160,6 +178,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '3',
+        extraction_method: 'privacy',
+        extraction_time: 82.5,
+        user_changes_count: 5,
         fields: {
           id: '3',
           seller: {
@@ -193,6 +214,9 @@ export const fakeProjects: FakeProject[] = [
     processed: [
       {
         id: '1',
+        extraction_method: 'openai',
+        extraction_time: 12.9,
+        user_changes_count: 0,
         fields: {
           id: '1',
           seller: {
@@ -220,6 +244,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '2',
+        extraction_method: 'privacy',
+        extraction_time: 71.3,
+        user_changes_count: 4,
         fields: {
           id: '2',
           seller: {
@@ -247,6 +274,9 @@ export const fakeProjects: FakeProject[] = [
       },
       {
         id: '3',
+        extraction_method: 'openai',
+        extraction_time: 27.6,
+        user_changes_count: 2,
         fields: {
           id: '3',
           seller: {

@@ -89,10 +89,10 @@ const InvoiceItem = React.memo<{
       <div className="col-span-1 relative">
         <FormInput
           value={item.currency || ''}
-          onChange={(value) => onUpdateItem(index, 'currency', value)}
-          placeholder="CUR"
+          onChange={(value) => onUpdateItem(index, 'currency', value.toUpperCase())}
+          placeholder="Cur"
           maxLength={3}
-          className="w-full px-1 py-1.5 text-xs text-center uppercase"
+          className="w-full px-1 py-1.5 text-xs text-center"
           isDirty={dirtyFields.has(`item_${index}_currency`)}
           onFocus={() => setShowCurrencyTooltip(index)}
           onBlur={() => setTimeout(() => setShowCurrencyTooltip(null), 200)}
@@ -192,11 +192,11 @@ const InvoiceItem = React.memo<{
         
         <FormInput
           value={item.currency || ''}
-          onChange={(value) => onUpdateItem(index, 'currency', value)}
+          onChange={(value) => onUpdateItem(index, 'currency', value.toUpperCase())}
           placeholder="Currency (e.g. EUR)"
           label="Currency"
           maxLength={3}
-          className="w-full uppercase"
+          className="w-full"
           isDirty={dirtyFields.has(`item_${index}_currency`)}
         />
       </div>

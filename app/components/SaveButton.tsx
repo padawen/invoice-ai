@@ -19,14 +19,14 @@ const SaveButton: React.FC<SaveButtonProps> = ({
   isDemo = false 
 }) => {
   return (
-    <div className="relative">
+    <div className="flex flex-col gap-3">
       <button
         onClick={onSave}
         disabled={isSaving || disabled}
         className={`px-8 py-4 rounded-xl text-white text-lg font-semibold flex items-center justify-center gap-2 shadow-lg ${
           isSaving || disabled
             ? 'bg-zinc-600 cursor-not-allowed'
-            : isDemo 
+            : isDemo
               ? 'bg-amber-600 hover:bg-amber-500 cursor-pointer'
               : 'bg-green-600 hover:bg-green-500 cursor-pointer'
         } transition-colors ${className}`}
@@ -49,9 +49,9 @@ const SaveButton: React.FC<SaveButtonProps> = ({
           </>
         )}
       </button>
-      
+
       {isDemo && !isSaving && (
-        <div className="absolute -bottom-10 left-0 right-0 text-xs text-amber-400 text-center px-4 py-2">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-xs text-amber-400 text-center">
           Demo mode - changes won&apos;t persist
         </div>
       )}
