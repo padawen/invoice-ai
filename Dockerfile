@@ -2,14 +2,21 @@
 
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+
+# Install pnpm
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm i --frozen-lockfile
 
 # ---------- Builder ----------
 
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Install pnpm
+RUN corepack enable
 
 # Only build-time client env vars (NEXT_PUBLIC_*)
 ARG NEXT_PUBLIC_SUPABASE_URL
@@ -22,7 +29,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build && npm prune --omit=dev
+RUN pnpm run build && pnpm prune --prod
 
 # ---------- Runner with Playwright ----------
 

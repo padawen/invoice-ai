@@ -1,6 +1,7 @@
 {
   "name": "invoice-ai",
   "version": "0.9.0",
+  "packageManager": "pnpm@10.6.5",
   "private": true,
   "scripts": {
     "dev": "next dev",

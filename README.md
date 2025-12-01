@@ -79,7 +79,7 @@ Automatically extracts:
 ### Prerequisites
 
 - **Node.js 18+** ([Download](https://nodejs.org/))
-- **npm or yarn**
+- **pnpm** (recommended) or npm/yarn
 - **Git**
 - **Supabase account** (free tier available)
 - **OpenAI API key** (for cloud processing)
@@ -102,6 +102,32 @@ yarn install
 #### 3. Environment Configuration
 
 Create a `.env.local` file in the root directory:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+- **Supabase account** (free tier available)
+- **OpenAI API key** (for cloud processing)
+
+### Installation
+
+#### 1. Clone the Repository
+```bash
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+- **Supabase account** (free tier available)
+- **OpenAI API key** (for cloud processing)
+
+### Installation
+
+#### 1. Clone the Repository
+```bash
 
 ```env
 # Supabase Configuration
