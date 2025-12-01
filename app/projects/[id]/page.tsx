@@ -65,7 +65,7 @@ const normalizeCurrency = (currency: string): string => {
     'gbp': 'GBP',
     '': 'HUF'
   };
-  
+
   return currencyMap[currency] || currency.toUpperCase();
 };
 
@@ -73,7 +73,7 @@ export default function ProjectDetailsPage() {
   const user = useUser();
   const router = useRouter();
   const { id: projectSlug } = useParams() as { id: string };
-  
+
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
@@ -91,7 +91,7 @@ export default function ProjectDetailsPage() {
   const [processed, setProcessed] = useState<ProcessedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
-  
+
   const [editing, setEditing] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -147,9 +147,9 @@ export default function ProjectDetailsPage() {
 
   useEffect(() => {
     if (!processed) return;
-    
+
     let filtered = [...processed];
-    
+
     if (filterOptions.searchTerm) {
       const term = filterOptions.searchTerm.toLowerCase();
       filtered = filtered.filter(item => {
@@ -180,30 +180,30 @@ export default function ProjectDetailsPage() {
           const itemCurrency = (invItem.currency || '').toLowerCase();
 
           return itemName.includes(term) ||
-                 itemQuantity.includes(term) ||
-                 itemUnitPrice.includes(term) ||
-                 itemNet.includes(term) ||
-                 itemGross.includes(term) ||
-                 itemCurrency.includes(term);
+            itemQuantity.includes(term) ||
+            itemUnitPrice.includes(term) ||
+            itemNet.includes(term) ||
+            itemGross.includes(term) ||
+            itemCurrency.includes(term);
         });
 
         return invoiceNumber.includes(term) ||
-               buyer.includes(term) ||
-               seller.includes(term) ||
-               issueDate.includes(term) ||
-               dueDate.includes(term) ||
-               fulfillmentDate.includes(term) ||
-               paymentMethod.includes(term) ||
-               buyerAddress.includes(term) ||
-               buyerTaxId.includes(term) ||
-               sellerAddress.includes(term) ||
-               sellerTaxId.includes(term) ||
-               sellerEmail.includes(term) ||
-               sellerPhone.includes(term) ||
-               itemMatches;
+          buyer.includes(term) ||
+          seller.includes(term) ||
+          issueDate.includes(term) ||
+          dueDate.includes(term) ||
+          fulfillmentDate.includes(term) ||
+          paymentMethod.includes(term) ||
+          buyerAddress.includes(term) ||
+          buyerTaxId.includes(term) ||
+          sellerAddress.includes(term) ||
+          sellerTaxId.includes(term) ||
+          sellerEmail.includes(term) ||
+          sellerPhone.includes(term) ||
+          itemMatches;
       });
     }
-    
+
     if (filterOptions.dateRange.start) {
       const startDate = new Date(filterOptions.dateRange.start);
       filtered = filtered.filter(item => {
@@ -211,7 +211,7 @@ export default function ProjectDetailsPage() {
         return !isNaN(itemDate.getTime()) && itemDate >= startDate;
       });
     }
-    
+
     if (filterOptions.dateRange.end) {
       const endDate = new Date(filterOptions.dateRange.end);
       filtered = filtered.filter(item => {
@@ -219,7 +219,7 @@ export default function ProjectDetailsPage() {
         return !isNaN(itemDate.getTime()) && itemDate <= endDate;
       });
     }
-    
+
     if (filterOptions.buyer) {
       const buyerTerm = filterOptions.buyer.toLowerCase();
       filtered = filtered.filter(item => {
@@ -227,7 +227,7 @@ export default function ProjectDetailsPage() {
         return buyer.includes(buyerTerm);
       });
     }
-    
+
     if (filterOptions.seller) {
       const sellerTerm = filterOptions.seller.toLowerCase();
       filtered = filtered.filter(item => {
@@ -235,23 +235,23 @@ export default function ProjectDetailsPage() {
         return seller.includes(sellerTerm);
       });
     }
-    
+
     if (filterOptions.amountRange.min || filterOptions.amountRange.max) {
       filtered = filtered.filter(item => {
         const invoiceItems = item.raw_data || item.fields?.invoice_data || [];
         let total = 0;
-        
+
         invoiceItems.forEach(invItem => {
           total += parseFloat(invItem.gross) || 0;
         });
-        
+
         const min = filterOptions.amountRange.min ? parseFloat(filterOptions.amountRange.min) : 0;
         const max = filterOptions.amountRange.max ? parseFloat(filterOptions.amountRange.max) : Infinity;
-        
+
         return total >= min && total <= max;
       });
     }
-    
+
     setFilteredProcessed(filtered);
   }, [processed, filterOptions]);
 
@@ -278,24 +278,24 @@ export default function ProjectDetailsPage() {
     setProcessed((prev: ProcessedItem[]) => prev.filter((item: ProcessedItem) => item.id !== itemId));
     setShowDeleteModal(null);
   };
-  
+
   const saveProjectName = async () => {
     if (!project || !projectName.trim() || projectName === project.name) {
       setEditing(false);
       return;
     }
-    
+
     setSaving(true);
-    
+
     if (user && supabase) {
       try {
         await supabase
           .from('projects')
           .update({ name: projectName.trim() })
           .eq('id', project.id);
-          
+
         setProject({ ...project, name: projectName.trim() });
-        
+
         const newSlug = slugify(projectName.trim(), { lower: true, strict: true });
         router.push(`/projects/${newSlug}`);
       } catch (error) {
@@ -305,7 +305,7 @@ export default function ProjectDetailsPage() {
     } else {
       setProject({ ...project, name: projectName.trim() });
     }
-    
+
     setSaving(false);
     setEditing(false);
   };
@@ -380,8 +380,8 @@ export default function ProjectDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {filteredProcessed.length === 0 ? (
             <div className="col-span-2 text-center text-zinc-400">
-              {processed.length > 0 
-                ? "No invoices match the current filters." 
+              {processed.length > 0
+                ? "No invoices match the current filters."
                 : "No processed items found."}
             </div>
           ) : (
@@ -409,7 +409,7 @@ export default function ProjectDetailsPage() {
               if (!detectedCurrency || detectedCurrency === 'HUF') {
                 detectedCurrency = item.fields?.currency || item.currency || 'HUF';
               }
-              
+
               const currency = normalizeCurrency(detectedCurrency);
 
               return (

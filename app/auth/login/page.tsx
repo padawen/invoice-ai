@@ -1,35 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Session } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
-let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
+
 
 export default function LoginPage() {
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const router = useRouter();
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(() => createSupabaseBrowserClient());
 
-  useEffect(() => {
-    if (!clientSideSupabase) {
-      const client = createSupabaseBrowserClient();
-      if (client) {
-        clientSideSupabase = client;
-        setSupabase(client);
-      }
-    }
-  }, []);
-  
   useEffect(() => {
     if (!supabase) return;
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      if (session) window.location.href = '/upload';
+      if (session) router.push('/upload');
     });
 
     return () => {
       authListener?.subscription?.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, router]);
 
   const handleGoogleLogin = async () => {
     if (!supabase) return;
@@ -50,8 +42,21 @@ export default function LoginPage() {
   return (
     <main className="select-none flex items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-2xl" />
+        {/* Green orbs - entire left side */}
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-3xl animate-bounce" />
+        <div className="absolute top-[5%] left-[8%] w-[300px] h-[300px] bg-green-400/12 rounded-full blur-3xl animate-bounce [animation-delay:0.5s]" />
+        <div className="absolute top-[15%] left-[15%] w-[200px] h-[200px] bg-emerald-500/10 rounded-full blur-3xl animate-bounce [animation-delay:1s]" />
+        <div className="absolute top-[40%] left-[5%] w-[250px] h-[250px] bg-green-500/12 rounded-full blur-3xl animate-bounce [animation-delay:1.8s]" />
+        <div className="absolute top-[60%] left-[10%] w-[280px] h-[280px] bg-emerald-400/10 rounded-full blur-3xl animate-bounce [animation-delay:0.3s]" />
+        <div className="absolute bottom-[10%] left-[8%] w-[220px] h-[220px] bg-green-400/11 rounded-full blur-3xl animate-bounce [animation-delay:2.2s]" />
+
+        {/* Blue orbs - entire right side */}
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-2xl animate-bounce [animation-delay:1.5s]" />
+        <div className="absolute bottom-[10%] right-[10%] w-[250px] h-[250px] bg-blue-400/12 rounded-full blur-3xl animate-bounce [animation-delay:2s]" />
+        <div className="absolute bottom-[20%] right-[15%] w-[180px] h-[180px] bg-cyan-500/10 rounded-full blur-3xl animate-bounce [animation-delay:0.8s]" />
+        <div className="absolute top-[10%] right-[5%] w-[300px] h-[300px] bg-blue-500/11 rounded-full blur-3xl animate-bounce [animation-delay:1.2s]" />
+        <div className="absolute top-[35%] right-[8%] w-[240px] h-[240px] bg-cyan-400/10 rounded-full blur-3xl animate-bounce [animation-delay:0.6s]" />
+        <div className="absolute top-[55%] right-[12%] w-[200px] h-[200px] bg-blue-400/11 rounded-full blur-3xl animate-bounce [animation-delay:2.5s]" />
       </div>
 
       <div className="relative z-10 w-full max-w-md mx-auto bg-zinc-900/80 rounded-2xl shadow-2xl p-10 flex flex-col items-center gap-8 border border-zinc-800 backdrop-blur-md">

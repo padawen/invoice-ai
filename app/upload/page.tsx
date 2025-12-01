@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Upload, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useUser } from '../providers';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
@@ -14,17 +15,14 @@ import type { EditableInvoice } from '@/app/types';
 
 const UploadPage = () => {
   const user = useUser();
+  const router = useRouter();
   const { setIsProcessing } = useProcessing();
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-
-  useEffect(() => {
-    const client = createSupabaseBrowserClient();
-    if (client) setSupabase(client);
-  }, []);
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(() => createSupabaseBrowserClient());
 
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [localProcessing, setLocalProcessing] = useState(false);
+  const [isProcessingFinished, setIsProcessingFinished] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -102,12 +100,24 @@ const UploadPage = () => {
     processFile(droppedFile);
   };
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const handleProcessWithOpenAI = async () => {
     await processInvoice('openai');
   };
 
   const handleProcessWithPrivacy = async () => {
     await processInvoice('privacy');
+  };
+
+  const handleCancelOpenAI = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setShowProgressModal(false);
+    setLocalProcessing(false);
+    setIsProcessingFinished(false);
   };
 
   const processInvoice = async (type: 'openai' | 'privacy') => {
@@ -139,12 +149,17 @@ const UploadPage = () => {
         endpoint = '/api/proxy/process-invoice';
         processingMethod = 'privacy';
         formData.append('processor', 'privacy');
+      } else {
+        // Create new AbortController for OpenAI request
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
       }
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
+        signal: type === 'openai' ? abortControllerRef.current?.signal : undefined,
       });
 
       const rawText = await res.text();
@@ -188,12 +203,20 @@ const UploadPage = () => {
       sessionStorage.setItem('extraction_method', type);
       sessionStorage.setItem('extraction_time', extractionTime.toString());
 
+      sessionStorage.setItem('extraction_time', extractionTime.toString());
+
+      setIsProcessingFinished(true);
+
       setTimeout(() => {
-        setShowProgressModal(false);
-        window.location.href = '/edit';
-      }, 1000);
+        router.push('/edit');
+      }, 1500);
 
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Processing cancelled');
+        return;
+      }
+
       if (type === 'privacy') {
         setShowPrivacyProgressModal(false);
       } else {
@@ -256,11 +279,9 @@ const UploadPage = () => {
             <div className="w-full max-w-md">
               <label
                 htmlFor="file-upload"
-                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${
-                  isDragging ? 'border-green-500 bg-green-500/10' : 'border-zinc-700 bg-zinc-800/50'
-                } rounded-xl backdrop-blur-sm hover:border-green-500/50 transition-colors cursor-pointer group ${
-                  isOperationInProgress ? 'opacity-50 pointer-events-none' : ''
-                }`}
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${isDragging ? 'border-green-500 bg-green-500/10' : 'border-zinc-700 bg-zinc-800/50'
+                  } rounded-xl backdrop-blur-sm hover:border-green-500/50 transition-colors cursor-pointer group ${isOperationInProgress ? 'opacity-50 pointer-events-none' : ''
+                  }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -314,9 +335,8 @@ const UploadPage = () => {
                   <button
                     onClick={handleProcessWithOpenAI}
                     disabled={isOperationInProgress}
-                    className={`px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
-                      isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                    } min-h-[80px]`}
+                    className={`px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${isOperationInProgress ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      } min-h-[80px]`}
                   >
                     Extract with OpenAI
                     <span className="text-sm px-3 py-1 bg-green-700 rounded">Cloud</span>
@@ -331,9 +351,8 @@ const UploadPage = () => {
                   <button
                     onClick={handleProcessWithPrivacy}
                     disabled={isOperationInProgress || !isPrivacyModeAvailable}
-                    className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${
-                      isOperationInProgress || !isPrivacyModeAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                    } min-h-[80px]`}
+                    className={`px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg flex flex-col items-center justify-center gap-2 transition ${isOperationInProgress || !isPrivacyModeAvailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      } min-h-[80px]`}
                     title={!isPrivacyModeAvailable ? 'Privacy mode is currently offline' : ''}
                   >
                     {isCheckingPrivacy ? (
@@ -362,11 +381,15 @@ const UploadPage = () => {
         <Footer />
       </main>
 
-      <ProgressModal
-        isOpen={showProgressModal}
-        processingType="image"
-        onClose={() => setShowProgressModal(false)}
-      />
+      {showProgressModal && (
+        <ProgressModal
+          isOpen={showProgressModal}
+          onClose={() => setShowProgressModal(false)}
+          processingType="image"
+          isFinished={isProcessingFinished}
+          onCancel={handleCancelOpenAI}
+        />
+      )}
 
       <PrivacyProgressModal
         isOpen={showPrivacyProgressModal}

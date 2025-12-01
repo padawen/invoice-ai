@@ -9,7 +9,9 @@ import slugify from "slugify";
 import BackButton from "../components/BackButton";
 import DeleteModal from "../components/modals/DeleteModal";
 import Footer from "../components/Footer";
+
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { Skeleton } from "../components/ui/Skeleton";
 
 interface Project {
   id: string;
@@ -25,10 +27,10 @@ interface ExtractionStats {
 export default function DashboardPage() {
   const user = useUser();
   const router = useRouter();
-  
+
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-  
+
   useEffect(() => {
     if (!supabaseRef.current) {
       const client = createSupabaseBrowserClient();
@@ -38,7 +40,7 @@ export default function DashboardPage() {
       }
     }
   }, []);
-  
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState<{ id: string; name: string } | null>(null);
@@ -57,32 +59,54 @@ export default function DashboardPage() {
 
       if (user && supabase) {
         try {
-          const { data, error } = await supabase.from("projects").select("id, name");
-          if (error) {
-            console.error("Error fetching projects:", error);
+          const { data: projectsData, error: projectsError } = await supabase
+            .from("projects")
+            .select("id, name");
+
+          if (projectsError) {
+            console.error("Error fetching projects:", projectsError);
             return;
           }
-          if (data) {
-            setProjects(data);
 
-            const stats: Record<string, ExtractionStats> = {};
-            for (const project of data) {
-              const { data: processedData } = await supabase
+          if (projectsData) {
+            setProjects(projectsData);
+
+            // Optimization: Fetch all processed data for these projects in one query
+            // instead of looping through each project (N+1 problem)
+            const projectIds = projectsData.map(p => p.id);
+
+            if (projectIds.length > 0) {
+              const { data: allStats, error: statsError } = await supabase
                 .from("processed_data")
-                .select("extraction_method")
-                .eq("project_id", project.id);
+                .select("project_id, extraction_method")
+                .in("project_id", projectIds);
 
-              if (processedData) {
-                const openaiCount = processedData.filter(item => item.extraction_method === 'openai').length;
-                const privacyCount = processedData.filter(item => item.extraction_method === 'privacy').length;
-                stats[project.id] = {
-                  openai: openaiCount,
-                  privacy: privacyCount,
-                  total: processedData.length
-                };
+              if (statsError) {
+                console.error("Error fetching stats:", statsError);
+              } else if (allStats) {
+                // Aggregate stats in memory
+                const stats: Record<string, ExtractionStats> = {};
+
+                // Initialize stats for all projects
+                projectsData.forEach(p => {
+                  stats[p.id] = { openai: 0, privacy: 0, total: 0 };
+                });
+
+                // Count items
+                allStats.forEach(item => {
+                  if (stats[item.project_id]) {
+                    stats[item.project_id].total++;
+                    if (item.extraction_method === 'openai') {
+                      stats[item.project_id].openai++;
+                    } else if (item.extraction_method === 'privacy') {
+                      stats[item.project_id].privacy++;
+                    }
+                  }
+                });
+
+                setProjectStats(stats);
               }
             }
-            setProjectStats(stats);
           }
         } catch (err) {
           console.error("Failed to fetch projects:", err);
@@ -129,7 +153,43 @@ export default function DashboardPage() {
   };
 
   if (loading || !authInitialized) {
-    return <div className="p-8 text-center text-zinc-400">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white select-none pb-16">
+        <div className="max-w-5xl mx-auto py-12 px-4">
+          <div className="flex flex-col items-center justify-center mb-10">
+            <div className="w-full flex items-center justify-between mb-4">
+              <div className="w-24" /> {/* Placeholder for BackButton alignment */}
+              <div className="flex-1 flex justify-center">
+                <Skeleton className="h-10 w-48" />
+              </div>
+              <div className="w-24" />
+            </div>
+            <div className="w-full border-b border-zinc-700/60 mb-6" />
+          </div>
+
+          <div className="bg-zinc-900/70 rounded-2xl shadow-2xl p-8 border border-zinc-800">
+            <div className="flex items-center mb-8">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="ml-3 h-6 w-24 rounded-full" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="aspect-square rounded-xl bg-zinc-800/30 border border-zinc-700/30 p-6 flex flex-col gap-4">
+                  <Skeleton className="h-8 w-3/4" />
+                  <div className="flex-1" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -167,7 +227,7 @@ export default function DashboardPage() {
                   {projects.length} {projects.length === 1 ? 'project' : 'projects'}
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
                 {projects.map(({ id, name }) => {
                   const slug = slugify(name, { lower: true, strict: true });

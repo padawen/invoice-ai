@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server, Upload, X, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import type { TimeEstimationResponse } from '@/app/types/api';
 
@@ -39,6 +40,7 @@ interface ProgressData {
 }
 
 const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps) => {
+  const router = useRouter();
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -47,18 +49,13 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
   const [isCancelling, setIsCancelling] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const processingStartTimeRef = useRef<number | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(() => createSupabaseBrowserClient());
   const [timeEstimation, setTimeEstimation] = useState<TimeEstimationResponse | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const timeEstimationRef = useRef<TimeEstimationResponse | null>(null);
 
-  useEffect(() => {
-    const client = createSupabaseBrowserClient();
-    if (client) setSupabase(client);
-  }, []);
-
   const stages: ProcessingStage[] = useMemo(() => {
-    // Use estimated durations if available, otherwise use defaults
     if (timeEstimation) {
       return [
         {
@@ -142,7 +139,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
   }, [timeEstimation]);
 
 
-  // Determine active sub-stage based on backend message
   const activeSubStage = useMemo(() => {
     if (!progressData || progressData.stage !== 'llm') {
       return null;
@@ -159,7 +155,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     return null;
   }, [progressData]);
 
-  // Fetch time estimation when modal opens
   useEffect(() => {
     if (!isOpen || !file || timeEstimation || isEstimating) {
       return;
@@ -192,7 +187,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         }
       } catch (err) {
         console.error('Failed to fetch time estimation:', err);
-        // Don't show error to user, just use default durations
       } finally {
         setIsEstimating(false);
       }
@@ -200,6 +194,17 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
     fetchEstimation();
   }, [isOpen, file, timeEstimation, isEstimating, supabase]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !jobId) {
@@ -244,21 +249,17 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           const stageIndex = stageToIndex[data.stage as keyof typeof stageToIndex] ?? 0;
           setCurrentStageIndex(stageIndex);
 
-          // Calculate progress and time remaining based on elapsed time vs estimated time
           if (startTimeRef.current) {
             const elapsed = (Date.now() - startTimeRef.current) / 1000;
 
             if (timeEstimationRef.current) {
-              // Calculate progress based on elapsed time vs estimated total time
               const estimatedTotal = timeEstimationRef.current.estimated_time_seconds;
               const calculatedProgress = Math.min((elapsed / estimatedTotal) * 100, 99);
               setProgress(calculatedProgress);
 
-              // Calculate remaining time
               const remaining = Math.max(estimatedTotal - elapsed, 0);
               setTimeRemaining(remaining);
             } else {
-              // Fall back to backend progress if no estimation available
               setProgress(data.progress);
 
               if (data.progress > 5) {
@@ -278,6 +279,33 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           const data: { result: unknown } = JSON.parse(event.data);
           eventSource.close();
 
+          setProgress(100);
+          setCurrentStageIndex(stages.length - 1);
+          setProgressData(prev => {
+            if (!prev) return {
+              id: 'completed',
+              filename: file?.name || 'unknown',
+              status: 'completed',
+              progress: 100,
+              stage: 'postprocess',
+              message: 'Processing complete!',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              stages: {
+                upload: { progress: 100, status: 'completed' },
+                ocr: { progress: 100, status: 'completed' },
+                llm: { progress: 100, status: 'completed' },
+                postprocess: { progress: 100, status: 'completed' }
+              }
+            };
+            return {
+              ...prev,
+              status: 'completed',
+              message: 'Processing complete!',
+              progress: 100
+            };
+          });
+
           const saveResultAndRedirect = async () => {
             const endTime = Date.now();
             const extractionTime = processingStartTimeRef.current
@@ -293,8 +321,8 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
             sessionStorage.setItem('extraction_time', extractionTime.toString());
 
             setTimeout(() => {
-              window.location.href = '/edit';
-            }, 1000);
+              router.push('/edit');
+            }, 1500);
           };
 
           saveResultAndRedirect();
@@ -326,7 +354,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
     return () => {
       eventSourcePromise.then(es => es.close());
     };
-  }, [isOpen, jobId, supabase, file]);
+  }, [isOpen, jobId, supabase, file, router, stages.length]);
 
   const handleCancel = async () => {
     if (!jobId || isCancelling) return;
@@ -349,7 +377,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       });
 
       if (response.ok) {
-        window.location.href = '/upload';
+        router.push('/upload');
       } else {
         const errorText = await response.text();
         console.error('Cancel failed:', errorText);
@@ -375,7 +403,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none">
       <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-2xl border border-blue-700/50 p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -447,13 +475,13 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
             <div>
               <h3 className="text-white font-semibold">
                 {error ? 'Processing Error' :
-                 progressData?.status === 'completed' ? 'Processing Complete' :
-                 stages[currentStageIndex]?.name || 'Processing'}
+                  progressData?.status === 'completed' ? 'Processing Complete' :
+                    stages[currentStageIndex]?.name || 'Processing'}
               </h3>
               <p className="text-zinc-400 text-sm">
                 {error ? error :
-                 progressData?.message ||
-                 stages[currentStageIndex]?.description}
+                  progressData?.message ||
+                  stages[currentStageIndex]?.description}
               </p>
             </div>
           </div>
@@ -461,17 +489,14 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
 
         <div className="space-y-3">
           {stages.map((stage, index) => {
-            // Skip LLM parent stage if we have sub-stages
             if (stage.id === 'llm' && timeEstimation) {
               return null;
             }
 
-            // Determine stage status
             let isCompleted = false;
             let isCurrent = false;
 
             if (stage.isSubStage) {
-              // Sub-stage logic
               const llmCompleted = currentStageIndex > 2;
               if (stage.id === 'metadata') {
                 isCompleted = activeSubStage === 'items' || llmCompleted;
@@ -481,7 +506,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
                 isCurrent = activeSubStage === 'items';
               }
             } else {
-              // Main stage logic
               const stageData = progressData?.stages?.[stage.id as keyof typeof progressData.stages];
               isCompleted = stageData?.status === 'completed' || index < currentStageIndex;
               isCurrent = index === currentStageIndex && progressData?.status !== 'completed';
@@ -492,29 +516,25 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
             return (
               <div
                 key={stage.id}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                  stage.isSubStage ? 'ml-11' : ''
-                } ${
-                  hasError
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${stage.isSubStage ? 'ml-11' : ''
+                  } ${hasError
                     ? 'bg-red-500/10 border border-red-500/20'
                     : isCompleted
-                    ? 'bg-green-500/10 border border-green-500/20'
-                    : isCurrent
-                    ? 'bg-cyan-500/10 border border-cyan-500/20'
-                    : 'bg-zinc-800/50 border border-zinc-700/50'
-                }`}
+                      ? 'bg-green-500/10 border border-green-500/20'
+                      : isCurrent
+                        ? 'bg-cyan-500/10 border border-cyan-500/20'
+                        : 'bg-zinc-800/50 border border-zinc-700/50'
+                  }`}
               >
-                <div className={`flex items-center justify-center ${
-                  stage.isSubStage ? 'w-6 h-6' : 'w-8 h-8'
-                } rounded-full ${
-                  hasError
+                <div className={`flex items-center justify-center ${stage.isSubStage ? 'w-6 h-6' : 'w-8 h-8'
+                  } rounded-full ${hasError
                     ? 'bg-red-500/20 text-red-400'
                     : isCompleted
-                    ? 'bg-green-500/20 text-green-400'
-                    : isCurrent
-                    ? 'bg-cyan-500/20 text-cyan-400'
-                    : 'bg-zinc-700/50 text-zinc-500'
-                }`}>
+                      ? 'bg-green-500/20 text-green-400'
+                      : isCurrent
+                        ? 'bg-cyan-500/20 text-cyan-400'
+                        : 'bg-zinc-700/50 text-zinc-500'
+                  }`}>
                   {hasError ? (
                     <AlertCircle className={stage.isSubStage ? 'w-3 h-3' : 'w-4 h-4'} />
                   ) : isCompleted ? (
@@ -526,21 +546,19 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
                   )}
                 </div>
                 <div className="flex-1">
-                  <span className={`${stage.isSubStage ? 'text-xs' : 'text-sm'} font-medium ${
-                    hasError
-                      ? 'text-red-400'
-                      : isCompleted
+                  <span className={`${stage.isSubStage ? 'text-xs' : 'text-sm'} font-medium ${hasError
+                    ? 'text-red-400'
+                    : isCompleted
                       ? 'text-green-400'
                       : isCurrent
-                      ? 'text-cyan-400'
-                      : 'text-zinc-500'
-                  }`}>
+                        ? 'text-cyan-400'
+                        : 'text-zinc-500'
+                    }`}>
                     {stage.name}
                   </span>
                   {stage.id === 'ocr' && timeEstimation && (isCompleted || isCurrent) && (
-                    <div className={`text-xs mt-1 ${
-                      isCompleted ? 'text-green-400' : 'text-cyan-400'
-                    }`}>
+                    <div className={`text-xs mt-1 ${isCompleted ? 'text-green-400' : 'text-cyan-400'
+                      }`}>
                       {timeEstimation.char_count.toLocaleString()} characters extracted
                     </div>
                   )}
@@ -563,35 +581,52 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="mt-4 flex justify-center">
-          {/* Stop button - only show if processing and not completed/errored */}
           {progressData?.status === 'processing' && !error && (
-            <button
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className={`px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition ${
-                isCancelling ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-              }`}
-            >
-              {isCancelling ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Stopping...
-                </>
-              ) : (
-                <>
-                  <X className="w-4 h-4" />
-                  Stop Processing
-                </>
-              )}
-            </button>
+            showCancelConfirmation ? (
+              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <span className="text-sm text-zinc-300">Are you sure?</span>
+                <button
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-2"
+                >
+                  {isCancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  Yes, Stop
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirmation(false)}
+                  disabled={isCancelling}
+                  className="px-4 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-xs font-medium transition cursor-pointer"
+                >
+                  No, Continue
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCancelConfirmation(true)}
+                disabled={isCancelling}
+                className={`px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition ${isCancelling ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4" />
+                    Stop Processing
+                  </>
+                )}
+              </button>
+            )
           )}
 
-          {/* Close button - show when there's an error or processing is cancelled (NOT when completed) */}
           {(error || progressData?.status === 'error') && (
             <button
-              onClick={() => window.location.href = '/upload'}
+              onClick={() => router.push('/upload')}
               className="px-6 py-2 bg-zinc-600 hover:bg-zinc-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition cursor-pointer"
             >
               <X className="w-4 h-4" />

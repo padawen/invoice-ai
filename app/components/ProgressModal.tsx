@@ -1,114 +1,103 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Loader2, FileText, Image as ImageIcon, Brain, CheckCircle } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Loader2, FileText, Image as ImageIcon, Brain, CheckCircle, X } from 'lucide-react';
 
 interface ProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
   processingType: 'image';
+  isFinished?: boolean;
+  onCancel?: () => void;
 }
 
 interface ProcessingStage {
   id: string;
   name: string;
   icon: React.ReactNode;
-  duration: number;
   description: string;
 }
 
-const ProgressModal = ({ isOpen }: ProgressModalProps) => {
+const ProgressModal = ({ isOpen, isFinished = false, onCancel }: ProgressModalProps) => {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const startTimeRef = useRef<number | null>(null);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
   const stages: ProcessingStage[] = useMemo(() => [
     {
       id: 'upload',
       name: 'Uploading PDF',
       icon: <FileText className="w-5 h-5" />,
-      duration: 3,
       description: 'Uploading and validating PDF file...'
     },
     {
       id: 'render',
       name: 'Rendering PDF',
       icon: <ImageIcon className="w-5 h-5" />,
-      duration: 10,
       description: 'Converting PDF pages to high-quality images...'
     },
     {
       id: 'analyze',
       name: 'AI Analysis',
       icon: <Brain className="w-5 h-5" />,
-      duration: 15,
       description: 'OpenAI is analyzing the invoice content...'
     },
     {
       id: 'complete',
       name: 'Processing Complete',
       icon: <CheckCircle className="w-5 h-5" />,
-      duration: 2,
       description: 'Finalizing results and preparing data...'
     }
   ], []);
 
-  const totalDuration = useMemo(() => stages.reduce((sum, stage) => sum + stage.duration, 0), [stages]);
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
       setCurrentStageIndex(0);
       setProgress(0);
-      setTimeRemaining(0);
-      startTimeRef.current = null;
       return;
     }
 
-    startTimeRef.current = Date.now();
-
     const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = startTimeRef.current ? (now - startTimeRef.current) / 1000 : 0;
-
-      let cumulativeTime = 0;
-      let newStageIndex = 0;
-
-      for (let i = 0; i < stages.length; i++) {
-        if (elapsed >= cumulativeTime && elapsed < cumulativeTime + stages[i].duration) {
-          newStageIndex = i;
-          break;
+      setProgress(prev => {
+        if (isFinished) {
+          setCurrentStageIndex(3);
+          return 100;
         }
-        cumulativeTime += stages[i].duration;
-        if (i === stages.length - 1) {
-          newStageIndex = stages.length - 1;
-        }
-      }
 
-      setCurrentStageIndex(newStageIndex);
+        const target = 95;
+        const remaining = target - prev;
 
-      const overallProgress = Math.min((elapsed / totalDuration) * 100, 100);
-      setProgress(overallProgress);
+        const increment = (remaining * 0.015) + 0.05 + (Math.random() * 0.1);
 
-      const remaining = Math.max(totalDuration - elapsed, 0);
-      setTimeRemaining(remaining);
+        const newProgress = Math.min(prev + increment, 95);
 
-    }, 100);
+        if (newProgress < 25) setCurrentStageIndex(0);
+        else if (newProgress < 50) setCurrentStageIndex(1);
+        else if (newProgress < 90) setCurrentStageIndex(2);
+        else setCurrentStageIndex(2);
+
+        return newProgress;
+      });
+    }, 200);
 
     return () => clearInterval(interval);
-  }, [isOpen, totalDuration, stages]);
+  }, [isOpen, isFinished]);
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) {
-      return `${Math.ceil(seconds)}s`;
-    }
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.ceil(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
-  };
+
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none">
       <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-800 p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-white mb-2">Processing Invoice</h2>
@@ -132,10 +121,10 @@ const ProgressModal = ({ isOpen }: ProgressModalProps) => {
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-zinc-500">
-              {timeRemaining > 0 ? `~${formatTime(timeRemaining)} remaining` : 'Almost done...'}
+              Processing...
             </span>
             <span className="text-xs text-zinc-500">
-              {formatTime(totalDuration)} total
+              Please wait
             </span>
           </div>
         </div>
@@ -164,21 +153,19 @@ const ProgressModal = ({ isOpen }: ProgressModalProps) => {
           {stages.map((stage, index) => (
             <div
               key={stage.id}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                index < currentStageIndex
-                  ? 'bg-green-500/10 border border-green-500/20'
-                  : index === currentStageIndex
+              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${index < currentStageIndex
+                ? 'bg-green-500/10 border border-green-500/20'
+                : index === currentStageIndex
                   ? 'bg-blue-500/10 border border-blue-500/20'
                   : 'bg-zinc-800/50 border border-zinc-700/50'
-              }`}
+                }`}
             >
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                index < currentStageIndex
-                  ? 'bg-green-500/20 text-green-400'
-                  : index === currentStageIndex
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${index < currentStageIndex
+                ? 'bg-green-500/20 text-green-400'
+                : index === currentStageIndex
                   ? 'bg-blue-500/20 text-blue-400'
                   : 'bg-zinc-700/50 text-zinc-500'
-              }`}>
+                }`}>
                 {index < currentStageIndex ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : index === currentStageIndex ? (
@@ -187,13 +174,12 @@ const ProgressModal = ({ isOpen }: ProgressModalProps) => {
                   stage.icon
                 )}
               </div>
-              <span className={`text-sm font-medium ${
-                index < currentStageIndex
-                  ? 'text-green-400'
-                  : index === currentStageIndex
+              <span className={`text-sm font-medium ${index < currentStageIndex
+                ? 'text-green-400'
+                : index === currentStageIndex
                   ? 'text-blue-400'
                   : 'text-zinc-500'
-              }`}>
+                }`}>
                 {stage.name}
               </span>
             </div>
@@ -205,6 +191,36 @@ const ProgressModal = ({ isOpen }: ProgressModalProps) => {
             AI is extracting structured data from your invoice
           </p>
         </div>
+
+        {!isFinished && onCancel && (
+          <div className="mt-4 flex justify-center">
+            {showCancelConfirmation ? (
+              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <span className="text-sm text-zinc-300">Are you sure?</span>
+                <button
+                  onClick={onCancel}
+                  className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-medium transition cursor-pointer"
+                >
+                  Yes, Stop
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirmation(false)}
+                  className="px-4 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-xs font-medium transition cursor-pointer"
+                >
+                  No, Continue
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCancelConfirmation(true)}
+                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium text-sm shadow-lg flex items-center gap-2 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                Stop Processing
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

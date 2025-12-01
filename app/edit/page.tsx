@@ -10,29 +10,22 @@ import { AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { EditableInvoice } from '../types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import slugify from 'slugify';
+import { Skeleton } from '../components/ui/Skeleton';
 
-let clientSideSupabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
+
 
 const EditPage = () => {
   const router = useRouter();
   const projectSelectorRef = useRef<ProjectSelectorRef>(null);
-  
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
+
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(() => createSupabaseBrowserClient());
   const [expandedView, setExpandedView] = useState(false);
   const itemsContainerRef = useRef<HTMLDivElement>(null);
   const stickyContainerRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!clientSideSupabase) {
-      const client = createSupabaseBrowserClient();
-      if (client) {
-        clientSideSupabase = client;
-        setSupabase(client);
-      }
-    }
-  }, []);
-  
+
+
   const [fields, setFields] = useState<EditableInvoice | null>(null);
   const [project, setProject] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
@@ -97,9 +90,9 @@ const EditPage = () => {
   useEffect(() => {
     if (error && errorRef.current) {
       setTimeout(() => {
-        errorRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        errorRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
         errorRef.current?.classList.add('animate-pulse');
         setTimeout(() => {
@@ -130,41 +123,41 @@ const EditPage = () => {
     setLocalProcessing(true);
     setError(null);
     setSaveSuccess(false);
-  
+
     try {
       if (!supabase) {
         alert('This is a demo mode - your data is not actually being saved to a database.');
         sessionStorage.removeItem('openai_json');
         sessionStorage.removeItem('pdf_base64');
-        
+
         setSaveSuccess(true);
         setIsSaving(false);
         setLocalProcessing(false);
-        
+
         setTimeout(() => {
           router.push('/dashboard');
         }, 1500);
         return;
       }
-  
+
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-  
+
       if (!token) {
         alert('This is a demo mode - your data is not actually being saved to a database.');
         sessionStorage.removeItem('openai_json');
         sessionStorage.removeItem('pdf_base64');
-        
+
         setSaveSuccess(true);
         setIsSaving(false);
         setLocalProcessing(false);
-        
+
         setTimeout(() => {
           router.push('/dashboard');
         }, 1500);
         return;
       }
-  
+
       const response = await fetch('/api/saveProcessedData', {
         method: 'POST',
         headers: {
@@ -176,7 +169,7 @@ const EditPage = () => {
           project
         }),
       });
-  
+
       if (!response.ok) {
         try {
           const errorData = await response.json();
@@ -185,16 +178,16 @@ const EditPage = () => {
           throw new Error(`Failed to save: ${response.statusText}`);
         }
       }
-      
+
       await response.json();
-      
+
       sessionStorage.removeItem('openai_json');
       sessionStorage.removeItem('pdf_base64');
-      
+
       setSaveSuccess(true);
       setIsSaving(false);
       setLocalProcessing(false);
-      
+
       setTimeout(() => {
         const projectSlug = slugify(project, { lower: true, strict: true });
         router.push(`/projects/${projectSlug}`);
@@ -209,7 +202,7 @@ const EditPage = () => {
   const toggleExpandedView = () => {
     setExpandedView(!expandedView);
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white py-8 px-4">
       <div className="max-w-[1600px] mx-auto">
@@ -226,16 +219,16 @@ const EditPage = () => {
             <span className="hidden sm:inline">{expandedView ? "Show Preview" : "Full Edit View"}</span>
           </button>
         </div>
-        
+
         <div className="flex flex-col xl:flex-row gap-8 items-start">
           {!expandedView && (
-            <div 
+            <div
               ref={stickyContainerRef}
               className="xl:sticky xl:top-8 w-full xl:w-1/3 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 shadow-xl overflow-hidden transition-all"
               style={{ height: 'calc(100vh - 120px)' }}
             >
-              {pdfUrl ? 
-                <PdfPreviewFrame src={pdfUrl} /> : 
+              {pdfUrl ?
+                <PdfPreviewFrame src={pdfUrl} /> :
                 <div className="h-full w-full flex items-center justify-center text-zinc-500">
                   No PDF preview
                 </div>
@@ -250,7 +243,7 @@ const EditPage = () => {
                 <span>{error}</span>
               </div>
             )}
-            
+
             {saveSuccess && (
               <div className="py-3 px-4 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-center text-lg">
                 Changes saved successfully!
@@ -265,10 +258,40 @@ const EditPage = () => {
                   onChangesCountUpdate={setUserChangesCount}
                 />
               ) : (
-                <div className="text-center py-12 text-zinc-400">Loading invoice data...</div>
+                <div className="space-y-6">
+                  {/* Seller Section Skeleton */}
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  </div>
+
+                  {/* Buyer Section Skeleton */}
+                  <div className="space-y-4 pt-4 border-t border-zinc-700/50">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  </div>
+
+                  {/* Items Section Skeleton */}
+                  <div className="space-y-4 pt-4 border-t border-zinc-700/50">
+                    <Skeleton className="h-8 w-32" />
+                    <div className="space-y-3">
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-            
+
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-6 sm:p-8">
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="flex-1">
@@ -278,7 +301,7 @@ const EditPage = () => {
                     <ProjectSelector onSelect={setProject} isDemo={!supabase} ref={projectSelectorRef} />
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-center md:justify-end">
                   <SaveButton
                     isSaving={isSaving}

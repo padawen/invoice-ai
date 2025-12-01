@@ -7,8 +7,8 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import ProjectCreator from './ProjectCreator';
 import ProjectList from './ProjectList';
 
-interface ProjectModalProps { 
-  isOpen: boolean; 
+interface ProjectModalProps {
+  isOpen: boolean;
   onClose: () => void;
   onSelect: (project: string) => void;
   selectedProject: string;
@@ -59,7 +59,7 @@ const ProjectModal = ({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = ''; 
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
@@ -68,7 +68,7 @@ const ProjectModal = ({
       const focusableElements = modalRef.current.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-      
+
       if (focusableElements.length > 0) {
         (focusableElements[0] as HTMLElement).focus();
       }
@@ -133,15 +133,15 @@ const ProjectModal = ({
     }
   };
 
-  const filteredProjects = existingProjects.filter(p => 
+  const filteredProjects = existingProjects.filter(p =>
     p.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!mounted || !isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all">
-      <div 
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all select-none">
+      <div
         ref={modalRef}
         className={`w-[95%] max-w-md max-h-[85vh] bg-zinc-900 rounded-xl border ${isDemo ? 'border-amber-500/30' : 'border-zinc-800'} shadow-2xl transform`}
         style={{ animation: 'modal-pop 0.25s ease-out' }}
@@ -153,7 +153,7 @@ const ProjectModal = ({
             <span className="text-sm font-medium">Demo Mode</span>
           </div>
         )}
-        
+
         {isCreating ? (
           <ProjectCreator
             onCancel={() => {
@@ -227,7 +227,7 @@ const ProjectModal = ({
           </div>
         )}
       </div>
-      
+
       {error && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[101] flex items-center gap-2 text-red-400 bg-zinc-900 border border-red-500/30 px-4 py-3 rounded-lg">
           <AlertCircle size={18} />
@@ -241,7 +241,7 @@ const ProjectModal = ({
           <span>Project selected successfully!</span>
         </div>
       )}
-      
+
       <style jsx global>{`
         @keyframes modal-pop {
           0% {

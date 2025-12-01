@@ -21,21 +21,21 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
 
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden'; 
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = ''; 
+      document.body.style.overflow = '';
     }
-    
+
     return () => {
-      document.body.style.overflow = ''; 
+      document.body.style.overflow = '';
     };
   }, [open]);
 
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all">
-      <div 
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all select-none">
+      <div
         className="bg-zinc-900 rounded-xl shadow-2xl p-8 max-w-md w-[95%] border border-zinc-800 transform"
         style={{ animation: 'modal-pop 0.25s ease-out' }}
         onClick={(e) => e.stopPropagation()}
@@ -57,7 +57,7 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
           </button>
         </div>
       </div>
-      
+
       <style jsx global>{`
         @keyframes modal-pop {
           0% {

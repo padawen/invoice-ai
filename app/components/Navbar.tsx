@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Menu, X, LogOut, User, Loader2 } from 'lucide-react';
 import { Geist } from 'next/font/google';
 import { useUser } from '../providers';
@@ -16,25 +16,24 @@ interface NavbarProps {
 
 const Navbar = ({ isProcessing = false }: NavbarProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const user = useUser();
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-
-  useEffect(() => {
+  const [supabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(() => {
     if (typeof window !== 'undefined') {
-      const client = createSupabaseBrowserClient();
-      if (client) setSupabase(client);
+      return createSupabaseBrowserClient();
     }
-  }, []);
+    return null;
+  });
 
   const handleLogin = () => {
-    window.location.href = '/auth/login';
+    router.push('/auth/login');
   };
 
   const handleLogout = async () => {
     if (supabase) {
       await supabase.auth.signOut();
-      window.location.href = '/';
+      router.push('/');
     }
   };
 
@@ -47,9 +46,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
   const LinkItem = ({ href, label }: { href: string; label: string }) => (
     <Link
       href={href}
-      className={`text-lg font-semibold transition-colors ${
-        pathname === href ? 'text-green-400' : 'text-zinc-200 hover:text-green-400'
-      } ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}
+      className={`text-lg font-semibold transition-colors ${pathname === href ? 'text-green-400' : 'text-zinc-200 hover:text-green-400'
+        } ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}
       onClick={() => setOpen(false)}
       aria-disabled={isProcessing}
       tabIndex={isProcessing ? -1 : 0}
@@ -67,9 +65,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className={`text-3xl font-extrabold tracking-tight bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent hover:from-green-300 hover:to-emerald-400 transition ${geistSans.className} ${
-                isProcessing ? 'pointer-events-none' : ''
-              }`}
+              className={`text-3xl font-extrabold tracking-tight bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent hover:from-green-300 hover:to-emerald-400 transition ${geistSans.className} ${isProcessing ? 'pointer-events-none' : ''
+                }`}
               style={{ letterSpacing: '-0.04em' }}
               aria-disabled={isProcessing}
               tabIndex={isProcessing ? -1 : 0}
@@ -98,9 +95,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                 <button
                   onClick={handleLogout}
                   disabled={isProcessing}
-                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
-                    isProcessing ? 'opacity-50 pointer-events-none' : ''
-                  }`}
+                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${isProcessing ? 'opacity-50 pointer-events-none' : ''
+                    }`}
                 >
                   <LogOut size={18} />
                   <span>Logout</span>
@@ -110,9 +106,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
               <button
                 onClick={handleLogin}
                 disabled={isProcessing}
-                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
-                  isProcessing ? 'opacity-50 pointer-events-none' : ''
-                }`}
+                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${isProcessing ? 'opacity-50 pointer-events-none' : ''
+                  }`}
               >
                 Login with Google
               </button>
@@ -146,9 +141,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                     setOpen(false);
                   }}
                   disabled={isProcessing}
-                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
-                    isProcessing ? 'opacity-50 pointer-events-none' : ''
-                  }`}
+                  className={`flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${isProcessing ? 'opacity-50 pointer-events-none' : ''
+                    }`}
                 >
                   <LogOut size={18} />
                   <span>Logout</span>
@@ -161,9 +155,8 @@ const Navbar = ({ isProcessing = false }: NavbarProps) => {
                   setOpen(false);
                 }}
                 disabled={isProcessing}
-                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${
-                  isProcessing ? 'opacity-50 pointer-events-none' : ''
-                }`}
+                className={`bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white px-6 py-2 rounded-lg text-base font-medium shadow-lg transition cursor-pointer ${isProcessing ? 'opacity-50 pointer-events-none' : ''
+                  }`}
               >
                 Login with Google
               </button>

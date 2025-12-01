@@ -20,23 +20,23 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
   const [selectedProject, setSelectedProject] = useState(initialProject);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   useImperativeHandle(ref, () => ({
     openProjectModal: () => setIsModalOpen(true)
   }));
-  
+
   const fetchProjects = async () => {
     try {
       const supabase = createSupabaseBrowserClient();
-      
+
       if (!supabase) {
         setError('Failed to initialize Supabase client');
         return;
       }
-      
+
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      
+
       if (!token) return;
 
       const res = await fetch('/api/project', {
@@ -54,7 +54,7 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
       setError('Failed to load projects.');
     }
   };
-  
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -68,14 +68,14 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
   const handleSelectProject = async (project: string) => {
     setSelectedProject(project);
     onSelect(project);
-    
+
     if (!projects.includes(project)) {
       await fetchProjects();
     }
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full select-none">
       {projects.length === 0 ? (
         <button
           onClick={() => setIsModalOpen(true)}
@@ -87,9 +87,8 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
       ) : (
         <div
           onClick={() => setIsModalOpen(true)}
-          className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${
-            isDemo ? 'border-amber-500/50 hover:border-amber-400/70' : 'border-zinc-700 hover:border-green-500/50'
-          } text-white cursor-pointer shadow-md transition-all group`}
+          className={`flex items-center justify-between w-full pl-5 pr-5 py-4 rounded-xl bg-zinc-900 border ${isDemo ? 'border-amber-500/50 hover:border-amber-400/70' : 'border-zinc-700 hover:border-green-500/50'
+            } text-white cursor-pointer shadow-md transition-all group`}
           title={isDemo ? "Demo Mode - Project selection is for demonstration purposes only" : "Select a project"}
         >
           <div className="flex items-center gap-3">
@@ -110,8 +109,8 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
         </div>
       )}
 
-      <ProjectModal 
-        isOpen={isModalOpen} 
+      <ProjectModal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectProject}
         selectedProject={selectedProject}
@@ -125,7 +124,7 @@ const ProjectSelector = forwardRef<ProjectSelectorRef, Props>(({ onSelect, initi
           <span>{error}</span>
         </div>
       )}
-      
+
       {isDemo && (
         <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-xs text-amber-400 text-center">
           Demo mode - project selection is for demonstration only
