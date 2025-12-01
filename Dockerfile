@@ -33,7 +33,7 @@ RUN pnpm run build && pnpm prune --prod
 
 # ---------- Runner with Playwright ----------
 
-FROM mcr.microsoft.com/playwright:v1.52.0-jammy AS runner
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0

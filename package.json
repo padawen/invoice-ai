@@ -16,7 +16,7 @@
     "lucide-react": "^0.503.0",
     "next": "^15.5.4",
     "openai": "^4.98.0",
-    "playwright": "^1.52.0",
+    "playwright": "1.57.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "slugify": "^1.6.6"
