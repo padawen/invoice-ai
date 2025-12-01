@@ -7,7 +7,7 @@ WORKDIR /app
 RUN corepack enable
 
 COPY .npmrc package.json pnpm-lock.yaml* ./
-RUN pnpm i --frozen-lockfile
+RUN pnpm i --frozen-lockfile && pnpm rebuild sharp
 
 # ---------- Builder ----------
 
