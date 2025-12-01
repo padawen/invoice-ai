@@ -150,7 +150,6 @@ const UploadPage = () => {
         processingMethod = 'privacy';
         formData.append('processor', 'privacy');
       } else {
-        // Create new AbortController for OpenAI request
         const controller = new AbortController();
         abortControllerRef.current = controller;
       }

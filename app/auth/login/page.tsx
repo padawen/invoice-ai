@@ -42,7 +42,6 @@ export default function LoginPage() {
   return (
     <main className="select-none flex items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        {/* Green orbs - entire left side */}
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-3xl animate-bounce" />
         <div className="absolute top-[5%] left-[8%] w-[300px] h-[300px] bg-green-400/12 rounded-full blur-3xl animate-bounce [animation-delay:0.5s]" />
         <div className="absolute top-[15%] left-[15%] w-[200px] h-[200px] bg-emerald-500/10 rounded-full blur-3xl animate-bounce [animation-delay:1s]" />
@@ -50,7 +49,6 @@ export default function LoginPage() {
         <div className="absolute top-[60%] left-[10%] w-[280px] h-[280px] bg-emerald-400/10 rounded-full blur-3xl animate-bounce [animation-delay:0.3s]" />
         <div className="absolute bottom-[10%] left-[8%] w-[220px] h-[220px] bg-green-400/11 rounded-full blur-3xl animate-bounce [animation-delay:2.2s]" />
 
-        {/* Blue orbs - entire right side */}
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-2xl animate-bounce [animation-delay:1.5s]" />
         <div className="absolute bottom-[10%] right-[10%] w-[250px] h-[250px] bg-blue-400/12 rounded-full blur-3xl animate-bounce [animation-delay:2s]" />
         <div className="absolute bottom-[20%] right-[15%] w-[180px] h-[180px] bg-cyan-500/10 rounded-full blur-3xl animate-bounce [animation-delay:0.8s]" />
@@ -65,7 +63,6 @@ export default function LoginPage() {
         </h1>
         <p className="text-zinc-400 text-center text-lg">Sign in to access your smart invoice workspace</p>
 
-        {/* Google Login Button */}
         <button
           onClick={handleGoogleLogin}
           className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 transition-colors px-8 py-4 rounded-xl shadow-lg text-white font-semibold text-lg border border-blue-700 hover:border-blue-600 w-full justify-center cursor-pointer"

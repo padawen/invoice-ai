@@ -105,7 +105,6 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
       ];
     }
 
-    // Default durations if no estimation available
     return [
       {
         id: 'upload',

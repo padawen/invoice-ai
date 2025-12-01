@@ -62,7 +62,7 @@ const EditPage = () => {
               id: parsed.id || crypto.randomUUID(),
               extraction_method: extractionMethod || undefined,
               extraction_time: extractionTime ? parseFloat(extractionTime) : undefined,
-              user_changes_count: 0 // Will be updated when user makes changes
+              user_changes_count: 0
             };
             setFields(invoiceData);
             setPdfUrl(pdfBase64);
@@ -259,7 +259,6 @@ const EditPage = () => {
                 />
               ) : (
                 <div className="space-y-6">
-                  {/* Seller Section Skeleton */}
                   <div className="space-y-4">
                     <Skeleton className="h-8 w-48" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,7 +269,6 @@ const EditPage = () => {
                     </div>
                   </div>
 
-                  {/* Buyer Section Skeleton */}
                   <div className="space-y-4 pt-4 border-t border-zinc-700/50">
                     <Skeleton className="h-8 w-48" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -279,7 +277,6 @@ const EditPage = () => {
                     </div>
                   </div>
 
-                  {/* Items Section Skeleton */}
                   <div className="space-y-4 pt-4 border-t border-zinc-700/50">
                     <Skeleton className="h-8 w-32" />
                     <div className="space-y-3">

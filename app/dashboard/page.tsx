@@ -71,8 +71,6 @@ export default function DashboardPage() {
           if (projectsData) {
             setProjects(projectsData);
 
-            // Optimization: Fetch all processed data for these projects in one query
-            // instead of looping through each project (N+1 problem)
             const projectIds = projectsData.map(p => p.id);
 
             if (projectIds.length > 0) {
@@ -84,15 +82,12 @@ export default function DashboardPage() {
               if (statsError) {
                 console.error("Error fetching stats:", statsError);
               } else if (allStats) {
-                // Aggregate stats in memory
                 const stats: Record<string, ExtractionStats> = {};
 
-                // Initialize stats for all projects
                 projectsData.forEach(p => {
                   stats[p.id] = { openai: 0, privacy: 0, total: 0 };
                 });
 
-                // Count items
                 allStats.forEach(item => {
                   if (stats[item.project_id]) {
                     stats[item.project_id].total++;
@@ -158,7 +153,7 @@ export default function DashboardPage() {
         <div className="max-w-5xl mx-auto py-12 px-4">
           <div className="flex flex-col items-center justify-center mb-10">
             <div className="w-full flex items-center justify-between mb-4">
-              <div className="w-24" /> {/* Placeholder for BackButton alignment */}
+              <div className="w-24" />
               <div className="flex-1 flex justify-center">
                 <Skeleton className="h-10 w-48" />
               </div>
