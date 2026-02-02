@@ -20,107 +20,17 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
 
   try {
-    const { chromium } = await import('playwright-core');
+    const { pdf } = await import('pdf-to-img');
 
-    const isProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL;
-
-    let browser;
-    if (isProduction) {
-      const chromiumPkg = await import('@sparticuz/chromium');
-      browser = await chromium.launch({
-        args: chromiumPkg.default.args,
-        executablePath: await chromiumPkg.default.executablePath(),
-        headless: true,
-      });
-    } else {
-      // Local dev: use system chromium (requires: pnpm add -D playwright)
-      browser = await chromium.launch({
-        headless: true,
-      });
-    }
-
-    const context = await browser.newContext({
-      viewport: { width: 1200, height: 1600 }
-    });
-
-    const page = await context.newPage();
-
-    const base64Data = pdfBuffer.toString('base64');
-
-    await page.setContent(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-          <style>
-            body { margin: 0; padding: 20px; background: white; }
-            #pdf-container { width: 100%; }
-            canvas { display: block; margin: 20px 0; border: 1px solid #ccc; }
-          </style>
-        </head>
-        <body>
-          <div id="pdf-container"></div>
-          <script>
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            
-            async function renderPDF() {
-              try {
-                const pdfData = atob('${base64Data}');
-                const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
-                const container = document.getElementById('pdf-container');
-                
-                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                  const page = await pdf.getPage(pageNum);
-                  const viewport = page.getViewport({scale: 2.0});
-                  
-                  const canvas = document.createElement('canvas');
-                  canvas.width = viewport.width;
-                  canvas.height = viewport.height;
-                  canvas.id = 'page-' + pageNum;
-                  
-                  const context = canvas.getContext('2d');
-                  await page.render({canvasContext: context, viewport: viewport}).promise;
-                  
-                  container.appendChild(canvas);
-                }
-                
-                window.pdfRendered = true;
-              } catch (error) {
-                console.error('PDF rendering error:', error);
-                window.pdfError = error;
-              }
-            }
-            
-            renderPDF();
-          </script>
-        </body>
-      </html>
-    `);
-
-    await page.waitForFunction(() => window.pdfRendered || window.pdfError, { timeout: 30000 });
-
-    const pdfError = await page.evaluate(() => window.pdfError);
-    if (pdfError) {
-      throw new Error(`PDF rendering failed: ${pdfError}`);
-    }
-
-    const canvasElements = await page.$$('canvas');
     const imagePaths: string[] = [];
+    let pageNum = 1;
 
-    for (let i = 0; i < canvasElements.length; i++) {
-      try {
-        await canvasElements[i].screenshot({
-          type: 'png',
-          path: path.join(tempDir, `page-${i + 1}.png`)
-        });
-        imagePaths.push(path.join(tempDir, `page-${i + 1}.png`));
-      } catch (error) {
-        console.warn('Failed to screenshot canvas, skipping:', error);
-        continue;
-      }
+    for await (const image of await pdf(pdfBuffer, { scale: 2.0 })) {
+      const imagePath = path.join(tempDir, `page-${pageNum}.png`);
+      fs.writeFileSync(imagePath, image);
+      imagePaths.push(imagePath);
+      pageNum++;
     }
-
-    await browser.close();
 
     if (imagePaths.length === 0) {
       throw new Error('No images were generated from the PDF');
@@ -193,7 +103,6 @@ const cleanupTempFiles = (paths: string[]) => {
 };
 
 export async function POST(req: NextRequest) {
-  // Rate limiting: 5 requests per minute for expensive OpenAI API calls
   const rateLimitResult = rateLimit(req, { limit: 5, interval: 60000 });
   if (!rateLimitResult.success && rateLimitResult.response) {
     return rateLimitResult.response;
