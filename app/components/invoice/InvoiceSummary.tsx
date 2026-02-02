@@ -1,17 +1,22 @@
 import type { InvoiceData } from '@/app/types';
+import { Calculator } from 'lucide-react';
 
 interface InvoiceSummaryProps {
   items: InvoiceData[];
   currency: string;
   hasDirtyChanges: boolean;
   totalChanges: number;
+  paymentMethod?: string;
+  onAddRoundingItem?: (diff: number) => void;
 }
 
 const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
   items,
   currency,
   hasDirtyChanges,
-  totalChanges
+  totalChanges,
+  paymentMethod,
+  onAddRoundingItem
 }) => {
   const calculateTotalGross = () => {
     if (!items) return 0;
@@ -22,6 +27,26 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
   };
 
   const totalGross = calculateTotalGross();
+
+  // Smart Rounding Logic
+  let roundingTarget = 0;
+  let roundingLabel = '';
+
+  const isCash = paymentMethod?.toLowerCase().includes('cash') || paymentMethod?.toLowerCase().includes('készpénz');
+  const isHuf = currency?.toUpperCase() === 'HUF';
+
+  if (isHuf && isCash) {
+    // Standard Hungarian cash rounding (0/5)
+    roundingTarget = Math.round(totalGross / 5) * 5;
+    roundingLabel = '0/5';
+  } else {
+    // Standard integer rounding for digital payments / other currencies
+    roundingTarget = Math.round(totalGross);
+    roundingLabel = 'integer';
+  }
+
+  const roundingDiff = parseFloat((roundingTarget - totalGross).toFixed(2));
+  const showRoundingButton = Math.abs(roundingDiff) >= 0.01 && onAddRoundingItem;
 
   return (
     <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl border border-green-600/30 p-4 sm:p-6">
@@ -37,18 +62,33 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
             )}
           </p>
         </div>
-        
+
         <div className="text-left sm:text-right">
           <div className="text-sm text-zinc-400 mb-1">Total Gross Amount</div>
-          <div className="text-2xl sm:text-3xl font-bold text-green-400">
-            {totalGross.toFixed(2)}
-            <span className="text-base sm:text-lg text-zinc-400 ml-2">
-              {currency || 'USD'}
-            </span>
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-2xl sm:text-3xl font-bold text-green-400">
+              {totalGross.toFixed(2)}
+              <span className="text-base sm:text-lg text-zinc-400 ml-2">
+                {currency || 'USD'}
+              </span>
+            </div>
+
+            {showRoundingButton && (
+              <button
+                onClick={() => onAddRoundingItem && onAddRoundingItem(roundingDiff)}
+                className="flex items-center gap-2 text-xs bg-green-500/20 hover:bg-green-500/30 text-green-300 px-3 py-1.5 rounded-full transition-colors cursor-pointer border border-green-500/30"
+                title={`Adds a rounding item of ${roundingDiff > 0 ? '+' : ''}${roundingDiff} to reach ${roundingTarget} (${roundingLabel} rounding)`}
+              >
+                <Calculator size={12} />
+                <span>
+                  Round to {roundingTarget} ({roundingDiff > 0 ? '+' : ''}{roundingDiff})
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
-      
+
       {hasDirtyChanges && (
         <div className="mt-4 pt-4 border-t border-green-600/20">
           <div className="flex items-center gap-2 text-orange-400">

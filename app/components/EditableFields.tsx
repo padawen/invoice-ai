@@ -22,7 +22,7 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
   const [buyerCollapsed, setBuyerCollapsed] = useState(false);
   const [invoiceDetailsCollapsed, setInvoiceDetailsCollapsed] = useState(false);
   const [invoiceItemsCollapsed, setInvoiceItemsCollapsed] = useState(false);
-  
+
   const {
     dirtyFields,
     globalDirtyOperations,
@@ -47,17 +47,17 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
 
   const updateSellerField = (key: string, value: string) => {
     markFieldDirty(`seller_${key}`, value);
-    onChange({ 
-      ...fields, 
-      seller: { ...fields.seller, [key]: value } 
+    onChange({
+      ...fields,
+      seller: { ...fields.seller, [key]: value }
     });
   };
 
   const updateBuyerField = (key: string, value: string) => {
     markFieldDirty(`buyer_${key}`, value);
-    onChange({ 
-      ...fields, 
-      buyer: { ...fields.buyer, [key]: value } 
+    onChange({
+      ...fields,
+      buyer: { ...fields.buyer, [key]: value }
     });
   };
 
@@ -69,19 +69,19 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
   };
 
   const addItem = () => {
-    const newItem = { 
-      name: '', 
-      quantity: '', 
-      unit_price: '', 
-      net: '', 
-      gross: '', 
-      currency: '' 
+    const newItem = {
+      name: '',
+      quantity: '',
+      unit_price: '',
+      net: '',
+      gross: '',
+      currency: ''
     };
     const newIndex = fields.invoice_data.length;
     markItemAdded(newIndex);
-    onChange({ 
-      ...fields, 
-      invoice_data: [...fields.invoice_data, newItem] 
+    onChange({
+      ...fields,
+      invoice_data: [...fields.invoice_data, newItem]
     });
   };
 
@@ -101,6 +101,23 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
       </div>
     );
   }
+
+  const addRoundingItem = (diff: number) => {
+    const newItem = {
+      name: 'Rounding / Kerekítés',
+      quantity: '1',
+      unit_price: diff.toString(),
+      net: diff.toString(),
+      gross: diff.toString(),
+      currency: fields.currency || 'HUF'
+    };
+    const newIndex = fields.invoice_data.length;
+    markItemAdded(newIndex);
+    onChange({
+      ...fields,
+      invoice_data: [...fields.invoice_data, newItem]
+    });
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -163,6 +180,8 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
         currency={fields.currency || 'USD'}
         hasDirtyChanges={hasDirtyChanges}
         totalChanges={totalChanges}
+        paymentMethod={fields.payment_method}
+        onAddRoundingItem={addRoundingItem}
       />
     </div>
   );
