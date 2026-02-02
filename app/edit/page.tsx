@@ -66,7 +66,8 @@ const EditPage = () => {
             };
             setFields(invoiceData);
 
-            const byteCharacters = atob(pdfBase64);
+            const base64Data = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+            const byteCharacters = atob(base64Data);
             const byteArray = new Uint8Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
               byteArray[i] = byteCharacters.charCodeAt(i);

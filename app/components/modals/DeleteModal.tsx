@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Loader2 } from 'lucide-react';
 
 interface DeleteModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
   title: string;
   description: string;
 }
 
 const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteModalProps) => {
   const [mounted, setMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -22,6 +24,7 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+      setIsDeleting(false);
     } else {
       document.body.style.overflow = '';
     }
@@ -30,6 +33,15 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!mounted || !open) return null;
 
@@ -42,18 +54,35 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
       >
         <h2 className="text-xl font-bold text-red-400 mb-4">{title}</h2>
         <p className="text-zinc-300 mb-6">{description}</p>
+
+        {isDeleting && (
+          <div className="flex items-center gap-3 mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+            <Loader2 className="w-5 h-5 text-red-400 animate-spin" />
+            <span className="text-red-400 font-medium">Deleting...</span>
+          </div>
+        )}
+
         <div className="flex justify-end gap-4">
           <button
-            className="px-6 py-2 rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition cursor-pointer"
+            className="px-6 py-2 rounded-lg bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onClose}
+            disabled={isDeleting}
           >
             Cancel
           </button>
           <button
-            className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition font-bold cursor-pointer"
-            onClick={onConfirm}
+            className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            onClick={handleConfirm}
+            disabled={isDeleting}
           >
-            Delete
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
           </button>
         </div>
       </div>
@@ -75,4 +104,4 @@ const DeleteModal = ({ open, onClose, onConfirm, title, description }: DeleteMod
   );
 };
 
-export default DeleteModal; 
+export default DeleteModal;
