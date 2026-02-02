@@ -8,26 +8,24 @@ import { rateLimit } from '@/lib/rate-limit';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { DOMMatrix as CanvasDOMMatrix } from 'canvas';
-
-if (typeof globalThis.DOMMatrix === 'undefined') {
-  (globalThis as Record<string, unknown>).DOMMatrix = CanvasDOMMatrix;
-}
 
 const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
 
   try {
-    const { pdf } = await import('pdf-to-img');
+    const pdfImgConvert = await import('pdf-img-convert');
+
+    const images = await pdfImgConvert.convert(pdfBuffer, {
+      width: 1600,
+      height: 2200,
+    });
 
     const imagePaths: string[] = [];
-    let pageNum = 1;
 
-    for await (const image of await pdf(pdfBuffer, { scale: 2.0 })) {
-      const imagePath = path.join(tempDir, `page-${pageNum}.png`);
-      fs.writeFileSync(imagePath, image);
+    for (let i = 0; i < images.length; i++) {
+      const imagePath = path.join(tempDir, `page-${i + 1}.png`);
+      fs.writeFileSync(imagePath, images[i] as Buffer);
       imagePaths.push(imagePath);
-      pageNum++;
     }
 
     if (imagePaths.length === 0) {
