@@ -49,14 +49,11 @@
         }
     ],
     "functions": {
-        "api/**": {
-            "maxDuration": 60
-        },
-        "api/processImagePDF": {
+        "app/api/processImagePDF/route": {
             "maxDuration": 300,
             "memory": 2048
         },
-        "api/proxy/**": {
+        "app/api/proxy/**/route": {
             "maxDuration": 300
         }
     }
