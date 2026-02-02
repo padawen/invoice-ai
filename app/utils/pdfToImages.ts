@@ -12,7 +12,7 @@ export async function convertPdfToImages(
 ): Promise<PdfConversionResult> {
     const pdfjs = await import('pdfjs-dist');
 
-    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
