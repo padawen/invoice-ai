@@ -1,6 +1,6 @@
 {
-    "buildCommand": "npm run build",
-    "installCommand": "npm install",
+    "buildCommand": "pnpm run build",
+    "installCommand": "pnpm install",
     "framework": "nextjs",
     "regions": [
         "iad1"
@@ -41,9 +41,6 @@
         }
     ],
     "functions": {
-        "app/api/processImagePDF/route": {
-            "maxDuration": 300
-        },
         "app/api/proxy/**/route": {
             "maxDuration": 300
         }
