@@ -88,12 +88,14 @@ Automatically extracts:
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/invoice-ai.git
+git clone https://github.com/padawen/invoice-ai.git
 cd invoice-ai
 ```
 
 #### 2. Install Dependencies
 ```bash
+pnpm install
+# or
 npm install
 # or
 yarn install
@@ -101,33 +103,7 @@ yarn install
 
 #### 3. Environment Configuration
 
-Create a `.env.local` file in the root directory:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-- **Supabase account** (free tier available)
-- **OpenAI API key** (for cloud processing)
-
-### Installation
-
-#### 1. Clone the Repository
-```bash
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-- **Supabase account** (free tier available)
-- **OpenAI API key** (for cloud processing)
-
-### Installation
-
-#### 1. Clone the Repository
-```bash
+Create a `.env.local` file in the root directory (use `.env.example` as a template):
 
 ```env
 # Supabase Configuration
@@ -138,12 +114,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
-# Privacy Processing API (local LLM with Pytesseract OCR)
+# Privacy Processing API (optional - for local LLM processing)
 PRIVACY_API_URL=http://localhost:5000
 PRIVACY_API_KEY=your_privacy_api_key
-
-# Optional: Custom API endpoints
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 ```
 
 **Configuration Guide:**
@@ -254,56 +227,77 @@ CREATE POLICY "Users can delete their own processed data" ON processed_data
 #### 5. Start Development Server
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 🚀 Production Deployment
+### 🚀 Vercel Deployment
 
-#### Render Environment Configuration
+#### Quick Deploy
 
-**Build-time Environment Variables** (required during build):
-- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL (client-side)
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key (client-side)
-- `NEXT_PUBLIC_SITE_URL` - Your production site URL (client-side)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/padawen/invoice-ai)
 
-**Runtime Environment Variables** (injected at runtime by Render):
-- `SUPABASE_URL` - Supabase URL for server-side operations
-- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (server-only, sensitive)
-- `SUPABASE_JWT_SECRET` - JWT secret for auth (server-only, sensitive)
-- `OPENAI_API_KEY` - OpenAI API key (server-only, sensitive)
-- `POSTGRES_URL` - Database connection string (server-only, sensitive)
-- `POSTGRES_PRISMA_URL` - Prisma database URL (server-only, sensitive)
-- `POSTGRES_URL_NON_POOLING` - Non-pooling database URL (server-only, sensitive)
-- `POSTGRES_USER` - Database user (server-only, sensitive)
-- `POSTGRES_PASSWORD` - Database password (server-only, sensitive)
-- `POSTGRES_DATABASE` - Database name (server-only, sensitive)
-- `POSTGRES_HOST` - Database host (server-only, sensitive)
-- `PRIVACY_API_URL` - Privacy API endpoint for local processing (server-only)
-- `PRIVACY_API_KEY` - Privacy API authentication key (server-only, sensitive)
+#### Manual Deployment
 
-#### Docker Deployment
+1. **Install Vercel CLI** (optional):
+   ```bash
+   npm i -g vercel
+   ```
 
-Build locally and test:
-```bash
-docker build -t invoice-ai:standalone .
-docker run --rm -p 3000:3000 \
-  -e NEXT_PUBLIC_SITE_URL=RENDER_ENV_AT_RUNTIME \
-  -e NEXT_PUBLIC_SUPABASE_URL=RENDER_ENV_AT_RUNTIME \
-  -e NEXT_PUBLIC_SUPABASE_ANON_KEY=RENDER_ENV_AT_RUNTIME \
-  -e SUPABASE_URL=RENDER_ENV_AT_RUNTIME \
-  -e SUPABASE_SERVICE_ROLE_KEY=RENDER_ENV_AT_RUNTIME \
-  -e SUPABASE_JWT_SECRET=RENDER_ENV_AT_RUNTIME \
-  -e OPENAI_API_KEY=RENDER_ENV_AT_RUNTIME \
-  -e POSTGRES_URL=RENDER_ENV_AT_RUNTIME \
-  invoice-ai:standalone
-```
+2. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push origin main
+   ```
 
-**Security Notes:**
-- Server secrets are NOT baked into the Docker image
-- All sensitive env vars are injected at runtime by Render
-- Client-side env vars (`NEXT_PUBLIC_*`) are compiled into the build
+3. **Deploy on Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Configure environment variables (see below)
+   - Click "Deploy"
+
+#### Environment Variables for Vercel
+
+Add these in your Vercel project settings under **Environment Variables**:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key | ✅ Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) | ✅ Yes |
+| `OPENAI_API_KEY` | OpenAI API key for invoice processing | ✅ Yes |
+| `PRIVACY_API_URL` | Privacy API endpoint (optional) | ❌ No |
+| `PRIVACY_API_KEY` | Privacy API key (optional) | ❌ No |
+
+#### Security Headers
+
+The application includes comprehensive security headers configured in `vercel.json`:
+
+- **Content-Security-Policy (CSP)**: Prevents XSS attacks by whitelisting content sources
+- **Strict-Transport-Security (HSTS)**: Enforces HTTPS connections
+- **X-Frame-Options**: Prevents clickjacking attacks
+- **X-Content-Type-Options**: Prevents MIME-sniffing attacks
+- **Referrer-Policy**: Controls referrer information
+- **Permissions-Policy**: Restricts browser features
+- **Cross-Origin-Embedder-Policy (COEP)**: Controls cross-origin resource loading
+- **Cross-Origin-Opener-Policy (COOP)**: Enables cross-origin isolation
+- **Cross-Origin-Resource-Policy (CORP)**: Controls resource sharing
+
+These headers provide defense-in-depth security for your application.
+
+#### Production Deployment Checklist
+
+Before deploying to production, ensure you have:
+
+- ✅ Set all required environment variables in Vercel
+- ✅ Configured Supabase Row Level Security (RLS) policies
+- ✅ Set up Supabase authentication (Google OAuth)
+- ✅ Added OpenAI API credits
+- ✅ Tested the application locally
+
 
 ## 📝 Usage
 

@@ -11,27 +11,27 @@
     "postinstall": "npx playwright install"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.93.3",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.503.0",
-    "next": "^15.5.4",
-    "openai": "^4.98.0",
-    "playwright": "1.57.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "lucide-react": "^0.563.0",
+    "next": "^16.1.6",
+    "openai": "^4.104.0",
+    "playwright": "1.58.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "slugify": "^1.6.6",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "^15.5.4",
-    "tailwindcss": "^4",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5"
   }
 }

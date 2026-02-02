@@ -4,6 +4,7 @@ import type { ChatCompletionContentPart } from 'openai/resources/chat/completion
 import { getGuidelines } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
+import { rateLimit } from '@/lib/rate-limit';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -18,7 +19,7 @@ declare global {
 
 const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
-  
+
   try {
     const browser = await chromium.launch({
       headless: true,
@@ -32,15 +33,15 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
         '--disable-gpu'
       ]
     });
-    
+
     const context = await browser.newContext({
       viewport: { width: 1200, height: 1600 }
     });
-    
+
     const page = await context.newPage();
-    
+
     const base64Data = pdfBuffer.toString('base64');
-    
+
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -92,7 +93,7 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
     `);
 
     await page.waitForFunction(() => window.pdfRendered || window.pdfError, { timeout: 30000 });
-    
+
     const pdfError = await page.evaluate(() => window.pdfError);
     if (pdfError) {
       throw new Error(`PDF rendering failed: ${pdfError}`);
@@ -100,10 +101,10 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
 
     const canvasElements = await page.$$('canvas');
     const imagePaths: string[] = [];
-    
+
     for (let i = 0; i < canvasElements.length; i++) {
       try {
-        await canvasElements[i].screenshot({ 
+        await canvasElements[i].screenshot({
           type: 'png',
           path: path.join(tempDir, `page-${i + 1}.png`)
         });
@@ -131,10 +132,10 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
 const encodeImageToBase64 = (imagePath: string): { base64: string; mimeType: string } => {
   const imageBuffer = fs.readFileSync(imagePath);
   const base64 = imageBuffer.toString('base64');
-  
+
   const ext = path.extname(imagePath).toLowerCase();
   let mimeType = 'image/png';
-  
+
   switch (ext) {
     case '.jpg':
     case '.jpeg':
@@ -150,32 +151,32 @@ const encodeImageToBase64 = (imagePath: string): { base64: string; mimeType: str
       mimeType = 'image/webp';
       break;
   }
-  
+
   return { base64, mimeType };
 };
 
 const cleanupTempFiles = (paths: string[]) => {
   if (!paths || paths.length === 0) return;
-  
+
   const dir = path.dirname(paths[0]);
-  
-  const isTempDir = dir.includes('tmp') || 
-                   dir.includes('temp') || 
-                   dir.includes('Temp') ||
-                   dir.includes('AppData\\Local\\Temp') ||
-                   dir.includes('AppData/Local/Temp');
-  
+
+  const isTempDir = dir.includes('tmp') ||
+    dir.includes('temp') ||
+    dir.includes('Temp') ||
+    dir.includes('AppData\\Local\\Temp') ||
+    dir.includes('AppData/Local/Temp');
+
   if (!isTempDir) {
     return;
   }
-  
+
   try {
     paths.forEach((p) => {
       if (fs.existsSync(p)) {
         fs.unlinkSync(p);
       }
     });
-    
+
     if (fs.existsSync(dir)) {
       const remainingFiles = fs.readdirSync(dir);
       if (remainingFiles.length === 0) {
@@ -187,6 +188,12 @@ const cleanupTempFiles = (paths: string[]) => {
 };
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: 5 requests per minute for expensive OpenAI API calls
+  const rateLimitResult = rateLimit(req, { limit: 5, interval: 60000 });
+  if (!rateLimitResult.success && rateLimitResult.response) {
+    return rateLimitResult.response;
+  }
+
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   const supabase = createSupabaseClient(token);
   const {
@@ -204,20 +211,20 @@ export async function POST(req: NextRequest) {
   }
 
   let imagePaths: string[] = [];
-  
+
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    
+
     if (buffer.length === 0) {
       throw new Error('Uploaded file is empty');
     }
-    
-    if (buffer.length > 50 * 1024 * 1024) {
-      throw new Error('File too large (max 50MB)');
+
+    if (buffer.length > 10 * 1024 * 1024) {
+      throw new Error('File too large (max 10MB)');
     }
-    
+
     imagePaths = await convertPdfToImages(buffer);
-    
+
     if (!imagePaths.length) {
       throw new Error('No images extracted from PDF - the PDF might be corrupted or contain no convertible pages');
     }
@@ -246,11 +253,11 @@ export async function POST(req: NextRequest) {
     ];
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    
+
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OpenAI API key is not configured');
     }
-    
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content }],
@@ -261,19 +268,19 @@ export async function POST(req: NextRequest) {
     }
 
     const responseText = response.choices[0].message?.content ?? '';
-    
+
     if (!responseText || responseText.trim().length === 0) {
       throw new Error('Empty response received from OpenAI API');
     }
-    
+
     let cleanedResponse = responseText;
-    
+
     if (cleanedResponse.startsWith('```json') && cleanedResponse.endsWith('```')) {
       cleanedResponse = cleanedResponse.slice(7, -3).trim();
     } else if (cleanedResponse.startsWith('```') && cleanedResponse.endsWith('```')) {
       cleanedResponse = cleanedResponse.slice(3, -3).trim();
     }
-    
+
     const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No valid JSON found in OpenAI response');
@@ -282,11 +289,11 @@ export async function POST(req: NextRequest) {
     try {
       const jsonStr = jsonMatch[0];
       const parsed = JSON.parse(jsonStr);
-      
+
       if (!parsed.seller || !parsed.buyer || !Array.isArray(parsed.invoice_data)) {
         throw new Error('OpenAI response missing required fields (seller, buyer, or invoice_data)');
       }
-      
+
       if (parsed.issue_date) {
         parsed.issue_date = formatDateForInput(parsed.issue_date);
       }
@@ -296,7 +303,7 @@ export async function POST(req: NextRequest) {
       if (parsed.fulfillment_date) {
         parsed.fulfillment_date = formatDateForInput(parsed.fulfillment_date);
       }
-      
+
       const output = { id: crypto.randomUUID(), ...parsed };
 
       cleanupTempFiles(imagePaths);
@@ -308,7 +315,7 @@ export async function POST(req: NextRequest) {
     if (imagePaths && imagePaths.length > 0) {
       cleanupTempFiles(imagePaths);
     }
-    
+
     const errorMessage = (_ as Error).message || 'Unexpected server error';
     console.error('ProcessImagePDF Error:', {
       message: errorMessage,
@@ -316,9 +323,9 @@ export async function POST(req: NextRequest) {
       name: (_ as Error).name,
       timestamp: new Date().toISOString()
     });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         fallbackData: {
           id: crypto.randomUUID(),

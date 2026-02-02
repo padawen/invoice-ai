@@ -1,10 +1,14 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
-  output: 'standalone',
   experimental: {},
   images: {
-    domains: ['localhost', 'invoice-ai-app.vercel.app'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.vercel.app',
+      },
+    ],
   },
 };
 

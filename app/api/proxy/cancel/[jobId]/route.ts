@@ -57,7 +57,9 @@ export async function DELETE(
         return NextResponse.json(
           {
             error: 'Cancel request timed out',
-            details: 'Request to privacy API timed out after 5 seconds'
+            ...(process.env.NODE_ENV === 'development' && {
+              details: 'Request to privacy API timed out after 5 seconds'
+            })
           },
           { status: 504 }
         );
@@ -66,8 +68,9 @@ export async function DELETE(
         return NextResponse.json(
           {
             error: 'Cannot connect to privacy API for cancellation.',
-            details: 'ECONNREFUSED - Connection refused by target server',
-            url: process.env.PRIVACY_API_URL || 'Environment variable not set'
+            ...(process.env.NODE_ENV === 'development' && {
+              details: 'ECONNREFUSED - Connection refused by target server'
+            })
           },
           { status: 503 }
         );
@@ -77,7 +80,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error: 'Failed to cancel job',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        ...(process.env.NODE_ENV === 'development' && {
+          details: error instanceof Error ? error.message : 'Unknown error'
+        })
       },
       { status: 500 }
     );

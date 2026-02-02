@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Cannot connect to privacy API. Please check if the service is running.',
-            details: 'ECONNREFUSED - Connection refused by target server',
-            url: process.env.PRIVACY_API_URL || 'Environment variable not set'
+            ...(process.env.NODE_ENV === 'development' && {
+              details: 'ECONNREFUSED - Connection refused by target server'
+            })
           },
           { status: 503 }
         );
@@ -76,7 +77,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to process request',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        ...(process.env.NODE_ENV === 'development' && {
+          details: error instanceof Error ? error.message : 'Unknown error'
+        })
       },
       { status: 500 }
     );

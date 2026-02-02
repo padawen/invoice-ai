@@ -26,9 +26,12 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     if (!supabase) return;
 
+    // Use environment variable or construct from window only on client side
     const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/upload`
-      : `${window.location.origin}/upload`;
+      : typeof window !== 'undefined'
+        ? `${window.location.protocol}//${window.location.host}/upload`
+        : '/upload';
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',

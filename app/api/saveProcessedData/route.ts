@@ -4,28 +4,28 @@ import { InvoiceData } from '@/app/types';
 
 const convertToISODate = (dateString: string): string | null => {
   if (!dateString || dateString.trim() === '') return null;
-  
+
   try {
     if (dateString.includes('.')) {
       const cleaned = dateString.replace(/\./g, '').trim();
       const parts = cleaned.split(' ').filter(part => part.length > 0);
-      
+
       if (parts.length === 3) {
         const [year, month, day] = parts;
         const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        
+
         const testDate = new Date(isoDate);
         if (!isNaN(testDate.getTime())) {
           return isoDate;
         }
       }
     }
-    
+
     const testDate = new Date(dateString);
     if (!isNaN(testDate.getTime())) {
       return testDate.toISOString().split('T')[0];
     }
-    
+
     return null;
   } catch (error) {
     console.warn('Date conversion failed for:', dateString, error);
@@ -35,7 +35,7 @@ const convertToISODate = (dateString: string): string | null => {
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     console.error('No authorization token provided');
     return NextResponse.json({ error: 'No authorization token provided' }, { status: 401 });
@@ -108,11 +108,11 @@ export async function POST(req: NextRequest) {
     if (seller.tax_id) insertData.seller_tax_id = seller.tax_id;
     if (seller.email) insertData.seller_email = seller.email;
     if (seller.phone) insertData.seller_phone = seller.phone;
-    
+
     if (buyer?.name) insertData.buyer_name = buyer.name;
     if (buyer?.address) insertData.buyer_address = buyer.address;
     if (buyer?.tax_id) insertData.buyer_tax_id = buyer.tax_id;
-    
+
     if (invoice_number) insertData.invoice_number = invoice_number;
     if (issue_date) insertData.issue_date = convertToISODate(issue_date);
     if (fulfillment_date) insertData.fulfillment_date = convertToISODate(fulfillment_date);
@@ -130,23 +130,27 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Database insert error:', insertError);
-      return NextResponse.json({ 
-        error: 'Database insert failed', 
-        details: insertError.message 
+      return NextResponse.json({
+        error: 'Database insert failed',
+        ...(process.env.NODE_ENV === 'development' && {
+          details: insertError.message
+        })
       }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       id: insertedData?.id,
       projectId: projectData.id,
       projectName: project
     });
   } catch (err) {
     console.error('Save error:', err);
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({
+      error: 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && {
+        details: err instanceof Error ? err.message : 'Unknown error'
+      })
     }, { status: 500 });
   }
 }
