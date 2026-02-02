@@ -65,7 +65,14 @@ const EditPage = () => {
               user_changes_count: 0
             };
             setFields(invoiceData);
-            setPdfUrl(pdfBase64);
+
+            const byteCharacters = atob(pdfBase64);
+            const byteArray = new Uint8Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteArray[i] = byteCharacters.charCodeAt(i);
+            }
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            setPdfUrl(URL.createObjectURL(blob));
           } else {
             setError('Invalid data structure received from AI processing.');
           }
