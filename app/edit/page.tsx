@@ -139,8 +139,9 @@ const EditPage = () => {
         sessionStorage.removeItem('pdf_base64');
 
         setSaveSuccess(true);
-        setIsSaving(false);
-        setLocalProcessing(false);
+        // Keep loading
+        // setIsSaving(false);
+        // setLocalProcessing(false);
 
         setTimeout(() => {
           router.push('/dashboard');
@@ -157,8 +158,9 @@ const EditPage = () => {
         sessionStorage.removeItem('pdf_base64');
 
         setSaveSuccess(true);
-        setIsSaving(false);
-        setLocalProcessing(false);
+        // Keep loading
+        // setIsSaving(false);
+        // setLocalProcessing(false);
 
         setTimeout(() => {
           router.push('/dashboard');
@@ -193,8 +195,9 @@ const EditPage = () => {
       sessionStorage.removeItem('pdf_base64');
 
       setSaveSuccess(true);
-      setIsSaving(false);
-      setLocalProcessing(false);
+      // Keep isSaving and localProcessing true until redirect happens
+      // setIsSaving(false); 
+      // setLocalProcessing(false);
 
       setTimeout(() => {
         const projectSlug = slugify(project, { lower: true, strict: true });
