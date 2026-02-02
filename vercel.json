@@ -50,8 +50,7 @@
     ],
     "functions": {
         "app/api/processImagePDF/route": {
-            "maxDuration": 300,
-            "memory": 2048
+            "maxDuration": 300
         },
         "app/api/proxy/**/route": {
             "maxDuration": 300
