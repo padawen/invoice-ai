@@ -13,7 +13,6 @@ export default function Home() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-green-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse [animation-delay:1s]" />
 
-      {/* Static bubbles - no bouncing */}
       <div className="absolute top-[5%] left-[10%] w-64 h-64 bg-green-500/25 rounded-full blur-3xl" />
       <div className="absolute top-[15%] right-[8%] w-72 h-72 bg-green-400/20 rounded-full blur-3xl" />
       <div className="absolute bottom-[10%] left-[70%] w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl" />

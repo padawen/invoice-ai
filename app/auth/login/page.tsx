@@ -26,7 +26,6 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     if (!supabase) return;
 
-    // Use environment variable or construct from window only on client side
     const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/upload`
       : typeof window !== 'undefined'
@@ -45,7 +44,6 @@ export default function LoginPage() {
   return (
     <main className="select-none flex items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        {/* Static bubbles - no bouncing */}
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-3xl" />
         <div className="absolute top-[5%] left-[8%] w-[300px] h-[300px] bg-green-400/12 rounded-full blur-3xl" />
         <div className="absolute top-[15%] left-[15%] w-[200px] h-[200px] bg-emerald-500/10 rounded-full blur-3xl" />

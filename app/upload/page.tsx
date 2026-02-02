@@ -144,7 +144,6 @@ const UploadPage = () => {
       let res: Response;
 
       if (type === 'privacy') {
-        // Privacy mode: send file directly to privacy proxy
         const formData = new FormData();
         formData.append('file', file);
         formData.append('processor', 'privacy');
@@ -155,18 +154,15 @@ const UploadPage = () => {
           body: formData,
         });
       } else {
-        // OpenAI mode: convert PDF to images client-side, then send images
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
         let images: string[];
 
         if (isPdfFile(file)) {
-          // Convert PDF to images in browser
           const result = await convertPdfToImages(file, 2.0, 10);
           images = result.images;
         } else {
-          // For image files, convert to base64 directly
           const dataUrl = await fileToBase64(file);
           images = [dataUrl];
         }

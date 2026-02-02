@@ -272,22 +272,6 @@ Add these in your Vercel project settings under **Environment Variables**:
 | `PRIVACY_API_URL` | Privacy API endpoint (optional) | ❌ No |
 | `PRIVACY_API_KEY` | Privacy API key (optional) | ❌ No |
 
-#### Security Headers
-
-The application includes comprehensive security headers configured in `vercel.json`:
-
-- **Content-Security-Policy (CSP)**: Prevents XSS attacks by whitelisting content sources
-- **Strict-Transport-Security (HSTS)**: Enforces HTTPS connections
-- **X-Frame-Options**: Prevents clickjacking attacks
-- **X-Content-Type-Options**: Prevents MIME-sniffing attacks
-- **Referrer-Policy**: Controls referrer information
-- **Permissions-Policy**: Restricts browser features
-- **Cross-Origin-Embedder-Policy (COEP)**: Controls cross-origin resource loading
-- **Cross-Origin-Opener-Policy (COOP)**: Enables cross-origin isolation
-- **Cross-Origin-Resource-Policy (CORP)**: Controls resource sharing
-
-These headers provide defense-in-depth security for your application.
-
 #### Production Deployment Checklist
 
 Before deploying to production, ensure you have:
