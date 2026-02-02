@@ -8,12 +8,10 @@ import { rateLimit } from '@/lib/rate-limit';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { DOMMatrix as CanvasDOMMatrix } from 'canvas';
 
-declare global {
-  interface Window {
-    pdfRendered?: boolean;
-    pdfError?: Error | string;
-  }
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  (globalThis as Record<string, unknown>).DOMMatrix = CanvasDOMMatrix;
 }
 
 const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
