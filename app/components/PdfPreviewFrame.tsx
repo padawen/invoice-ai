@@ -15,25 +15,13 @@ const PdfPreviewFrame = ({ src }: PdfPreviewFrameProps) => {
 
   return (
     <div className="relative w-full h-full border border-zinc-700 rounded shadow-lg overflow-hidden">
-      <object
-        data={src}
-        type="application/pdf"
+      <iframe
+        src={src}
         className="w-full h-full"
-        aria-label="PDF preview"
-      >
-        <p className="p-4 text-zinc-400 text-sm bg-zinc-900">
-          This browser does not support embedded PDFs.{' '}
-          <a
-            href={src}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-400 underline hover:text-green-300"
-          >
-            Click here to download the PDF.
-          </a>
-        </p>
-      </object>
-      
+        title="PDF preview"
+        style={{ border: 'none' }}
+      />
+
       <div className="absolute bottom-4 left-4 bg-zinc-800/80 backdrop-blur-sm text-zinc-300 px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg">
         PDF Preview
       </div>
