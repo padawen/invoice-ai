@@ -1,14 +1,7 @@
 'use client';
 
-import * as pdfjs from 'pdfjs-dist';
-
-// Set worker source for pdf.js
-if (typeof window !== 'undefined') {
-    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-}
-
 export interface PdfConversionResult {
-    images: string[]; // base64 data URLs
+    images: string[];
     pageCount: number;
 }
 
@@ -17,6 +10,10 @@ export async function convertPdfToImages(
     scale: number = 2.0,
     maxPages: number = 10
 ): Promise<PdfConversionResult> {
+    const pdfjs = await import('pdfjs-dist');
+
+    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
 
@@ -47,11 +44,9 @@ export async function convertPdfToImages(
             canvas: canvas,
         }).promise;
 
-        // Convert canvas to base64 PNG
         const dataUrl = canvas.toDataURL('image/png');
         images.push(dataUrl);
 
-        // Cleanup
         canvas.remove();
     }
 
