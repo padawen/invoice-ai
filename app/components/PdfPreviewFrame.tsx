@@ -26,15 +26,29 @@ const PdfPreviewFrame = ({ src }: PdfPreviewFrameProps) => {
         const pdfjs = await import('pdfjs-dist');
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
-        // Convert base64 to array buffer
-        const base64Data = src.includes(',') ? src.split(',')[1] : src;
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
+        let pdfData: ArrayBuffer;
+
+        if (src.startsWith('blob:')) {
+          const response = await fetch(src);
+          pdfData = await response.arrayBuffer();
+        } else if (src.startsWith('data:')) {
+          const base64Data = src.split(',')[1];
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          pdfData = bytes.buffer;
+        } else {
+          const binaryString = atob(src);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          pdfData = bytes.buffer;
         }
 
-        const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+        const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
         const renderedPages: string[] = [];
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
