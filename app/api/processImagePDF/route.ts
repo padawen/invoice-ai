@@ -8,8 +8,6 @@ import { rateLimit } from '@/lib/rate-limit';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { chromium } from 'playwright-core';
-import chromiumPkg from '@sparticuz/chromium';
 
 declare global {
   interface Window {
@@ -22,11 +20,24 @@ const convertPdfToImages = async (pdfBuffer: Buffer): Promise<string[]> => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
 
   try {
-    const browser = await chromium.launch({
-      args: chromiumPkg.args,
-      executablePath: await chromiumPkg.executablePath(),
-      headless: true,
-    });
+    const { chromium } = await import('playwright-core');
+
+    const isProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL;
+
+    let browser;
+    if (isProduction) {
+      const chromiumPkg = await import('@sparticuz/chromium');
+      browser = await chromium.launch({
+        args: chromiumPkg.default.args,
+        executablePath: await chromiumPkg.default.executablePath(),
+        headless: true,
+      });
+    } else {
+      // Local dev: use system chromium (requires: pnpm add -D playwright)
+      browser = await chromium.launch({
+        headless: true,
+      });
+    }
 
     const context = await browser.newContext({
       viewport: { width: 1200, height: 1600 }
