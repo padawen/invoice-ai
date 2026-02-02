@@ -27,8 +27,9 @@ yarn-error.log*
 *.pem
 
 # Environment variables
-.env*
-.env.local
+.env
+.env*.local
+!.env.example
 
 # Custom project files to ignore
 /temp/                         # temp mappa (PDF-ekhez)
