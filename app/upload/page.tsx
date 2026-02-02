@@ -12,6 +12,7 @@ import ProgressModal from '../components/ProgressModal';
 import PrivacyProgressModal from '../components/PrivacyProgressModal';
 import Footer from '../components/Footer';
 import type { EditableInvoice } from '@/app/types';
+import { convertPdfToImages, isPdfFile } from '@/app/utils/pdfToImages';
 
 const UploadPage = () => {
   const user = useUser();
@@ -140,26 +141,46 @@ const UploadPage = () => {
         setShowProgressModal(true);
       }
 
-      let endpoint = '/api/processImagePDF';
-      let processingMethod = 'image';
-      const formData = new FormData();
-      formData.append('file', file);
+      let res: Response;
 
       if (type === 'privacy') {
-        endpoint = '/api/proxy/process-invoice';
-        processingMethod = 'privacy';
+        // Privacy mode: send file directly to privacy proxy
+        const formData = new FormData();
+        formData.append('file', file);
         formData.append('processor', 'privacy');
+
+        res = await fetch('/api/proxy/process-invoice', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
       } else {
+        // OpenAI mode: convert PDF to images client-side, then send images
         const controller = new AbortController();
         abortControllerRef.current = controller;
-      }
 
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-        signal: type === 'openai' ? abortControllerRef.current?.signal : undefined,
-      });
+        let images: string[];
+
+        if (isPdfFile(file)) {
+          // Convert PDF to images in browser
+          const result = await convertPdfToImages(file, 2.0, 10);
+          images = result.images;
+        } else {
+          // For image files, convert to base64 directly
+          const dataUrl = await fileToBase64(file);
+          images = [dataUrl];
+        }
+
+        res = await fetch('/api/processImages', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ images }),
+          signal: abortControllerRef.current?.signal,
+        });
+      }
 
       const rawText = await res.text();
 
@@ -198,7 +219,7 @@ const UploadPage = () => {
 
       sessionStorage.setItem('openai_json', JSON.stringify(result));
       sessionStorage.setItem('pdf_base64', await fileToBase64(file));
-      sessionStorage.setItem('processing_method', processingMethod);
+      sessionStorage.setItem('processing_method', type);
       sessionStorage.setItem('extraction_method', type);
       sessionStorage.setItem('extraction_time', extractionTime.toString());
 

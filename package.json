@@ -15,7 +15,7 @@
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
     "openai": "^4.104.0",
-    "pdf-img-convert": "^2.0.0",
+    "pdfjs-dist": "^5.4.624",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "slugify": "^1.6.6",
