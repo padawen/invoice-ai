@@ -104,7 +104,7 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
 
   const addRoundingItem = (diff: number) => {
     const newItem = {
-      name: 'Rounding / Kerekítés',
+      name: 'Rounding',
       quantity: '1',
       unit_price: diff.toString(),
       net: diff.toString(),
@@ -182,6 +182,7 @@ const EditableFields = ({ fields, onChange, onChangesCountUpdate }: Props) => {
         totalChanges={totalChanges}
         paymentMethod={fields.payment_method}
         onAddRoundingItem={addRoundingItem}
+        isUnsaved={true}
       />
     </div>
   );

@@ -8,6 +8,7 @@ interface InvoiceSummaryProps {
   totalChanges: number;
   paymentMethod?: string;
   onAddRoundingItem?: (diff: number) => void;
+  isUnsaved?: boolean;
 }
 
 const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
@@ -16,7 +17,8 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
   hasDirtyChanges,
   totalChanges,
   paymentMethod,
-  onAddRoundingItem
+  onAddRoundingItem,
+  isUnsaved
 }) => {
   const calculateTotalGross = () => {
     if (!items) return 0;
@@ -28,21 +30,17 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
 
   const totalGross = calculateTotalGross();
 
-  // Smart Rounding Logic
   let roundingTarget = 0;
   let roundingLabel = '';
 
-  const isCash = paymentMethod?.toLowerCase().includes('cash') || paymentMethod?.toLowerCase().includes('készpénz');
-  const isHuf = currency?.toUpperCase() === 'HUF';
+  const hasDecimal = Math.abs(totalGross % 1) > 0.01;
 
-  if (isHuf && isCash) {
-    // Standard Hungarian cash rounding (0/5)
+  if (hasDecimal) {
+    roundingTarget = Math.ceil(totalGross);
+    roundingLabel = 'round up';
+  } else {
     roundingTarget = Math.round(totalGross / 5) * 5;
     roundingLabel = '0/5';
-  } else {
-    // Standard integer rounding for digital payments / other currencies
-    roundingTarget = Math.round(totalGross);
-    roundingLabel = 'integer';
   }
 
   const roundingDiff = parseFloat((roundingTarget - totalGross).toFixed(2));
@@ -55,7 +53,7 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
           <h3 className="text-lg sm:text-xl font-bold text-green-400 mb-2">Invoice Summary</h3>
           <p className="text-sm text-zinc-400">
             {items?.length || 0} items
-            {hasDirtyChanges && (
+            {hasDirtyChanges && !isUnsaved && (
               <span className="text-orange-400 ml-2">
                 • {totalChanges} unsaved changes
               </span>
@@ -89,11 +87,13 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
         </div>
       </div>
 
-      {hasDirtyChanges && (
+      {(hasDirtyChanges || isUnsaved) && (
         <div className="mt-4 pt-4 border-t border-green-600/20">
           <div className="flex items-center gap-2 text-orange-400">
             <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-            <span className="text-sm">You have unsaved changes</span>
+            <span className="text-sm">
+              {isUnsaved ? "Unsaved Invoice - Open Draft" : "You have unsaved changes"}
+            </span>
           </div>
         </div>
       )}
@@ -101,4 +101,4 @@ const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
   );
 };
 
-export default InvoiceSummary; 
+export default InvoiceSummary;
