@@ -4,6 +4,7 @@ import { useEffect, useState, createContext, useContext } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import type { PropsWithChildren } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { logger } from '@/lib/logger';
 
 const UserContext = createContext<User | null>(null);
 const SessionContext = createContext<Session | null>(null);
@@ -19,7 +20,7 @@ export default function Providers({ children }: PropsWithChildren) {
     try {
       return createSupabaseBrowserClient();
     } catch {
-      console.error('Authentication service initialization failed');
+      logger.error('Authentication service initialization failed');
       return null;
     }
   });

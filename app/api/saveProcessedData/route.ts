@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { InvoiceData } from '@/app/types';
+import { logger } from '@/lib/logger';
 
 const convertToISODate = (dateString: string): string | null => {
   if (!dateString || dateString.trim() === '') return null;
@@ -28,7 +29,7 @@ const convertToISODate = (dateString: string): string | null => {
 
     return null;
   } catch (error) {
-    console.warn('Date conversion failed for:', dateString, error);
+    logger.warn('Date conversion failed', { data: { dateString, error } });
     return null;
   }
 };
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
 
   if (!token) {
-    console.error('No authorization token provided');
+    logger.error('No authorization token provided');
     return NextResponse.json({ error: 'No authorization token provided' }, { status: 401 });
   }
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
-    console.error('Authentication error:', error);
+    logger.error('Authentication error', error);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -55,12 +56,12 @@ export async function POST(req: NextRequest) {
     const { fields, project } = body;
 
     if (!fields || !project) {
-      console.error('Missing required fields:', { fields: !!fields, project: !!project });
+      logger.error('Missing required fields', undefined, { data: { hasFields: !!fields, hasProject: !!project } });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     if (!fields.seller?.name) {
-      console.error('Seller name is required but missing');
+      logger.error('Seller name is required but missing');
       return NextResponse.json({ error: 'Seller name is required' }, { status: 400 });
     }
 
@@ -72,12 +73,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (projectError) {
-      console.error('Project query error:', projectError);
+      logger.error('Project query error', projectError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     if (!projectData) {
-      console.error('Project not found:', project);
+      logger.error('Project not found', undefined, { data: { project } });
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Database insert error:', insertError);
+      logger.error('Database insert error', insertError);
       return NextResponse.json({
         error: 'Database insert failed',
         ...(process.env.NODE_ENV === 'development' && {
@@ -138,6 +139,8 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
+    logger.info('Processed data saved successfully', { data: { id: insertedData?.id, projectId: projectData.id } });
+
     return NextResponse.json({
       success: true,
       id: insertedData?.id,
@@ -145,7 +148,7 @@ export async function POST(req: NextRequest) {
       projectName: project
     });
   } catch (err) {
-    console.error('Save error:', err);
+    logger.error('Save error', err);
     return NextResponse.json({
       error: 'Internal server error',
       ...(process.env.NODE_ENV === 'development' && {

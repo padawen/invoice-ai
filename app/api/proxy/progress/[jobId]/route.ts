@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthHeader, proxyToPrivacyApi, parseJsonResponse } from '@/lib/api-utils';
 import { handleApiError } from '@/lib/errors';
 import { rateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 import type { PrivacyProgressData } from '@/app/types/api';
 
 export async function GET(
@@ -25,7 +26,7 @@ export async function GET(
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Progress proxy error:', error);
+    logger.error('Progress proxy error', error);
     return handleApiError(error);
   }
 }

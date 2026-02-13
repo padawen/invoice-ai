@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { serverEnv } from '@/lib/env';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +11,11 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
 
-    const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
+    const privacyApiBaseUrl = serverEnv.privacyApiUrl;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
 
     if (!privacyApiBaseUrl) {
+      logger.error('Privacy API URL not configured');
       return NextResponse.json({ error: 'Privacy API URL not configured' }, { status: 500 });
     }
     const privacyApiUrl = `${privacyApiBaseUrl}/process-invoice`;
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Privacy API responded with error:', response.status, errorText);
+      logger.error('Privacy API responded with error', undefined, { data: { status: response.status, errorText } });
       return NextResponse.json(
         { error: `Privacy API error: ${errorText}` },
         { status: response.status }
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Proxy error:', error);
+    logger.error('Proxy error', error);
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {

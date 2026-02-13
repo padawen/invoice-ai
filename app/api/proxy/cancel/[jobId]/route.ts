@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { serverEnv } from '@/lib/env';
 
 export async function DELETE(
   request: NextRequest,
@@ -12,7 +14,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const privacyApiBaseUrl = process.env.PRIVACY_API_URL;
+    const privacyApiBaseUrl = serverEnv.privacyApiUrl;
     const privacyApiKey = process.env.PRIVACY_API_KEY;
 
     if (!privacyApiBaseUrl) {
@@ -39,7 +41,7 @@ export async function DELETE(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Privacy API cancel failed:', response.status, errorText);
+      logger.error('Privacy API cancel failed', undefined, { data: { status: response.status, errorText } });
       return NextResponse.json(
         { error: `Cancel failed: ${errorText}` },
         { status: response.status }
@@ -50,7 +52,7 @@ export async function DELETE(
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Cancel proxy error:', error);
+    logger.error('Cancel proxy error', error);
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {

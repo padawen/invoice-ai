@@ -4,29 +4,83 @@ import { ArrowRight, Upload, Github, Zap, Shield, Clock, CheckCircle } from 'luc
 import Link from 'next/link';
 import { useUser } from './providers';
 import Footer from './components/Footer';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Home() {
   const user = useUser();
+  const [visibleBlocks, setVisibleBlocks] = useState<Set<number>>(new Set());
+  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const observers = blockRefs.current.map((ref, index) => {
+      if (!ref) return null;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setVisibleBlocks((prev) => new Set(prev).add(index));
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+
+      observer.observe(ref);
+      return observer;
+    });
+
+    return () => {
+      observers.forEach((observer) => observer?.disconnect());
+    };
+  }, []);
+
+  const features = [
+    {
+      icon: Zap,
+      title: 'Zero Manual Entry',
+      description: 'Upload invoices and let AI do the work. No more typos, copy-paste or wasted hours.',
+      color: 'green',
+      gradient: 'from-green-500/20 via-transparent to-transparent',
+    },
+    {
+      icon: Clock,
+      title: 'Lightning-Fast Workflow',
+      description: 'Go from PDF to structured data instantly. Seamlessly preview, edit, and export.',
+      color: 'emerald',
+      gradient: 'from-emerald-500/20 via-transparent to-transparent',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Export-Ready Output',
+      description: 'Clean, structured data ready for accounting, databases, or your next automation.',
+      color: 'green',
+      gradient: 'from-green-400/20 via-transparent to-transparent',
+    },
+    {
+      icon: Shield,
+      title: 'Privacy Mode',
+      description: 'On-premise processing keeps your data secure. Slower than OpenAI but fully private.',
+      color: 'blue',
+      gradient: 'from-blue-500/20 via-transparent to-transparent',
+    },
+  ];
 
   return (
-    <main className="flex-grow flex flex-col bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden select-none pb-16">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-green-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse [animation-delay:1s]" />
+    <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-x-hidden select-none">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-green-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-40 pointer-events-none animate-pulse [animation-delay:1s]" />
 
-      <div className="absolute top-[5%] left-[10%] w-64 h-64 bg-green-500/25 rounded-full blur-3xl" />
-      <div className="absolute top-[15%] right-[8%] w-72 h-72 bg-green-400/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-[10%] left-[70%] w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-[8%] right-[65%] w-56 h-56 bg-green-300/20 rounded-full blur-3xl" />
-      <div className="absolute top-[50%] left-[45%] w-96 h-96 bg-emerald-500/25 rounded-full blur-3xl" />
-      <div className="absolute top-[25%] left-[35%] w-48 h-48 bg-green-400/15 rounded-full blur-3xl" />
-      <div className="absolute top-[30%] right-[30%] w-52 h-52 bg-emerald-300/15 rounded-full blur-3xl" />
-      <div className="absolute top-[40%] left-[20%] w-60 h-60 bg-green-500/15 rounded-full blur-3xl" />
-      <div className="absolute top-[35%] right-[18%] w-56 h-56 bg-emerald-400/15 rounded-full blur-3xl" />
-      <div className="absolute top-[12%] left-[50%] w-44 h-44 bg-green-300/18 rounded-full blur-3xl" />
+      {/* Floating orbs */}
+      <div className="fixed top-[5%] left-[10%] w-64 h-64 bg-green-500/25 rounded-full blur-3xl animate-pulse" />
+      <div className="fixed top-[15%] right-[8%] w-72 h-72 bg-green-400/20 rounded-full blur-3xl animate-pulse [animation-delay:0.5s]" />
+      <div className="fixed bottom-[10%] left-[70%] w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl animate-pulse [animation-delay:1.5s]" />
 
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-12">
-        <div className="text-center space-y-12 max-w-6xl relative z-10">
-          <header className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Hero Section */}
+      <section className="min-h-[50vh] flex flex-col items-center justify-center px-4 py-8 relative z-10">
+        <div className="text-center space-y-8 max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <header className="space-y-6">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight tracking-tight">
               <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent">
                 Automate Invoicing.
@@ -63,55 +117,90 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="pt-16 pb-12 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 [animation-delay:400ms]">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="group p-8 bg-gradient-to-br from-zinc-800/70 to-zinc-900/70 backdrop-blur-sm rounded-2xl border border-zinc-700/50 hover:border-green-500/50 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/10">
-                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500/20 transition-colors">
-                  <Zap className="text-green-400" size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-green-400 mb-3">Zero Manual Entry</h3>
-                <p className="text-zinc-400 leading-relaxed">
-                  Upload invoices and let AI do the work. No more typos, copy-paste or wasted hours.
-                </p>
-              </div>
 
-              <div className="group p-8 bg-gradient-to-br from-zinc-800/70 to-zinc-900/70 backdrop-blur-sm rounded-2xl border border-zinc-700/50 hover:border-green-500/50 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/10">
-                <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
-                  <Clock className="text-emerald-400" size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-emerald-400 mb-3">Lightning-Fast Workflow</h3>
-                <p className="text-zinc-400 leading-relaxed">
-                  Go from PDF to structured data instantly. Seamlessly preview, edit, and export.
-                </p>
-              </div>
+        </div>
+      </section>
 
-              <div className="group p-8 bg-gradient-to-br from-zinc-800/70 to-zinc-900/70 backdrop-blur-sm rounded-2xl border border-zinc-700/50 hover:border-green-500/50 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/10">
-                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500/20 transition-colors">
-                  <CheckCircle className="text-green-400" size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-green-400 mb-3">Export-Ready Output</h3>
-                <p className="text-zinc-400 leading-relaxed">
-                  Clean, structured data ready for accounting, databases, or your next automation.
-                </p>
-              </div>
-            </div>
+      {/* Features Section - Scrollable with animations */}
+      <section className="min-h-[50vh] flex items-center justify-center px-4 py-12 relative z-10">
+        <div className="max-w-7xl w-full space-y-16">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+              Why Choose Invoice AI?
+            </h2>
+            <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
+              Four powerful features that transform your invoice processing workflow
+            </p>
+          </div>
 
-            <div className="flex justify-center">
-              <div className="w-full md:w-1/3">
-                <div className="group p-8 bg-gradient-to-br from-zinc-800/70 to-zinc-900/70 backdrop-blur-sm rounded-2xl border border-zinc-700/50 hover:border-blue-500/50 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10">
-                  <div className="w-12 h-12 md:mx-auto bg-blue-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-                    <Shield className="text-blue-400" size={24} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              const isVisible = visibleBlocks.has(index);
+              const colorClasses = {
+                green: 'text-green-400 border-green-500/50 shadow-green-500/10',
+                emerald: 'text-emerald-400 border-emerald-500/50 shadow-emerald-500/10',
+                blue: 'text-blue-400 border-blue-500/50 shadow-blue-500/10',
+              }[feature.color];
+
+              return (
+                <div
+                  key={index}
+                  ref={(el) => { blockRefs.current[index] = el; }}
+                  className={`
+                    group relative p-8 lg:p-10 
+                    bg-gradient-to-br from-zinc-800/70 to-zinc-900/70 
+                    backdrop-blur-sm rounded-2xl 
+                    border border-zinc-700/50 
+                    transition-all duration-700 
+                    hover:scale-105 hover:shadow-2xl
+                    ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}
+                    ${isVisible ? `hover:${colorClasses}` : ''}
+                  `}
+                  style={{
+                    transitionDelay: `${index * 150}ms`,
+                  }}
+                >
+                  {/* Gradient overlay on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none`} />
+
+                  <div className="relative z-10">
+                    <div className={`w-16 h-16 bg-${feature.color}-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-${feature.color}-500/20 transition-colors duration-300`}>
+                      <Icon className={`text-${feature.color}-400`} size={32} />
+                    </div>
+                    <h3 className={`text-2xl font-bold text-${feature.color}-400 mb-4`}>
+                      {feature.title}
+                    </h3>
+                    <p className="text-zinc-400 leading-relaxed text-lg">
+                      {feature.description}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-blue-400 mb-3 md:text-center">Privacy Mode</h3>
-                  <p className="text-zinc-400 leading-relaxed md:text-center">
-                    On-premise processing keeps your data secure. Slower than OpenAI but fully private.
-                  </p>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="min-h-[50vh] flex items-center justify-center px-4 py-12 relative z-10">
+        <div className="max-w-4xl w-full text-center space-y-8">
+          <h2 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+            Ready to Transform Your Workflow?
+          </h2>
+          <p className="text-xl text-zinc-300 max-w-2xl mx-auto">
+            Join thousands of businesses automating their invoice processing with AI
+          </p>
+          <Link
+            href={user ? '/upload' : '/auth/login'}
+            className="inline-flex items-center gap-3 px-12 py-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 transition-all duration-300 rounded-2xl text-white font-bold text-xl shadow-2xl shadow-green-500/30 hover:scale-105 hover:shadow-green-500/50"
+          >
+            <Upload size={28} />
+            <span>Get Started Now</span>
+            <ArrowRight size={28} />
+          </Link>
+        </div>
+      </section>
 
       <Footer />
     </main>

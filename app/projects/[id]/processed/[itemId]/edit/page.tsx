@@ -13,6 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 import { fakeProjects, FakeProcessedItem } from '@/app/fakeData';
 import type { EditableInvoice, InvoiceData } from '@/app/types';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { logger } from '@/lib/logger';
 
 interface Project {
   id: string;
@@ -23,7 +24,7 @@ export default function EditProcessedItemPage() {
   const user = useUser();
   const router = useRouter();
   const { id: slug, itemId } = useParams() as { id: string; itemId: string };
-  
+
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -61,7 +62,7 @@ export default function EditProcessedItemPage() {
   const handleProjectSelect = (newProjectName: string) => {
     const selectedProject = allProjects.find(p => p.name === newProjectName);
     if (!selectedProject) return;
-    
+
     setSelectedProjectName(newProjectName);
     setSelectedProjectId(selectedProject.id);
   };
@@ -71,9 +72,9 @@ export default function EditProcessedItemPage() {
   useEffect(() => {
     if (error && errorRef.current) {
       setTimeout(() => {
-        errorRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        errorRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
         errorRef.current?.classList.add('animate-pulse');
         setTimeout(() => {
@@ -86,10 +87,10 @@ export default function EditProcessedItemPage() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isNavigatingAfterSave) return;
-      
+
       const hasUnsavedChanges = hasDirtyChanges || hasProjectChanged;
       if (!hasUnsavedChanges) return;
-      
+
       e.preventDefault();
       e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
       return 'You have unsaved changes. Are you sure you want to leave?';
@@ -97,10 +98,10 @@ export default function EditProcessedItemPage() {
 
     const handleRouteChange = () => {
       if (isNavigatingAfterSave) return true;
-      
+
       const hasUnsavedChanges = hasDirtyChanges || hasProjectChanged;
       if (!hasUnsavedChanges) return true;
-      
+
       return window.confirm('You have unsaved changes. Are you sure you want to leave?');
     };
 
@@ -130,7 +131,7 @@ export default function EditProcessedItemPage() {
             .select('id, name');
 
           if (projErr || !projects) throw projErr;
-          
+
           setAllProjects(projects);
 
           const project = projects.find(
@@ -183,7 +184,7 @@ export default function EditProcessedItemPage() {
             extraction_time: data.extraction_time,
             user_changes_count: data.user_changes_count || 0,
           });
-          
+
           setLoading(false);
         } else if (!user) {
           try {
@@ -191,7 +192,7 @@ export default function EditProcessedItemPage() {
               (p) => slugify(p.name, { lower: true, strict: true }) === slug
             );
             if (!fake) throw new Error('Project not found');
-            
+
             setCurrentProjectName(fake.name);
             setCurrentProjectId(fake.id);
             setSelectedProjectName(fake.name);
@@ -200,16 +201,16 @@ export default function EditProcessedItemPage() {
 
             const item = fake.processed.find((i) => i.id === itemId);
             if (!item) throw new Error('Item not found');
-            
+
             setFields({ ...item.fields, id: item.id });
             setLoading(false);
           } catch (fakeErr) {
-            console.error('Error with demo data:', fakeErr);
+            logger.error('Error with demo data', fakeErr);
             throw new Error('Failed to load invoice data. Please log in to view real data.');
           }
         }
       } catch (err) {
-        console.error(err);
+        logger.error('Error loading invoice data', err);
         setError('Failed to load data.');
         setLoading(false);
       }
@@ -260,14 +261,14 @@ export default function EditProcessedItemPage() {
 
         if (hasProjectChanged) {
           setProjectChanging(true);
-          
+
           const { data: { session } } = await supabase.auth.getSession();
           const token = session?.access_token;
-          
+
           if (!token) {
             throw new Error('Authentication token not found');
           }
-          
+
           const response = await fetch('/api/processed/updateProject', {
             method: 'PUT',
             headers: {
@@ -279,12 +280,12 @@ export default function EditProcessedItemPage() {
               projectId: selectedProjectId
             })
           });
-          
+
           if (!response.ok) {
             const data = await response.json();
             throw new Error(data.error || 'Failed to update project');
           }
-          
+
           setCurrentProjectName(selectedProjectName);
           setCurrentProjectId(selectedProjectId);
         }
@@ -294,7 +295,7 @@ export default function EditProcessedItemPage() {
         );
         const item = fake?.processed.find((i: FakeProcessedItem) => i.id === itemId);
         if (item) item.fields = fields;
-        
+
         if (hasProjectChanged) {
           setProjectChanging(true);
           setCurrentProjectName(selectedProjectName);
@@ -303,19 +304,19 @@ export default function EditProcessedItemPage() {
       }
 
       setSuccess(true);
-      
+
       setIsNavigatingAfterSave(true);
-      
+
       setTimeout(() => {
-        const targetProjectSlug = hasProjectChanged 
+        const targetProjectSlug = hasProjectChanged
           ? slugify(selectedProjectName, { lower: true, strict: true })
           : slugify(currentProjectName, { lower: true, strict: true });
         router.push(`/projects/${targetProjectSlug}`);
       }, hasProjectChanged ? 1500 : 1000);
-      
+
       setTimeout(() => setSuccess(false), hasProjectChanged ? 4000 : 3000);
     } catch (err) {
-      console.error(err);
+      logger.error('Error saving invoice', err);
       setError(err instanceof Error ? err.message : 'Failed to save changes.');
       setProjectChanging(false);
     } finally {
@@ -338,10 +339,10 @@ export default function EditProcessedItemPage() {
           </h1>
         </div>
 
-        <EditableFields 
+        <EditableFields
           key={fields.id}
-          fields={fields} 
-          onChange={handleFieldChange} 
+          fields={fields}
+          onChange={handleFieldChange}
         />
 
         <div ref={saveRef} className="mt-6 sm:mt-10 bg-zinc-800/60 rounded-xl p-4 sm:p-6 border border-zinc-700/60">
@@ -349,12 +350,12 @@ export default function EditProcessedItemPage() {
             <div>
               <h3 className="text-lg font-bold text-green-400 mb-4">Project Assignment</h3>
               <div className="w-full sm:max-w-md">
-                <ProjectSelector 
+                <ProjectSelector
                   onSelect={handleProjectSelect}
                   initialProject={currentProjectName}
                   isDemo={!user || !supabase}
                 />
-                
+
                 {hasProjectChanged && (
                   <div className="mt-4 py-3 px-4 bg-amber-900/30 border border-amber-500/30 rounded-lg">
                     <div className="flex items-start gap-2">
@@ -371,11 +372,11 @@ export default function EditProcessedItemPage() {
                 )}
               </div>
             </div>
-            
+
             <div className="w-full">
-              <SaveButton 
-                isSaving={saving || projectChanging} 
-                onSave={handleSave} 
+              <SaveButton
+                isSaving={saving || projectChanging}
+                onSave={handleSave}
                 className="w-full"
                 isDemo={!user || !supabase}
               />

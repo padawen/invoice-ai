@@ -1,6 +1,8 @@
+import { logger } from '@/lib/logger';
+
 export const formatDateForInput = (dateString: string | undefined | null): string => {
   if (!dateString || dateString.trim() === '') return '';
-  
+
   try {
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       const testDate = new Date(dateString);
@@ -8,14 +10,14 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
         return dateString;
       }
     }
-    
+
     if (dateString.includes('.')) {
       const cleaned = dateString.replace(/\./g, '').trim();
       const parts = cleaned.split(' ').filter(part => part.length > 0);
-      
+
       if (parts.length === 3) {
         const [first, second, third] = parts;
-        
+
         if (first.length === 4) {
           const formattedDate = `${first}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
           const testDate = new Date(formattedDate);
@@ -33,9 +35,9 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
         const dotParts = dateString.split('.');
         if (dotParts.length === 3) {
           const [first, second, thirdRaw] = dotParts;
-          
+
           const third = thirdRaw.replace(/[.\s]+$/, '');
-          
+
           if (first.length === 4) {
             const formattedDate = `${first}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
             const testDate = new Date(formattedDate);
@@ -52,12 +54,12 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
         }
       }
     }
-    
+
     if (dateString.includes('/')) {
       const parts = dateString.split('/');
       if (parts.length === 3) {
         const [first, second, third] = parts;
-        
+
         if (first.length === 4) {
           const formattedDate = `${first}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
           const testDate = new Date(formattedDate);
@@ -73,13 +75,13 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
         }
       }
     }
-    
+
     if (dateString.includes(' ')) {
       const parts = dateString.split(' ').filter(part => part.length > 0);
-      
+
       if (parts.length === 3) {
         const [first, second, third] = parts;
-        
+
         if (first.length === 4) {
           const formattedDate = `${first}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
           const testDate = new Date(formattedDate);
@@ -89,23 +91,23 @@ export const formatDateForInput = (dateString: string | undefined | null): strin
         }
       }
     }
-    
+
     const testDate = new Date(dateString);
     if (!isNaN(testDate.getTime())) {
       return testDate.toISOString().split('T')[0];
     }
-    
-    console.warn('Could not parse date:', dateString);
+
+    logger.warn('Could not parse date', { data: { dateString } });
     return '';
   } catch (error) {
-    console.warn('Date formatting failed for:', dateString, error);
+    logger.warn('Date formatting failed', { data: { dateString, error } });
     return '';
   }
 };
 
 export const formatDateForDisplay = (dateString: string | undefined | null): string => {
   if (!dateString || dateString.trim() === '') return '';
-  
+
   try {
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
@@ -117,7 +119,7 @@ export const formatDateForDisplay = (dateString: string | undefined | null): str
     }
     return dateString;
   } catch (error) {
-    console.warn('Date display formatting failed for:', dateString, error);
+    logger.warn('Date display formatting failed', { data: { dateString, error } });
     return dateString;
   }
 }; 

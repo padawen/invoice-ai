@@ -13,6 +13,7 @@ import PrivacyProgressModal from '../components/PrivacyProgressModal';
 import Footer from '../components/Footer';
 import type { EditableInvoice } from '@/app/types';
 import { convertPdfToImages, isPdfFile } from '@/app/utils/pdfToImages';
+import { logger } from '@/lib/logger';
 
 const UploadPage = () => {
   const user = useUser();
@@ -229,7 +230,7 @@ const UploadPage = () => {
 
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        console.log('Processing cancelled');
+        logger.debug('Processing cancelled');
         return;
       }
 

@@ -14,6 +14,7 @@ import { Pencil, Check } from 'lucide-react';
 import InvoiceCard from '@/app/components/InvoiceCard';
 import InvoiceFilters, { FilterOptions } from '@/app/components/InvoiceFilters';
 import FinancialSummary from '@/app/components/FinancialSummary';
+import { logger } from '@/lib/logger';
 
 interface Project {
   id: string;
@@ -299,7 +300,7 @@ export default function ProjectDetailsPage() {
         const newSlug = slugify(projectName.trim(), { lower: true, strict: true });
         router.push(`/projects/${newSlug}`);
       } catch (error) {
-        console.error('Error updating project name:', error);
+        logger.error('Error updating project name', error);
         setProjectName(project.name);
       }
     } else {

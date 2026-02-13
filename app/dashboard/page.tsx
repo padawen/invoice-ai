@@ -12,6 +12,7 @@ import Footer from "../components/Footer";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { Skeleton } from "../components/ui/Skeleton";
+import { logger } from "@/lib/logger";
 
 interface Project {
   id: string;
@@ -64,7 +65,7 @@ export default function DashboardPage() {
             .select("id, name");
 
           if (projectsError) {
-            console.error("Error fetching projects:", projectsError);
+            logger.error("Error fetching projects", projectsError);
             return;
           }
 
@@ -80,7 +81,7 @@ export default function DashboardPage() {
                 .in("project_id", projectIds);
 
               if (statsError) {
-                console.error("Error fetching stats:", statsError);
+                logger.error("Error fetching stats", statsError);
               } else if (allStats) {
                 const stats: Record<string, ExtractionStats> = {};
 
@@ -104,7 +105,7 @@ export default function DashboardPage() {
             }
           }
         } catch (err) {
-          console.error("Failed to fetch projects:", err);
+          logger.error("Failed to fetch projects", err);
         }
       } else if (authInitialized && !user) {
         setProjects(fakeProjects);
@@ -134,7 +135,7 @@ export default function DashboardPage() {
       });
 
       if (!res.ok) {
-        console.error("Failed to delete project:", await res.text());
+        logger.error("Failed to delete project", undefined, { data: { response: await res.text() } });
         alert("Failed to delete project.");
         setShowDeleteModal(null);
         return;

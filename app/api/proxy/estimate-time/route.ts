@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthHeader, proxyToPrivacyApi, parseJsonResponse } from '@/lib/api-utils';
 import { handleApiError } from '@/lib/errors';
 import { rateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 import type { TimeEstimationResponse } from '@/app/types/api';
 
 export async function POST(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Time estimation proxy error:', error);
+    logger.error('Time estimation proxy error', error);
     return handleApiError(error);
   }
 }

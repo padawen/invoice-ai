@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { config } from '@/lib/config';
 import { fetchWithTimeout } from '@/lib/api-utils';
 import { handleApiError, ExternalServiceError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 import type { HealthCheckResponse } from '@/app/types/api';
 
 export async function GET() {
@@ -30,7 +31,7 @@ export async function GET() {
     return NextResponse.json(healthResponse);
 
   } catch (error) {
-    console.error('Health check error:', error);
+    logger.error('Health check error', error);
     return handleApiError(error);
   }
 }

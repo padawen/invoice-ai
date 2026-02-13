@@ -3,6 +3,7 @@ import { Loader2, Shield, FileText, Brain, CheckCircle, AlertCircle, Server, Upl
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import type { TimeEstimationResponse } from '@/app/types/api';
+import { logger } from '@/lib/logger';
 
 interface PrivacyProgressModalProps {
   isOpen: boolean;
@@ -185,7 +186,7 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
           timeEstimationRef.current = estimation;
         }
       } catch (err) {
-        console.error('Failed to fetch time estimation:', err);
+        logger.error('Failed to fetch time estimation', err);
       } finally {
         setIsEstimating(false);
       }
@@ -379,11 +380,11 @@ const PrivacyProgressModal = ({ isOpen, jobId, file }: PrivacyProgressModalProps
         router.push('/upload');
       } else {
         const errorText = await response.text();
-        console.error('Cancel failed:', errorText);
+        logger.error('Cancel failed', undefined, { data: { errorText } });
         setError('Failed to cancel processing');
       }
     } catch (err) {
-      console.error('Cancel error:', err);
+      logger.error('Cancel error', err);
       setError('Failed to cancel processing');
     } finally {
       setIsCancelling(false);

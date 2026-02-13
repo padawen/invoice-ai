@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 function getEnvVar(key: string, fallback?: string): string {
   const value = process.env[key];
   if (!value && !fallback) {
@@ -45,7 +47,7 @@ export function validateConfig(): void {
       throw new Error('Required configuration missing');
     }
   } catch (error) {
-    console.error('Configuration validation failed:', error);
+    logger.error('Configuration validation failed', error);
     throw error;
   }
 }

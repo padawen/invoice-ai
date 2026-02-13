@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase-server';
+import { logger } from '@/lib/logger';
 
 export async function DELETE(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return NextResponse.json({ error: 'No authorization token provided' }, { status: 401 });
   }
-  
+
   const supabase = createSupabaseClient(token);
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -17,7 +18,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const { invoiceId, itemIndex } = await req.json();
-    
+
     if (!invoiceId || typeof itemIndex !== 'number') {
       return NextResponse.json({ error: 'Missing invoiceId or itemIndex' }, { status: 400 });
     }
@@ -30,7 +31,7 @@ export async function DELETE(req: NextRequest) {
       .single();
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
+      logger.error('Fetch error', fetchError);
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
@@ -52,13 +53,13 @@ export async function DELETE(req: NextRequest) {
       .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Update error:', updateError);
+      logger.error('Update error', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Delete error:', err);
+    logger.error('Delete error', err);
     return NextResponse.json({ error: 'Failed to process the request' }, { status: 500 });
   }
 } 

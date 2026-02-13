@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
+import { serverEnv } from '@/lib/env';
 
-const PRIVACY_API_URL = process.env.PRIVACY_API_URL || 'http://localhost:5000';
+const PRIVACY_API_URL = serverEnv.privacyApiUrl || 'http://localhost:5000';
 const PRIVACY_API_KEY = process.env.PRIVACY_API_KEY || '';
 
 export async function GET(

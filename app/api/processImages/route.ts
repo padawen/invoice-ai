@@ -5,6 +5,8 @@ import { getGuidelines } from '@/lib/instructions';
 import { createSupabaseClient } from '@/lib/supabase-server';
 import { formatDateForInput } from '@/app/utils/dateFormatter';
 import { rateLimit } from '@/lib/rate-limit';
+import { processImagesRequestSchema, formatZodError } from '@/lib/validations';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
     const rateLimitResult = rateLimit(req, { limit: 5, interval: 60000 });
@@ -24,15 +26,17 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { images } = body as { images: string[] };
 
-        if (!images || !Array.isArray(images) || images.length === 0) {
-            return NextResponse.json({ error: 'No images provided' }, { status: 400 });
+        // Validate request body with Zod
+        const validationResult = processImagesRequestSchema.safeParse(body);
+        if (!validationResult.success) {
+            return NextResponse.json(
+                formatZodError(validationResult.error),
+                { status: 400 }
+            );
         }
 
-        if (images.length > 10) {
-            return NextResponse.json({ error: 'PAGE_LIMIT_EXCEEDED' }, { status: 400 });
-        }
+        const { images } = validationResult.data;
 
         const content: ChatCompletionContentPart[] = [
             { type: 'text', text: getGuidelines() },
@@ -98,11 +102,13 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         const errorMessage = (error as Error).message || 'Unexpected server error';
-        console.error('ProcessImages Error:', {
-            message: errorMessage,
-            stack: (error as Error).stack,
-            name: (error as Error).name,
-            timestamp: new Date().toISOString()
+        logger.error('ProcessImages Error', undefined, {
+            data: {
+                message: errorMessage,
+                stack: (error as Error).stack,
+                name: (error as Error).name,
+                timestamp: new Date().toISOString()
+            }
         });
 
         return NextResponse.json(
