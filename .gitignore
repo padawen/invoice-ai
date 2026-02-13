@@ -35,7 +35,7 @@ yarn-error.log*
 /temp/                         # temp mappa (PDF-ekhez)
 invoice_ai_summary.txt        # saját összefoglaló jegyzet
 /test/                         # test directory for PDF tests
-/.agent/                       # AI agent plans and artifacts
+.agent                         # AI agent plans and artifacts
 
 # VS Code (optional, if you don't want to share workspace settings)
 .vscode
